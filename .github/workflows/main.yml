@@ -10,6 +10,7 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -17,8 +18,8 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
-          cache: "npm"
+          node-version: '20'
+          cache: 'npm'
 
       - name: Install dependencies
         run: npm install
@@ -28,7 +29,6 @@ jobs:
           echo "== RUNNING BUILD =="
           node -v
           npm -v
-          # run build and save output to file so we can inspect it in logs
           set -o pipefail
           npm run build 2>&1 | tee build-output.log || true
           echo "=== BUILD OUTPUT (last 200 lines) ==="
@@ -37,32 +37,25 @@ jobs:
       - name: Debug: show workspace recursively
         run: |
           echo "Working dir: $(pwd)"
-          echo "UID/GID: $(id -u):$(id -g)"
           echo "Top-level files:"
           ls -la
-          echo "Recursive listing (limited depth 4):"
-          ls -laR --group-directories-first | sed -n '1,200p' || true
-          echo "Find any zip files (full list):"
+          echo "Find zip files (if any):"
           find . -type f -name "*.zip" -print -exec ls -lh {} \; || true
-          echo "Show any 'dist' dirs:"
-          find . -type d -name "dist" -print -exec ls -la {} \; || true
-          echo "Show .acode folder if exists:"
+          echo "Show dist folder (if exists):"
+          if [ -d "dist" ]; then ls -la dist; else echo "dist/ not found"; fi
+          echo "Show .acode folder (if exists):"
           ls -la .acode || true
 
       - name: Ensure zip tool present
         run: |
-          if ! command -v zip > /dev/null; then
-            echo "zip not found, installing..."
-            sudo apt-get update && sudo apt-get install -y zip >/dev/null
-          else
-            echo "zip available"
+          if ! command -v zip >/dev/null; then
+            sudo apt-get update && sudo apt-get install -y zip
           fi
           zip -v || true
 
       - name: Create artifact zip (guaranteed)
         run: |
           mkdir -p .artifacts
-          # Prefer packer output if exists (copy any zip found)
           found=0
           while IFS= read -r f; do
             echo "Copying existing zip: $f"
@@ -70,19 +63,16 @@ jobs:
             found=1
           done < <(find . -type f -name "*.zip" -print)
 
-          # If nothing found, create plugin zip from dist + manifest.json (adjust files as needed)
           if [ "$found" -eq 0 ]; then
             echo "No existing zip found — creating .artifacts/acode-plugin.zip from dist/ + manifest.json"
-            # Make sure dist exists
             if [ -d "dist" ]; then
-              # include manifest.json if it exists; otherwise only dist
               if [ -f "manifest.json" ]; then
                 zip -r .artifacts/acode-plugin.zip dist manifest.json > /dev/null || true
               else
                 zip -r .artifacts/acode-plugin.zip dist > /dev/null || true
               fi
             else
-              echo "ERROR: dist/ not found. Listing current directory again:"
+              echo "ERROR: dist/ not found. Listing current dir:"
               ls -la
             fi
           fi
