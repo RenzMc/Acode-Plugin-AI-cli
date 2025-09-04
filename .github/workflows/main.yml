@@ -22,7 +22,9 @@ jobs:
           cache: 'npm'
 
       - name: Install dependencies
-        run: npm install
+        shell: bash
+        run: |
+          npm install
 
       - name: Run build script (show stdout/stderr)
         shell: bash
@@ -44,15 +46,24 @@ jobs:
           echo "Find zip files (if any):"
           find . -type f -name "*.zip" -print -exec ls -lh {} \; || true
           echo "Show dist folder (if exists):"
-          if [ -d "dist" ]; then ls -la dist; else echo "dist/ not found"; fi
+          if [ -d "dist" ]; then
+            ls -la dist
+          else
+            echo "dist/ not found"
+          fi
           echo "Show .acode folder (if exists):"
-          ls -la .acode || true
+          if [ -d ".acode" ]; then
+            ls -la .acode
+          else
+            echo ".acode/ not found"
+          fi
 
       - name: Ensure zip tool present
         shell: bash
         run: |
           if ! command -v zip >/dev/null; then
-            sudo apt-get update && sudo apt-get install -y zip
+            sudo apt-get update -y
+            sudo apt-get install -y zip
           fi
           zip -v || true
 
@@ -61,19 +72,22 @@ jobs:
         run: |
           mkdir -p .artifacts
           found=0
-          while IFS= read -r f; do
+
+          # copy any existing zip files into .artifacts
+          find . -type f -name "*.zip" -print0 | while IFS= read -r -d '' f; do
             echo "Copying existing zip: $f"
             cp "$f" .artifacts/ || true
             found=1
-          done <<< "$(find . -type f -name "*.zip" -print)"
+          done
 
+          # if no zip found, create one from dist (and manifest.json if present)
           if [ "$found" -eq 0 ]; then
             echo "No existing zip found — creating .artifacts/acode-plugin.zip from dist/ + manifest.json"
             if [ -d "dist" ]; then
               if [ -f "manifest.json" ]; then
-                zip -r .artifacts/acode-plugin.zip dist manifest.json > /dev/null || true
+                zip -r .artifacts/acode-plugin.zip dist manifest.json >/dev/null 2>&1 || true
               else
-                zip -r .artifacts/acode-plugin.zip dist > /dev/null || true
+                zip -r .artifacts/acode-plugin.zip dist >/dev/null 2>&1 || true
               fi
             else
               echo "ERROR: dist/ not found. Listing current dir:"
