@@ -2,9 +2,9 @@ name: Build Acode Plugin
 
 on:
   push:
-    branches: [ "main" ]
+    branches: ["main"]
   pull_request:
-    branches: [ "main" ]
+    branches: ["main"]
   workflow_dispatch:
 
 jobs:
@@ -22,13 +22,39 @@ jobs:
           cache: "npm"
 
       - name: Install dependencies
-        run: npm install
+        run: npm ci
 
       - name: Run build script
         run: npm run build
+
+      # ---------- Debug / Verify artifacts ----------
+      - name: Show workspace and find any zip files (debug)
+        run: |
+          echo "PWD: $(pwd)"
+          echo "List top-level files:"
+          ls -la
+          echo "Find any zip files (full list):"
+          find . -type f -name "*.zip" -print || true
+
+      # ---------- Collect zip into single predictable folder ----------
+      - name: Collect ZIP artifact(s)
+        run: |
+          mkdir -p .artifacts
+          # find first zip and copy it (copy all zips if you prefer)
+          FOUND=0
+          while IFS= read -r file; do
+            echo "Copying zip: $file"
+            cp "$file" .artifacts/ || true
+            FOUND=1
+          done < <(find . -type f -name "*.zip" -print)
+          if [ "$FOUND" -eq 0 ]; then
+            echo "No zip files found to copy."
+          fi
+          echo "Contents of .artifacts:"
+          ls -la .artifacts || true
 
       - name: Upload plugin artifact
         uses: actions/upload-artifact@v4
         with:
           name: acode-plugin
-          path: dist.zip
+          path: .artifacts/*.zip
