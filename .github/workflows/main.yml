@@ -25,6 +25,7 @@ jobs:
         run: npm install
 
       - name: Run build script (show stdout/stderr)
+        shell: bash
         run: |
           echo "== RUNNING BUILD =="
           node -v
@@ -35,6 +36,7 @@ jobs:
           tail -n 200 build-output.log || true
 
       - name: Debug: show workspace recursively
+        shell: bash
         run: |
           echo "Working dir: $(pwd)"
           echo "Top-level files:"
@@ -47,6 +49,7 @@ jobs:
           ls -la .acode || true
 
       - name: Ensure zip tool present
+        shell: bash
         run: |
           if ! command -v zip >/dev/null; then
             sudo apt-get update && sudo apt-get install -y zip
@@ -54,6 +57,7 @@ jobs:
           zip -v || true
 
       - name: Create artifact zip (guaranteed)
+        shell: bash
         run: |
           mkdir -p .artifacts
           found=0
@@ -61,7 +65,7 @@ jobs:
             echo "Copying existing zip: $f"
             cp "$f" .artifacts/ || true
             found=1
-          done < <(find . -type f -name "*.zip" -print)
+          done <<< "$(find . -type f -name "*.zip" -print)"
 
           if [ "$found" -eq 0 ]; then
             echo "No existing zip found — creating .artifacts/acode-plugin.zip from dist/ + manifest.json"
