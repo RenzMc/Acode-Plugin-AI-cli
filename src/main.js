@@ -83,7 +83,40 @@ class AIAssistant {
       this.$markdownItFile,
       this.$style,
     );
+    
+  const waitForMarkdownIt = () => {
+    return new Promise((resolve) => {
+      const checkMarkdown = () => {
+        if (window.markdownit) {
+          this.$mdIt = window.markdownit({
+            html: false,
+            xhtmlOut: false,
+            breaks: false,
+            linkify: false,
+            typographer: false,
+            quotes: '""\'\'',
+            highlight: function (str, lang) {
+              const copyBtn = document.createElement("button");
+              copyBtn.classList.add("copy-button");
+              copyBtn.innerHTML = copyIconSvg;
+              copyBtn.setAttribute("data-str", str);
+              const codesArea = `<pre class="hljs codesArea"><code>${window.hljs ? window.hljs.highlightAuto(str).value : str}</code></pre>`;
+              const codeBlock = `<div class="codeBlock">${copyBtn.outerHTML}${codesArea}</div>`;
+              return codeBlock;
+            },
+          });
+          resolve();
+        } else {
+          setTimeout(checkMarkdown, 100);
+        }
+      };
+      checkMarkdown();
+    });
+  };
 
+  this.$markdownItFile.onload = () => {
+    waitForMarkdownIt();
+  };
 
     /**
      * Adding command for starting cli assistant
@@ -445,8 +478,27 @@ case 'toggle-realtime':
       },
     };
   }
-
+  
   async run() {
+    if (!this.$mdIt && window.markdownit) {
+      this.$mdIt = window.markdownit({
+        html: false,
+        xhtmlOut: false,
+        breaks: false,
+        linkify: false,
+        typographer: false,
+        quotes: "\"\"''",
+        highlight: function (str, lang) {
+          const copyBtn = document.createElement("button");
+          copyBtn.classList.add("copy-button");
+          copyBtn.innerHTML = copyIconSvg;
+          copyBtn.setAttribute("data-str", str);
+          const codesArea = `<pre class="hljs codesArea"><code>${window.hljs ? window.hljs.highlightAuto(str).value : str}</code></pre>`;
+          const codeBlock = `<div class="codeBlock">${copyBtn.outerHTML}${codesArea}</div>`;
+          return codeBlock;
+        },
+      });
+    }
     try {
       let passPhrase;
       if (await fs(window.DATA_STORAGE + "secret.key").exists()) {
@@ -911,9 +963,10 @@ case 'toggle-realtime':
   }
 
   async appendGptResponse(message) {
-    /*
-    add ai response to ui
-    */
+  /*
+  add ai response to ui
+  */
+  try {
     const ai_avatar = this.baseUrl + "assets/ai_assistant.svg";
     const gptChatBox = tag("div", { className: "ai_wrapper" });
     const chat = tag("div", { className: "ai_chat" });
@@ -927,9 +980,17 @@ case 'toggle-realtime':
     const msg = tag("div", {
       className: "ai_message",
     });
-    msg.innerHTML = this.$mdIt.render(message);
+    
+    // Pastikan this.$mdIt sudah diinisialisasi
+    if (this.$mdIt && typeof this.$mdIt.render === 'function') {
+      msg.innerHTML = this.$mdIt.render(message);
+    } else {
+      // Fallback jika markdown-it belum ready
+      msg.textContent = message;
+    }
+    
     const copyBtns = msg.querySelectorAll(".copy-button");
-    if (copyBtns) {
+    if (copyBtns && copyBtns.length > 0) {
       for (const copyBtn of copyBtns) {
         copyBtn.addEventListener("click", function () {
           copy(this.dataset.str);
@@ -941,7 +1002,11 @@ case 'toggle-realtime':
     chat.append(...[profileImg, msg]);
     gptChatBox.append(chat);
     this.$chatBox.appendChild(gptChatBox);
+  } catch (err) {
+    console.error("Error in appendGptResponse:", err);
+    window.toast("Error displaying AI response", 3000);
   }
+}
 
   async stopGenerating() {
     // Currently this doesn't works and I have no idea about , If you can , feel free to open pr
@@ -952,139 +1017,166 @@ case 'toggle-realtime':
   }
 
   async getCliResponse(question) {
-    try {
-      // Check cache first
-      const cachedResponse = this.getCachedResponse(question);
-      if (cachedResponse) {
-        const responseBox = Array.from(document.querySelectorAll(".ai_message"));
-        const targetElem = responseBox[responseBox.length - 1];
-        
-        clearInterval(this.$loadInterval);
-        this.$sendBtn.classList.add("hide");
-        this.$stopGenerationBtn.classList.remove('hide');
-        
-        // Simulate streaming for cached response
-        targetElem.innerHTML = "";
-        let index = 0;
-        const streamCache = () => {
-          if (index < cachedResponse.length) {
-            targetElem.textContent += cachedResponse[index];
-            index++;
-            this.scrollToBottom();
-            setTimeout(streamCache, 10);
-          } else {
-            const renderedHtml = this.$mdIt.render(cachedResponse);
-            targetElem.innerHTML = renderedHtml;
-            
-            const copyBtns = targetElem.querySelectorAll(".copy-button");
-            if (copyBtns) {
-              for (const copyBtn of copyBtns) {
-                copyBtn.addEventListener("click", function () {
-                  copy(this.dataset.str);
-                  window.toast("Copied to clipboard", 3000);
-                });
-              }
-            }
-            
-            this.$stopGenerationBtn.classList.add("hide");
-            this.$sendBtn.classList.remove("hide");
-            window.toast("Response from cache", 1500);
-          }
-        };
-        streamCache();
-        return;
-      }
+  try {
+    // Pastikan elemen DOM ada
+    const responseBoxes = Array.from(document.querySelectorAll(".ai_message"));
+    if (responseBoxes.length === 0) {
+      console.error("No response box found");
+      return;
+    }
+    
+    const targetElem = responseBoxes[responseBoxes.length - 1];
+    if (!targetElem) {
+      console.error("Target element not found");
+      return;
+    }
 
-      // Original AI request code...
-      const responseBox = Array.from(document.querySelectorAll(".ai_message"));
-      
-      this.abortController = new AbortController();
-      const { signal } = this.abortController;
-
-      const prompt = ChatPromptTemplate.fromMessages([
-        [
-          "system",
-          `You are Renz AI CLI assistant for the open source plugin Renz Ai Cli for Acode code editor(open source vscode like code editor for Android). You help users with code editing, file operations, and AI-powered development tasks. You can read files, edit files, delete files, show diffs, search and replace across project files, and perform various coding tasks. Always be helpful and provide clear, actionable responses.`,
-        ],
-        ["placeholder", "{chat_history}"],
-        ["human", "{input}"],
-      ]);
-      
-      const parser = new StringOutputParser();
-      const chain = prompt.pipe(this.modelInstance).pipe(parser);
-
-      const withMessageHistory = new RunnableWithMessageHistory({
-        runnable: chain,
-        getMessageHistory: async (sessionId) => {
-          if (this.messageHistories[sessionId] === undefined) {
-            this.messageHistories[sessionId] = new InMemoryChatMessageHistory();
-          } else {
-            let history = await this.messageHistories[sessionId].getMessages();
-            this.messageHistories[sessionId].addMessages(history.slice(-6))
-          }
-          return this.messageHistories[sessionId];
-        },
-        inputMessagesKey: "input",
-        historyMessagesKey: "chat_history",
-      });
-
-      const stream = await withMessageHistory.stream(
-        {
-          input: question,
-        },
-        this.messageSessionConfig,
-        signal
-      );
-
+    // Check cache first
+    const cachedResponse = this.getCachedResponse(question);
+    if (cachedResponse) {
       clearInterval(this.$loadInterval);
       this.$sendBtn.classList.add("hide");
       this.$stopGenerationBtn.classList.remove('hide');
-      const targetElem = responseBox[responseBox.length - 1];
+      
+      // Simulate streaming for cached response
       targetElem.innerHTML = "";
-      let result = "";
-      
-      for await (const chunk of stream) {
-        result += chunk;
-        targetElem.textContent += chunk;
-        this.scrollToBottom();
-      }
-      
-      // Cache the response
-      this.setCachedResponse(question, result);
-      
+      let index = 0;
+      const streamCache = () => {
+        if (index < cachedResponse.length) {
+          targetElem.textContent += cachedResponse[index];
+          index++;
+          this.scrollToBottom();
+          setTimeout(streamCache, 10);
+        } else {
+          // Pastikan markdown renderer ada
+          if (this.$mdIt && typeof this.$mdIt.render === 'function') {
+            const renderedHtml = this.$mdIt.render(cachedResponse);
+            targetElem.innerHTML = renderedHtml;
+          } else {
+            targetElem.textContent = cachedResponse;
+          }
+          
+          const copyBtns = targetElem.querySelectorAll(".copy-button");
+          if (copyBtns && copyBtns.length > 0) {
+            for (const copyBtn of copyBtns) {
+              copyBtn.addEventListener("click", function () {
+                copy(this.dataset.str);
+                window.toast("Copied to clipboard", 3000);
+              });
+            }
+          }
+          
+          this.$stopGenerationBtn.classList.add("hide");
+          this.$sendBtn.classList.remove("hide");
+          window.toast("Response from cache", 1500);
+        }
+      };
+      streamCache();
+      return;
+    }
+
+    // Original AI request code...
+    this.abortController = new AbortController();
+    const { signal } = this.abortController;
+
+    const prompt = ChatPromptTemplate.fromMessages([
+      [
+        "system",
+        `You are Renz AI CLI assistant for the open source plugin Renz Ai Cli for Acode code editor(open source vscode like code editor for Android). You help users with code editing, file operations, and AI-powered development tasks. You can read files, edit files, delete files, show diffs, search and replace across project files, and perform various coding tasks. Always be helpful and provide clear, actionable responses.`,
+      ],
+      ["placeholder", "{chat_history}"],
+      ["human", "{input}"],
+    ]);
+    
+    const parser = new StringOutputParser();
+    const chain = prompt.pipe(this.modelInstance).pipe(parser);
+
+    const withMessageHistory = new RunnableWithMessageHistory({
+      runnable: chain,
+      getMessageHistory: async (sessionId) => {
+        if (this.messageHistories[sessionId] === undefined) {
+          this.messageHistories[sessionId] = new InMemoryChatMessageHistory();
+        } else {
+          let history = await this.messageHistories[sessionId].getMessages();
+          this.messageHistories[sessionId].addMessages(history.slice(-6))
+        }
+        return this.messageHistories[sessionId];
+      },
+      inputMessagesKey: "input",
+      historyMessagesKey: "chat_history",
+    });
+
+    const stream = await withMessageHistory.stream(
+      {
+        input: question,
+      },
+      this.messageSessionConfig,
+      signal
+    );
+
+    clearInterval(this.$loadInterval);
+    this.$sendBtn.classList.add("hide");
+    this.$stopGenerationBtn.classList.remove('hide');
+    
+    targetElem.innerHTML = "";
+    let result = "";
+    
+    for await (const chunk of stream) {
+      result += chunk;
+      targetElem.textContent += chunk;
+      this.scrollToBottom();
+    }
+    
+    // Cache the response
+    this.setCachedResponse(question, result);
+    
+    // Render markdown jika tersedia
+    if (this.$mdIt && typeof this.$mdIt.render === 'function') {
       const renderedHtml = this.$mdIt.render(result);
       targetElem.innerHTML = renderedHtml;
-      
-      const copyBtns = targetElem.querySelectorAll(".copy-button");
-      if (copyBtns) {
-        for (const copyBtn of copyBtns) {
-          copyBtn.addEventListener("click", function () {
-            copy(this.dataset.str);
-            window.toast("Copied to clipboard", 3000);
-          });
-        }
-      }
-      this.$stopGenerationBtn.classList.add("hide");
-      this.$sendBtn.classList.remove("hide");
-
-      await this.saveHistory();
-    } catch (error) {
-      const responseBox = Array.from(document.querySelectorAll(".ai_message"));
-      clearInterval(this.$loadInterval);
-      const targetElem = responseBox[responseBox.length - 1];
-      targetElem.innerHTML = "";
-      const $errorBox = tag("div", { className: "error-box" });
-      console.log(error)
-      if (error.response) {
-        $errorBox.innerText = `Status code: ${error.response.status}\n${JSON.stringify(error.response.data)}`;
-      } else {
-        $errorBox.innerText = `${error.message}`;
-      }
-      targetElem.appendChild($errorBox);
-      this.$stopGenerationBtn.classList.add("hide");
-      this.$sendBtn.classList.remove("hide");
+    } else {
+      targetElem.textContent = result;
     }
+    
+    const copyBtns = targetElem.querySelectorAll(".copy-button");
+    if (copyBtns && copyBtns.length > 0) {
+      for (const copyBtn of copyBtns) {
+        copyBtn.addEventListener("click", function () {
+          copy(this.dataset.str);
+          window.toast("Copied to clipboard", 3000);
+        });
+      }
+    }
+    
+    this.$stopGenerationBtn.classList.add("hide");
+    this.$sendBtn.classList.remove("hide");
+
+    await this.saveHistory();
+  } catch (error) {
+    console.error("Error in getCliResponse:", error);
+    
+    const responseBoxes = Array.from(document.querySelectorAll(".ai_message"));
+    clearInterval(this.$loadInterval);
+    
+    if (responseBoxes.length > 0) {
+      const targetElem = responseBoxes[responseBoxes.length - 1];
+      if (targetElem) {
+        targetElem.innerHTML = "";
+        const $errorBox = tag("div", { className: "error-box" });
+        
+        if (error.response) {
+          $errorBox.innerText = `Status code: ${error.response.status}\n${JSON.stringify(error.response.data)}`;
+        } else {
+          $errorBox.innerText = `${error.message}`;
+        }
+        targetElem.appendChild($errorBox);
+      }
+    }
+    
+    this.$stopGenerationBtn.classList.add("hide");
+    this.$sendBtn.classList.remove("hide");
   }
+}
 
   async scrollToBottom() {
     this.$chatBox.scrollTop = this.$chatBox.scrollHeight;
@@ -1975,18 +2067,19 @@ case 'toggle-realtime':
 }
 
   async explainCodeWithChat(selectedText, activeFile) {
-  // Buka chat dan kirim prompt
-  if (!this.$page.isVisible) {
-    await this.run();
-  }
-  
-  let fileContent = "";
-  if (activeFile) {
-    fileContent = editor.getValue();
-  }
-  
-  const systemPrompt = `You are a professional code explainer. Analyze the provided code and explain it in detail, professionally, and comprehensively.`;
-  const userPrompt = `Please explain this code in detail:
+  try {
+    // Buka chat dan kirim prompt
+    if (!this.$page.isVisible) {
+      await this.run();
+    }
+    
+    let fileContent = "";
+    if (activeFile) {
+      fileContent = editor.getValue();
+    }
+    
+    const systemPrompt = `You are a professional code explainer. Analyze the provided code and explain it in detail, professionally, and comprehensively.`;
+    const userPrompt = `Please explain this code in detail:
 
 **File: ${activeFile ? activeFile.name : 'Unknown'}**
 
@@ -2002,10 +2095,15 @@ ${fileContent}
 
 Please provide a detailed and professional explanation of what this code does, how it works, its dependencies, and any potential improvements.`;
 
-  this.appendUserQuery(userPrompt);
-  this.appendGptResponse("");
-  this.loader();
-  await this.getCliResponse(systemPrompt + "\n\n" + userPrompt);
+    this.appendUserQuery(userPrompt);
+    this.scrollToBottom();
+    this.appendGptResponse("");
+    this.loader();
+    await this.getCliResponse(systemPrompt + "\n\n" + userPrompt);
+  } catch (error) {
+    console.error("Error in explainCodeWithChat:", error);
+    window.toast(`Error explaining code: ${error.message}`, 3000);
+  }
 }
 
   async showGenerateCodePopup() {
