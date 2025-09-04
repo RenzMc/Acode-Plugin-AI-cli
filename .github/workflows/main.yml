@@ -71,32 +71,44 @@ jobs:
         shell: bash
         run: |
           mkdir -p .artifacts
-          found=0
-          # copy any existing zip files into .artifacts
-          find . -type f -name "*.zip" -print0 | while IFS= read -r -d '' f; do
-            echo "Copying existing zip: $f"
-            cp "$f" .artifacts/ || true
-            found=1
-          done
-          # if no zip found, create one from dist (and manifest.json if present)
-          if [ "$found" -eq 0 ]; then
-            echo "No existing zip found — creating .artifacts/acode-plugin.zip from dist/ + manifest.json"
+          
+          # Check if AI.zip exists and copy it
+          if [ -f "AI.zip" ]; then
+            echo "Found existing AI.zip, copying to artifacts"
+            cp AI.zip .artifacts/
+          fi
+          
+          # Check for any other zip files
+          find . -maxdepth 1 -type f -name "*.zip" ! -name "AI.zip" -exec cp {} .artifacts/ \;
+          
+          # If no zip files found, create one from dist
+          if [ ! -f ".artifacts/AI.zip" ] && [ $(find .artifacts -name "*.zip" | wc -l) -eq 0 ]; then
+            echo "No existing zip found — creating .artifacts/acode-plugin.zip from dist/"
             if [ -d "dist" ]; then
-              if [ -f "manifest.json" ]; then
-                zip -r .artifacts/acode-plugin.zip dist manifest.json >/dev/null 2>&1 || true
+              if [ -f "plugin.json" ]; then
+                echo "Creating zip with dist/ and plugin.json"
+                zip -r .artifacts/acode-plugin.zip dist plugin.json
+              elif [ -f "manifest.json" ]; then
+                echo "Creating zip with dist/ and manifest.json"
+                zip -r .artifacts/acode-plugin.zip dist manifest.json
               else
-                zip -r .artifacts/acode-plugin.zip dist >/dev/null 2>&1 || true
+                echo "Creating zip with dist/ only"
+                zip -r .artifacts/acode-plugin.zip dist
               fi
             else
-              echo "ERROR: dist/ not found. Listing current dir:"
-              ls -la
+              echo "ERROR: dist/ not found. Cannot create plugin zip."
+              exit 1
             fi
           fi
-          echo "Contents of .artifacts:"
-          ls -la .artifacts || true
+          
+          echo "=== Contents of .artifacts ==="
+          ls -la .artifacts/
+          echo "=== Zip file details ==="
+          find .artifacts -name "*.zip" -exec ls -lh {} \;
 
       - name: Upload plugin artifact
         uses: actions/upload-artifact@v4
         with:
           name: acode-plugin
           path: .artifacts/*.zip
+          if-no-files-found: error
