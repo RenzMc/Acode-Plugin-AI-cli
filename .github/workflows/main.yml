@@ -37,7 +37,7 @@ jobs:
           echo "=== BUILD OUTPUT (last 200 lines) ==="
           tail -n 200 build-output.log || true
 
-      - name: Debug: show workspace recursively
+      - name: Debug - show workspace recursively
         shell: bash
         run: |
           echo "Working dir: $(pwd)"
@@ -72,14 +72,12 @@ jobs:
         run: |
           mkdir -p .artifacts
           found=0
-
           # copy any existing zip files into .artifacts
           find . -type f -name "*.zip" -print0 | while IFS= read -r -d '' f; do
             echo "Copying existing zip: $f"
             cp "$f" .artifacts/ || true
             found=1
           done
-
           # if no zip found, create one from dist (and manifest.json if present)
           if [ "$found" -eq 0 ]; then
             echo "No existing zip found — creating .artifacts/acode-plugin.zip from dist/ + manifest.json"
@@ -94,7 +92,6 @@ jobs:
               ls -la
             fi
           fi
-
           echo "Contents of .artifacts:"
           ls -la .artifacts || true
 
