@@ -1,0 +1,1548 @@
+// ===== ADVANCED AI THEME SYSTEM =====
+:root {
+  // Core Gradients with Enhanced Color Stops
+  --ai-primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #5a67d8 100%);
+  --ai-secondary-gradient: linear-gradient(135deg, #f093fb 0%, #f5576c 50%, #ff6b9d 100%);
+  --ai-accent-gradient: linear-gradient(135deg, #4facfe 0%, #00f2fe 50%, #43e97b 100%);
+  --ai-neural-gradient: linear-gradient(45deg, #667eea, #764ba2, #f093fb, #f5576c, #4facfe, #00f2fe);
+  
+  // Advanced Glass Morphism
+  --ai-glass-bg: rgba(255, 255, 255, 0.08);
+  --ai-glass-bg-hover: rgba(255, 255, 255, 0.12);
+  --ai-glass-border: rgba(255, 255, 255, 0.15);
+  --ai-glass-border-hover: rgba(255, 255, 255, 0.25);
+  
+  // Dynamic Shadow System
+  --ai-shadow-xs: 0 2px 8px rgba(31, 38, 135, 0.15);
+  --ai-shadow-sm: 0 4px 16px rgba(31, 38, 135, 0.2);
+  --ai-shadow-md: 0 8px 32px rgba(31, 38, 135, 0.25);
+  --ai-shadow-lg: 0 12px 40px rgba(31, 38, 135, 0.3);
+  --ai-shadow-xl: 0 20px 60px rgba(31, 38, 135, 0.4);
+  --ai-shadow-glow: 0 0 40px rgba(79, 172, 254, 0.3);
+  
+  // Advanced Blur & Filters
+  --ai-blur-xs: blur(4px);
+  --ai-blur-sm: blur(8px);
+  --ai-blur-md: blur(12px);
+  --ai-blur-lg: blur(16px);
+  
+  // Precision Timing Functions
+  --ai-ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --ai-ease-out-back: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ai-ease-in-out-circ: cubic-bezier(0.85, 0, 0.15, 1);
+  --ai-ease-elastic: cubic-bezier(0.68, -0.6, 0.32, 1.6);
+  
+  // Micro-interactions
+  --ai-transition-fast: all 0.15s var(--ai-ease-out-expo);
+  --ai-transition-base: all 0.25s var(--ai-ease-out-expo);
+  --ai-transition-slow: all 0.4s var(--ai-ease-out-back);
+  
+  // Spacing System
+  --ai-space-xs: 0.25rem;
+  --ai-space-sm: 0.5rem;
+  --ai-space-md: 1rem;
+  --ai-space-lg: 1.5rem;
+  --ai-space-xl: 2rem;
+  --ai-space-2xl: 3rem;
+}
+
+// Dark Theme with Enhanced Contrast
+[data-theme="dark"] {
+  --ai-glass-bg: rgba(0, 0, 0, 0.15);
+  --ai-glass-bg-hover: rgba(0, 0, 0, 0.25);
+  --ai-glass-border: rgba(255, 255, 255, 0.08);
+  --ai-glass-border-hover: rgba(255, 255, 255, 0.15);
+  --ai-shadow-xs: 0 2px 8px rgba(0, 0, 0, 0.3);
+  --ai-shadow-sm: 0 4px 16px rgba(0, 0, 0, 0.4);
+  --ai-shadow-md: 0 8px 32px rgba(0, 0, 0, 0.5);
+  --ai-shadow-lg: 0 12px 40px rgba(0, 0, 0, 0.6);
+  --ai-shadow-xl: 0 20px 60px rgba(0, 0, 0, 0.7);
+}
+
+// ===== ADVANCED KEYFRAME ANIMATIONS =====
+@keyframes ai-neural-pulse {
+  0%, 100% { 
+    transform: scale(1) rotate(0deg);
+    filter: hue-rotate(0deg);
+  }
+  25% { 
+    transform: scale(1.02) rotate(1deg);
+    filter: hue-rotate(90deg);
+  }
+  50% { 
+    transform: scale(1.05) rotate(0deg);
+    filter: hue-rotate(180deg);
+  }
+  75% { 
+    transform: scale(1.02) rotate(-1deg);
+    filter: hue-rotate(270deg);
+  }
+}
+
+@keyframes ai-quantum-glow {
+  0%, 100% { 
+    box-shadow: 
+      0 0 20px rgba(79, 172, 254, 0.2),
+      inset 0 0 20px rgba(79, 172, 254, 0.1);
+  }
+  33% { 
+    box-shadow: 
+      0 0 30px rgba(240, 147, 251, 0.3),
+      inset 0 0 30px rgba(240, 147, 251, 0.15);
+  }
+  66% { 
+    box-shadow: 
+      0 0 25px rgba(67, 233, 123, 0.25),
+      inset 0 0 25px rgba(67, 233, 123, 0.12);
+  }
+}
+
+@keyframes ai-hologram {
+  0% { 
+    background-position: 0% 0%;
+    opacity: 0.8;
+  }
+  50% {
+    background-position: 100% 100%;
+    opacity: 1;
+  }
+  100% { 
+    background-position: 200% 200%;
+    opacity: 0.8;
+  }
+}
+
+@keyframes ai-data-stream {
+  0% { 
+    transform: translateX(-100%) skewX(-15deg);
+    opacity: 0;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% { 
+    transform: translateX(100%) skewX(-15deg);
+    opacity: 0;
+  }
+}
+
+@keyframes ai-morph-in {
+  0% { 
+    transform: translateY(30px) scale(0.9) rotateX(10deg);
+    opacity: 0;
+    filter: blur(10px);
+  }
+  100% { 
+    transform: translateY(0) scale(1) rotateX(0deg);
+    opacity: 1;
+    filter: blur(0);
+  }
+}
+
+@keyframes ai-text-reveal {
+  0% {
+    clip-path: polygon(0 0, 0 0, 0 100%, 0% 100%);
+  }
+  100% {
+    clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%);
+  }
+}
+
+// ===== ENHANCED SIDEBAR COMPONENT =====
+.main-sidebar-cont {
+  // Advanced Box Model
+  * { box-sizing: border-box; }
+  
+  // Core Styling with Performance Optimization
+  background: var(--ai-glass-bg);
+  backdrop-filter: var(--ai-blur-md);
+  -webkit-backdrop-filter: var(--ai-blur-md); // Safari support
+  border-radius: clamp(16px, 4vw, 24px);
+  border: 1px solid var(--ai-glass-border);
+  padding: clamp(16px, 4vw, 32px);
+  position: relative;
+  overflow: hidden;
+  isolation: isolate; // Create stacking context
+  
+  // Neural Network Background Effect
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: 
+      radial-gradient(circle at 20% 20%, rgba(79, 172, 254, 0.1) 0%, transparent 50%),
+      radial-gradient(circle at 80% 80%, rgba(240, 147, 251, 0.1) 0%, transparent 50%),
+      linear-gradient(45deg, transparent 30%, rgba(79, 172, 254, 0.05) 50%, transparent 70%);
+    background-size: 300% 300%, 300% 300%, 200% 200%;
+    animation: ai-hologram 8s ease-in-out infinite;
+    pointer-events: none;
+    z-index: -1;
+  }
+  
+  // Data Stream Effect
+  &::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 2px;
+    background: var(--ai-neural-gradient);
+    background-size: 200% 100%;
+    animation: ai-data-stream 3s linear infinite;
+    z-index: 1;
+  }
+  
+  // Hover Enhancement
+  &:hover {
+    background: var(--ai-glass-bg-hover);
+    border-color: var(--ai-glass-border-hover);
+    box-shadow: var(--ai-shadow-lg);
+    transform: translateY(-2px);
+    transition: var(--ai-transition-slow);
+  }
+
+  // ===== ENHANCED HEADING =====
+  .sidebar-ai-heading {
+    text-align: center;
+    padding-bottom: var(--ai-space-xl);
+    font-weight: 800;
+    background: var(--ai-neural-gradient);
+    background-size: 300% 100%;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    font-size: clamp(1.2rem, 4vw, 1.6rem);
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    position: relative;
+    animation: 
+      ai-hologram 4s ease-in-out infinite,
+      ai-text-reveal 0.8s var(--ai-ease-out-back) forwards;
+    
+    &::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 60px;
+      height: 3px;
+      background: var(--ai-accent-gradient);
+      border-radius: 2px;
+      animation: ai-quantum-glow 3s ease-in-out infinite;
+    }
+  }
+
+  // ===== ADVANCED FORM ELEMENTS =====
+  .prompt-area {
+    width: 100%;
+    font-family: inherit;
+    font-size: clamp(0.9rem, 2vw, 1rem);
+    padding: var(--ai-space-lg) var(--ai-space-xl);
+    border-radius: clamp(12px, 3vw, 20px);
+    border: 2px solid transparent;
+    background: var(--ai-glass-bg);
+    backdrop-filter: var(--ai-blur-sm);
+    outline: none;
+    color: var(--primary-text-color);
+    resize: vertical;
+    min-height: 120px;
+    margin-bottom: var(--ai-space-lg);
+    transition: var(--ai-transition-base);
+    position: relative;
+    
+    // Advanced Placeholder Styling
+    &::placeholder {
+      color: var(--secondary-text-color);
+      opacity: 0.6;
+      font-style: italic;
+    }
+    
+    // Enhanced Focus State
+    &:focus {
+      background: var(--ai-glass-bg-hover);
+      border: 2px solid transparent;
+      background-clip: padding-box;
+      box-shadow: 
+        var(--ai-shadow-md),
+        inset 0 0 0 2px var(--ai-accent-gradient);
+      transform: translateY(-3px) scale(1.01);
+    }
+    
+    // Hover Enhancement
+    &:hover:not(:focus) {
+      background: var(--ai-glass-bg-hover);
+      box-shadow: var(--ai-shadow-sm);
+      transform: translateY(-1px);
+    }
+  }
+
+  // ===== ENHANCED SELECT DROPDOWN =====
+  .size-selector {
+    width: 100%;
+    margin-bottom: var(--ai-space-xl);
+    background: var(--ai-glass-bg);
+    backdrop-filter: var(--ai-blur-sm);
+    padding: var(--ai-space-lg) var(--ai-space-xl);
+    border-radius: clamp(12px, 3vw, 20px);
+    border: 2px solid transparent;
+    outline: none;
+    color: var(--primary-text-color);
+    cursor: pointer;
+    transition: var(--ai-transition-base);
+    appearance: none;
+    position: relative;
+    font-weight: 500;
+    
+    // Custom Arrow
+    background-image: 
+      linear-gradient(45deg, transparent 50%, var(--primary-text-color) 50%),
+      linear-gradient(135deg, var(--primary-text-color) 50%, transparent 50%);
+    background-position: 
+      calc(100% - 20px) calc(1em + 2px),
+      calc(100% - 15px) calc(1em + 2px);
+    background-size: 5px 5px, 5px 5px;
+    background-repeat: no-repeat;
+    
+    &:focus {
+      background-color: var(--ai-glass-bg-hover);
+      box-shadow: 
+        var(--ai-shadow-md),
+        inset 0 0 0 2px var(--ai-accent-gradient);
+      transform: translateY(-2px);
+    }
+    
+    &:hover:not(:focus) {
+      background-color: var(--ai-glass-bg-hover);
+      box-shadow: var(--ai-shadow-sm);
+      transform: translateY(-1px);
+    }
+  }
+
+  // ===== QUANTUM GENERATOR BUTTON =====
+  .generatorBtn {
+    border: none;
+    background: var(--ai-primary-gradient);
+    background-size: 200% 100%;
+    color: white;
+    padding: var(--ai-space-lg) var(--ai-space-2xl);
+    border-radius: clamp(16px, 4vw, 24px);
+    font-weight: 700;
+    font-size: clamp(0.9rem, 2vw, 1.1rem);
+    cursor: pointer;
+    transition: var(--ai-transition-slow);
+    position: relative;
+    overflow: hidden;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    box-shadow: var(--ai-shadow-md);
+    isolation: isolate;
+    
+    // Holographic Shine Effect
+    &::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(
+        90deg, 
+        transparent, 
+        rgba(255, 255, 255, 0.4), 
+        transparent
+      );
+      transition: left 0.6s var(--ai-ease-out-expo);
+      z-index: 1;
+    }
+    
+    // Neural Pulse Background
+    &::after {
+      content: '';
+      position: absolute;
+      inset: -2px;
+      background: var(--ai-neural-gradient);
+      background-size: 400% 100%;
+      border-radius: inherit;
+      z-index: -1;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+      animation: ai-hologram 3s linear infinite;
+    }
+    
+    // Enhanced Interactions
+    &:hover {
+      transform: translateY(-4px) scale(1.02);
+      box-shadow: var(--ai-shadow-xl);
+      background-position: 100% 0;
+      animation: ai-neural-pulse 2s ease-in-out infinite;
+      
+      &::before { left: 100%; }
+      &::after { opacity: 1; }
+    }
+    
+    &:active {
+      transform: translateY(-2px) scale(0.98);
+      transition: var(--ai-transition-fast);
+    }
+    
+    // Loading State
+    &:disabled {
+      opacity: 0.7;
+      cursor: not-allowed;
+      animation: ai-quantum-glow 1.5s ease-in-out infinite;
+    }
+  }
+
+  // ===== ENHANCED IMAGE DISPLAY =====
+  .img-fluid {
+    max-width: 100%;
+    margin-top: var(--ai-space-lg);
+    border-radius: clamp(12px, 3vw, 20px);
+    box-shadow: var(--ai-shadow-lg);
+    transition: var(--ai-transition-slow);
+    animation: ai-morph-in 0.8s var(--ai-ease-out-back) forwards;
+    position: relative;
+    overflow: hidden;
+    
+    // Holographic Border Effect
+    &::before {
+      content: '';
+      position: absolute;
+      inset: -2px;
+      background: var(--ai-neural-gradient);
+      background-size: 400% 100%;
+      border-radius: inherit;
+      z-index: -1;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+      animation: ai-hologram 4s linear infinite;
+    }
+    
+    &:hover {
+      transform: scale(1.03) rotateY(2deg);
+      box-shadow: var(--ai-shadow-xl);
+      
+      &::before { opacity: 1; }
+    }
+  }
+}
+
+// ===== ENHANCED AI ASSISTANT =====
+#acode-ai-assistant {
+  * { box-sizing: border-box; }
+  
+  .mainApp {
+    position: absolute;
+    left: 0;
+    width: 100%;
+    height: calc(100% - 80px);
+    background: var(--primary-color);
+    position: relative;
+    isolation: isolate;
+    
+    // Quantum Field Background
+    &::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: 
+        radial-gradient(circle at 25% 25%, rgba(79, 172, 254, 0.08) 0%, transparent 50%),
+        radial-gradient(circle at 75% 75%, rgba(240, 147, 251, 0.08) 0%, transparent 50%),
+        radial-gradient(circle at 50% 50%, rgba(67, 233, 123, 0.05) 0%, transparent 70%);
+      background-size: 400% 400%, 400% 400%, 600% 600%;
+      animation: ai-hologram 12s ease-in-out infinite;
+      pointer-events: none;
+      z-index: 0;
+    }
+  }
+
+  // ===== ENHANCED CHAT CONTAINER =====
+  .chatBox {
+    height: 100%;
+    width: 100%;
+    white-space: pre-wrap;
+    overflow-y: auto;
+    position: relative;
+    z-index: 1;
+    scroll-behavior: smooth;
+    padding: var(--ai-space-md);
+    
+    // Custom Scrollbar with Gradient
+    &::-webkit-scrollbar {
+      width: 8px;
+    }
+    
+    &::-webkit-scrollbar-track {
+      background: transparent;
+      border-radius: 4px;
+    }
+    
+    &::-webkit-scrollbar-thumb {
+      background: var(--ai-accent-gradient);
+      border-radius: 4px;
+      transition: var(--ai-transition-base);
+      
+      &:hover {
+        background: var(--ai-primary-gradient);
+      }
+    }
+  }
+
+  // ===== ENHANCED USER MESSAGE =====
+  .wrapper {
+    padding: var(--ai-space-lg) var(--ai-space-md);
+    animation: ai-morph-in 0.6s var(--ai-ease-out-back) forwards;
+    
+    .chat {
+      display: flex;
+      align-items: flex-start;
+      gap: var(--ai-space-lg);
+      
+      .profile {
+        height: 48px;
+        width: 48px;
+        border-radius: clamp(12px, 3vw, 18px);
+        background: var(--ai-primary-gradient);
+        background-size: 200% 200%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: var(--ai-shadow-md);
+        transition: var(--ai-transition-base);
+        position: relative;
+        flex-shrink: 0;
+        
+        // Quantum Ring Effect
+        &::before {
+          content: '';
+          position: absolute;
+          inset: -3px;
+          background: var(--ai-neural-gradient);
+          background-size: 400% 100%;
+          border-radius: inherit;
+          z-index: -1;
+          opacity: 0;
+          transition: opacity 0.3s ease;
+          animation: ai-hologram 3s linear infinite;
+        }
+        
+        &:hover {
+          transform: scale(1.1) rotate(5deg);
+          background-position: 100% 100%;
+          animation: ai-quantum-glow 2s ease-in-out infinite;
+          
+          &::before { opacity: 1; }
+        }
+        
+        img {
+          width: 60%;
+          filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.3));
+          transition: var(--ai-transition-base);
+        }
+      }
+      
+      .message {
+        flex: 1;
+        color: var(--primary-text-color);
+        font-size: clamp(0.9rem, 2vw, 1rem);
+        line-height: 1.7;
+        user-select: text;
+        background: var(--ai-glass-bg);
+        backdrop-filter: var(--ai-blur-sm);
+        padding: var(--ai-space-lg) var(--ai-space-xl);
+        border-radius: 24px 24px 24px 8px;
+        border: 1px solid var(--ai-glass-border);
+        box-shadow: var(--ai-shadow-sm);
+        transition: var(--ai-transition-base);
+        position: relative;
+        
+        // Message Tail Enhancement
+        &::after {
+          content: '';
+          position: absolute;
+          bottom: 0;
+          left: -8px;
+          width: 16px;
+          height: 16px;
+          background: inherit;
+          border-left: 1px solid var(--ai-glass-border);
+          border-bottom: 1px solid var(--ai-glass-border);
+          border-radius: 0 0 0 16px;
+          transform: rotate(-45deg);
+        }
+        
+        &:hover {
+          background: var(--ai-glass-bg-hover);
+          transform: translateY(-2px);
+          box-shadow: var(--ai-shadow-md);
+        }
+      }
+    }
+  }
+
+  // ===== ENHANCED AI RESPONSE =====
+  .ai_wrapper {
+    padding: var(--ai-space-xl) var(--ai-space-md);
+    background: var(--ai-glass-bg);
+    backdrop-filter: var(--ai-blur-md);
+    border-top: 1px solid var(--ai-glass-border);
+    border-bottom: 1px solid var(--ai-glass-border);
+    position: relative;
+    animation: ai-morph-in 0.8s var(--ai-ease-out-back) forwards;
+    margin: var(--ai-space-md) 0;
+    border-radius: 0 clamp(12px, 3vw, 20px) clamp(12px, 3vw, 20px) 0;
+    
+    // Neural Activity Indicator
+    &::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 4px;
+      height: 100%;
+      background: var(--ai-neural-gradient);
+      background-size: 100% 400%;
+      border-radius: 2px;
+      animation: ai-data-stream 2s linear infinite;
+    }
+    
+    .ai_chat {
+      display: flex;
+      align-items: flex-start;
+      gap: var(--ai-space-lg);
+      
+      .ai_profile {
+        height: 48px;
+        width: 48px;
+        border-radius: clamp(12px, 3vw, 18px);
+        background: var(--ai-secondary-gradient);
+        background-size: 200% 200%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: var(--ai-shadow-md);
+        position: relative;
+        flex-shrink: 0;
+        animation: ai-quantum-glow 4s ease-in-out infinite;
+        
+        // AI Consciousness Ring
+        &::before {
+          content: '';
+          position: absolute;
+          inset: -4px;
+          background: var(--ai-neural-gradient);
+          background-size: 400% 100%;
+          border-radius: inherit;
+          z-index: -1;
+          opacity: 0.6;
+          animation: ai-hologram 3s linear infinite;
+        }
+        
+        // Pulsing Aura
+        &::after {
+          content: '';
+          position: absolute;
+          inset: -8px;
+          background: radial-gradient(circle, rgba(79, 172, 254, 0.2) 0%, transparent 70%);
+          border-radius: 50%;
+          z-index: -2;
+          animation: ai-neural-pulse 3s ease-in-out infinite;
+        }
+        
+        img {
+          width: 60%;
+          filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.4));
+          animation: ai-neural-pulse 4s ease-in-out infinite;
+        }
+      }
+    }
+  }
+
+  // ===== ENHANCED AI MESSAGE CONTENT =====
+  .ai_wrapper .ai_message {
+    flex: 1;
+    color: var(--secondary-text-color);
+    font-size: clamp(0.9rem, 2vw, 1rem);
+    line-height: 1.7;
+    overflow: hidden;
+    user-select: text;
+    
+    // Enhanced Code Blocks
+    .codeBlock {
+      border: 2px solid var(--ai-glass-border);
+      background: var(--ai-glass-bg);
+      backdrop-filter: var(--ai-blur-md);
+      width: 100%;
+      border-radius: clamp(12px, 3vw, 20px);
+      overflow: hidden;
+      position: relative;
+      margin: var(--ai-space-lg) 0;
+      box-shadow: var(--ai-shadow-md);
+      transition: var(--ai-transition-base);
+      
+      // Code Block Glow Effect
+      &::before {
+        content: '';
+        position: absolute;
+        inset: -2px;
+        background: var(--ai-accent-gradient);
+        border-radius: inherit;
+        z-index: -1;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+      }
+      
+      &:hover {
+        box-shadow: var(--ai-shadow-lg);
+        transform: translateY(-2px);
+        
+        &::before { opacity: 0.5; }
+      }
+      
+      .copy-button {
+        position: absolute;
+        top: var(--ai-space-md);
+        right: var(--ai-space-md);
+        border: none;
+        outline: none;
+        border-radius: clamp(8px, 2vw, 12px);
+        height: 40px;
+        width: 40px;
+        background: var(--ai-glass-bg);
+        backdrop-filter: var(--ai-blur-sm);
+        color: var(--primary-text-color);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        font-weight: 600;
+        box-shadow: var(--ai-shadow-sm);
+        transition: var(--ai-transition-base);
+        cursor: pointer;
+        z-index: 10;
+        
+        &:hover {
+          background: var(--ai-accent-gradient);
+          color: white;
+          transform: scale(1.1) rotate(5deg);
+          box-shadow: var(--ai-shadow-md);
+        }
+        
+        &:active {
+          transform: scale(0.95);
+          transition: var(--ai-transition-fast);
+        }
+      }
+      
+      .codesArea {
+        padding: var(--ai-space-xl);
+        margin: 0;
+        background: rgba(0, 0, 0, 0.1);
+        font-family: 'JetBrains Mono', 'Fira Code', 'SF Mono', monospace;
+        font-size: 0.9rem;
+        line-height: 1.6;
+        
+        &::-webkit-scrollbar {
+          height: 6px;
+        }
+        
+        &::-webkit-scrollbar-thumb {
+          background: var(--ai-accent-gradient);
+          border-radius: 3px;
+        }
+      }
+    }
+    
+    // Enhanced Typography System
+    h1, h2, h3, h4, h5, h6 {
+      background: var(--ai-neural-gradient);
+      background-size: 300% 100%;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      font-weight: 800;
+      margin: var(--ai-space-xl) 0 var(--ai-space-lg);
+      position: relative;
+      animation: ai-hologram 6s ease-in-out infinite;
+      
+      &::after {
+        content: '';
+        position: absolute;
+        bottom: -6px;
+        left: 0;
+        width: 60px;
+        height: 3px;
+        background: var(--ai-accent-gradient);
+        border-radius: 2px;
+        animation: ai-quantum-glow 3s ease-in-out infinite;
+      }
+    }
+    
+    code {
+      background: var(--ai-glass-bg);
+      backdrop-filter: var(--ai-blur-xs);
+      padding: var(--ai-space-xs) var(--ai-space-sm);
+      border-radius: 6px;
+      border: 1px solid var(--ai-glass-border);
+      font-family: 'JetBrains Mono', 'Fira Code', monospace;
+      font-size: 0.9em;
+      color: var(--primary-text-color);
+      transition: var(--ai-transition-fast);
+      
+      &:hover {
+        background: var(--ai-glass-bg-hover);
+        box-shadow: var(--ai-shadow-xs);
+      }
+    }
+    
+    blockquote {
+      border-left: 4px solid transparent;
+      border-image: var(--ai-accent-gradient) 1;
+      background: var(--ai-glass-bg);
+      backdrop-filter: var(--ai-blur-sm);
+      padding: var(--ai-space-lg) var(--ai-space-xl);
+      margin: var(--ai-space-lg) 0;
+      border-radius: 0 clamp(8px, 2vw, 16px) clamp(8px, 2vw, 16px) 0;
+      position: relative;
+      box-shadow: var(--ai-shadow-sm);
+      transition: var(--ai-transition-base);
+      
+      &::before {
+        content: '"';
+        position: absolute;
+        top: -15px;
+        left: var(--ai-space-lg);
+        font-size: 4rem;
+        background: var(--ai-primary-gradient);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        opacity: 0.4;
+        font-family: Georgia, serif;
+      }
+      
+      &:hover {
+        transform: translateX(4px);
+        box-shadow: var(--ai-shadow-md);
+      }
+    }
+    
+    // Enhanced Lists
+    ul, ol {
+      padding-left: var(--ai-space-xl);
+      
+      li {
+        margin: var(--ai-space-sm) 0;
+        position: relative;
+        
+        &::marker {
+          color: var(--ai-accent-gradient);
+        }
+      }
+    }
+    
+    // Enhanced Links
+    a {
+      color: var(--primary-text-color);
+      text-decoration: none;
+      background: var(--ai-accent-gradient);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      position: relative;
+      transition: var(--ai-transition-base);
+      
+      &::after {
+        content: '';
+        position: absolute;
+        bottom: -2px;
+        left: 0;
+        width: 0;
+        height: 2px;
+        background: var(--ai-accent-gradient);
+        transition: width 0.3s var(--ai-ease-out-expo);
+      }
+      
+      &:hover::after {
+        width: 100%;
+      }
+    }
+  }
+
+  // ===== ENHANCED ERROR DISPLAY =====
+  .error-box {
+    border: 2px solid #ff6b6b;
+    background: 
+      linear-gradient(135deg, rgba(255, 107, 107, 0.1), rgba(255, 107, 107, 0.05)),
+      var(--ai-glass-bg);
+    backdrop-filter: var(--ai-blur-sm);
+    color: #ff6b6b;
+    font-weight: 600;
+    padding: var(--ai-space-lg) var(--ai-space-xl);
+    border-radius: clamp(12px, 3vw, 20px);
+    box-shadow: var(--ai-shadow-md);
+    position: relative;
+    animation: ai-morph-in 0.6s var(--ai-ease-out-back) forwards;
+    margin: var(--ai-space-lg) 0;
+    
+    &::before {
+      content: '⚠️';
+      position: absolute;
+      top: var(--ai-space-lg);
+      left: -15px;
+      font-size: 1.8rem;
+      animation: ai-neural-pulse 2s ease-in-out infinite;
+    }
+    
+    &::after {
+      content: '';
+      position: absolute;
+      inset: -2px;
+      background: linear-gradient(45deg, #ff6b6b, #ff8e8e, #ff6b6b);
+      background-size: 200% 100%;
+      border-radius: inherit;
+      z-index: -1;
+      opacity: 0.3;
+      animation: ai-hologram 3s linear infinite;
+    }
+  }
+
+  // ===== ENHANCED INPUT SYSTEM =====
+  .inputBox {
+    position: fixed;
+    bottom: 0;
+    width: 100%;
+    height: 80px;
+    padding: var(--ai-space-md);
+    display: flex;
+    gap: var(--ai-space-md);
+    background: var(--ai-glass-bg);
+    backdrop-filter: var(--ai-blur-lg);
+    border-top: 1px solid var(--ai-glass-border);
+    box-shadow: 0 -12px 40px rgba(0, 0, 0, 0.15);
+    z-index: 1000;
+    isolation: isolate;
+    
+    // Neural Interface Line
+    &::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: var(--ai-neural-gradient);
+      background-size: 400% 100%;
+      animation: ai-data-stream 4s linear infinite;
+    }
+    
+    // Quantum Field Effect
+    &::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: 
+        radial-gradient(circle at 30% 50%, rgba(79, 172, 254, 0.05) 0%, transparent 50%),
+        radial-gradient(circle at 70% 50%, rgba(240, 147, 251, 0.05) 0%, transparent 50%);
+      pointer-events: none;
+      z-index: -1;
+    }
+  }
+
+  .chatTextarea {
+    flex: 1;
+    height: 100%;
+    resize: none;
+    border: 2px solid transparent;
+    outline: none;
+    background: var(--ai-glass-bg);
+    backdrop-filter: var(--ai-blur-sm);
+    font-size: clamp(0.9rem, 2vw, 1.1rem);
+    color: var(--primary-text-color);
+    padding: var(--ai-space-lg) var(--ai-space-xl);
+    border-radius: clamp(12px, 3vw, 20px);
+    transition: var(--ai-transition-base);
+    font-family: inherit;
+    line-height: 1.5;
+    
+    &:focus {
+      background: var(--ai-glass-bg-hover);
+      border: 2px solid transparent;
+      background-clip: padding-box;
+      box-shadow: 
+        var(--ai-shadow-lg),
+        inset 0 0 0 2px var(--ai-accent-gradient);
+      transform: scale(1.01);
+    }
+    
+    &::placeholder {
+      color: var(--secondary-text-color);
+      opacity: 0.6;
+      font-style: italic;
+    }
+    
+    &:hover:not(:focus) {
+      background: var(--ai-glass-bg-hover);
+      box-shadow: var(--ai-shadow-sm);
+    }
+  }
+
+  // ===== QUANTUM ACTION BUTTONS =====
+  .sendBtn, .stopGenerationBtn {
+    height: 56px;
+    width: 56px;
+    border-radius: clamp(12px, 3vw, 18px);
+    border: none;
+    outline: none;
+    display: grid;
+    place-items: center;
+    cursor: pointer;
+    transition: var(--ai-transition-slow);
+    position: relative;
+    overflow: hidden;
+    isolation: isolate;
+    font-size: 1.2rem;
+    
+    // Quantum Ring Effect
+    &::before {
+      content: '';
+      position: absolute;
+      inset: -2px;
+      background: var(--ai-neural-gradient);
+      background-size: 400% 100%;
+      border-radius: inherit;
+      z-index: -1;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+      animation: ai-hologram 3s linear infinite;
+    }
+    
+    // Holographic Shine
+    &::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+      transition: left 0.5s var(--ai-ease-out-expo);
+      z-index: 1;
+    }
+    
+    &:hover {
+      transform: translateY(-3px) scale(1.08) rotate(5deg);
+      box-shadow: var(--ai-shadow-xl);
+      
+      &::before { opacity: 1; }
+      &::after { left: 100%; }
+    }
+    
+    &:active {
+      transform: translateY(-1px) scale(0.95);
+      transition: var(--ai-transition-fast);
+    }
+  }
+
+  .sendBtn {
+    background: var(--ai-glass-bg);
+    backdrop-filter: var(--ai-blur-sm);
+    color: var(--primary-text-color);
+    
+    &:hover {
+      background: var(--ai-accent-gradient);
+      color: white;
+      animation: ai-quantum-glow 2s ease-in-out infinite;
+    }
+    
+    &:active {
+      background: var(--ai-primary-gradient);
+    }
+  }
+
+  .stopGenerationBtn {
+    background: var(--ai-secondary-gradient);
+    background-size: 200% 100%;
+    color: white;
+    animation: ai-neural-pulse 2s ease-in-out infinite;
+    
+    &:hover {
+      background-position: 100% 0;
+      animation: ai-quantum-glow 1.5s ease-in-out infinite;
+    }
+    
+    &:active {
+      background: linear-gradient(135deg, #ff6b6b, #ff8e8e);
+    }
+  }
+
+  // ===== ENHANCED DIFF DISPLAY =====
+  .diff-container {
+    background: var(--ai-glass-bg);
+    backdrop-filter: var(--ai-blur-md);
+    border: 2px solid var(--ai-glass-border);
+    border-radius: clamp(12px, 3vw, 20px);
+    padding: var(--ai-space-xl);
+    margin: var(--ai-space-lg) 0;
+    font-family: 'JetBrains Mono', 'Fira Code', monospace;
+    font-size: 0.9rem;
+    box-shadow: var(--ai-shadow-md);
+    position: relative;
+    overflow: hidden;
+    
+    // Code Signature Line
+    &::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: var(--ai-neural-gradient);
+      background-size: 300% 100%;
+      animation: ai-data-stream 3s linear infinite;
+    }
+    
+    &:hover {
+      box-shadow: var(--ai-shadow-lg);
+      transform: translateY(-2px);
+    }
+  }
+
+  .diff-line {
+    display: flex;
+    margin: var(--ai-space-xs) 0;
+    padding: var(--ai-space-sm) var(--ai-space-md);
+    border-radius: 8px;
+    transition: var(--ai-transition-base);
+    position: relative;
+    
+    &:hover {
+      transform: translateX(6px);
+      box-shadow: var(--ai-shadow-xs);
+    }
+    
+    &.modified {
+      background: linear-gradient(90deg, rgba(255, 165, 0, 0.15), rgba(255, 165, 0, 0.05));
+      border-left: 3px solid #ffa500;
+      
+      &::before {
+        content: '~';
+        position: absolute;
+        left: -15px;
+        color: #ffa500;
+        font-weight: bold;
+      }
+    }
+    
+    &.deleted {
+      background: linear-gradient(90deg, rgba(255, 107, 107, 0.15), rgba(255, 107, 107, 0.05));
+      border-left: 3px solid #ff6b6b;
+      
+      &::before {
+        content: '-';
+        position: absolute;
+        left: -15px;
+        color: #ff6b6b;
+        font-weight: bold;
+      }
+    }
+    
+    &.added {
+      background: linear-gradient(90deg, rgba(81, 207, 102, 0.15), rgba(81, 207, 102, 0.05));
+      border-left: 3px solid #51cf66;
+      
+      &::before {
+        content: '+';
+        position: absolute;
+        left: -15px;
+        color: #51cf66;
+        font-weight: bold;
+      }
+    }
+  }
+
+  // ===== QUANTUM POPUP SYSTEM =====
+  .ai-edit-popup {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: var(--ai-glass-bg);
+    backdrop-filter: var(--ai-blur-lg);
+    border: 2px solid var(--ai-glass-border);
+    border-radius: clamp(16px, 4vw, 32px);
+    box-shadow: var(--ai-shadow-xl);
+    width: min(90vw, 700px);
+    max-height: 85vh;
+    z-index: 9999;
+    overflow: hidden;
+    animation: ai-morph-in 0.8s var(--ai-ease-out-back) forwards;
+    isolation: isolate;
+    
+    // Neural Interface Header
+    &::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 5px;
+      background: var(--ai-neural-gradient);
+      background-size: 400% 100%;
+      animation: ai-data-stream 4s linear infinite;
+    }
+    
+    // Quantum Field Background
+    &::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: 
+        radial-gradient(circle at 20% 30%, rgba(79, 172, 254, 0.05) 0%, transparent 50%),
+        radial-gradient(circle at 80% 70%, rgba(240, 147, 251, 0.05) 0%, transparent 50%);
+      pointer-events: none;
+      z-index: -1;
+    }
+  }
+
+  .ai-edit-popup-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--ai-space-xl) var(--ai-space-2xl);
+    background: var(--ai-glass-bg-hover);
+    backdrop-filter: var(--ai-blur-md);
+    color: var(--primary-text-color);
+    border-bottom: 1px solid var(--ai-glass-border);
+  }
+
+  .ai-edit-popup-title {
+    font-weight: 800;
+    font-size: clamp(1.1rem, 3vw, 1.4rem);
+    background: var(--ai-neural-gradient);
+    background-size: 300% 100%;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    animation: ai-hologram 4s ease-in-out infinite;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .ai-edit-popup-close {
+    background: var(--ai-glass-bg);
+    backdrop-filter: var(--ai-blur-sm);
+    border: 1px solid var(--ai-glass-border);
+    color: var(--primary-text-color);
+    font-size: 1.4rem;
+    cursor: pointer;
+    padding: var(--ai-space-sm);
+    border-radius: clamp(8px, 2vw, 12px);
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: var(--ai-transition-base);
+    position: relative;
+    overflow: hidden;
+    
+    &::before {
+      content: '';
+      position: absolute;
+      inset: -2px;
+      background: var(--ai-secondary-gradient);
+      border-radius: inherit;
+      z-index: -1;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+    
+    &:hover {
+      color: white;
+      transform: scale(1.1) rotate(90deg);
+      
+      &::before { opacity: 1; }
+    }
+  }
+
+  .ai-edit-prompt {
+    width: 100%;
+    min-height: 140px;
+    max-height: 250px;
+    resize: vertical;
+    border: 2px solid var(--ai-glass-border);
+    border-radius: clamp(12px, 3vw, 20px);
+    padding: var(--ai-space-lg) var(--ai-space-xl);
+    background: var(--ai-glass-bg);
+    backdrop-filter: var(--ai-blur-sm);
+    color: var(--primary-text-color);
+    font-family: inherit;
+    font-size: clamp(0.9rem, 2vw, 1rem);
+    outline: none;
+    transition: var(--ai-transition-base);
+    line-height: 1.6;
+    
+    &:focus {
+      background: var(--ai-glass-bg-hover);
+      border: 2px solid transparent;
+      background-clip: padding-box;
+      box-shadow: 
+        var(--ai-shadow-lg),
+        inset 0 0 0 2px var(--ai-accent-gradient);
+      transform: scale(1.01);
+    }
+    
+    &::placeholder {
+      color: var(--secondary-text-color);
+      opacity: 0.6;
+      font-style: italic;
+    }
+  }
+
+  .ai-edit-btn {
+    padding: var(--ai-space-md) var(--ai-space-xl);
+    border: none;
+    border-radius: clamp(10px, 2vw, 16px);
+    font-weight: 700;
+    font-size: clamp(0.9rem, 2vw, 1rem);
+    cursor: pointer;
+    transition: var(--ai-transition-slow);
+    position: relative;
+    overflow: hidden;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    
+    // Holographic Shine Effect
+    &::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+      transition: left 0.6s var(--ai-ease-out-expo);
+    }
+    
+    &:hover::before { left: 100%; }
+    
+    &.primary {
+      background: var(--ai-primary-gradient);
+      background-size: 200% 100%;
+      color: white;
+      box-shadow: var(--ai-shadow-md);
+      
+      &:hover {
+        transform: translateY(-3px) scale(1.02);
+        box-shadow: var(--ai-shadow-xl);
+        background-position: 100% 0;
+        animation: ai-quantum-glow 2s ease-in-out infinite;
+      }
+    }
+    
+    &.secondary {
+      background: var(--ai-glass-bg);
+      backdrop-filter: var(--ai-blur-sm);
+      color: var(--secondary-text-color);
+      border: 1px solid var(--ai-glass-border);
+      
+      &:hover {
+        background: var(--ai-secondary-gradient);
+        color: white;
+        transform: translateY(-2px);
+        box-shadow: var(--ai-shadow-md);
+      }
+    }
+  }
+
+  // ===== ENHANCED PROVIDER SYSTEM =====
+  .provider-select {
+    background: var(--ai-glass-bg);
+    backdrop-filter: var(--ai-blur-sm);
+    color: var(--primary-text-color);
+    border: 2px solid var(--ai-glass-border);
+    border-radius: clamp(8px, 2vw, 14px);
+    padding: var(--ai-space-md) 40px var(--ai-space-md) var(--ai-space-lg);
+    font-size: clamp(0.9rem, 2vw, 1rem);
+    font-weight: 500;
+    cursor: pointer;
+    appearance: none;
+    min-width: 160px;
+    transition: var(--ai-transition-base);
+    position: relative;
+    
+    // Custom Dropdown Arrow
+    background-image: 
+      linear-gradient(45deg, transparent 50%, var(--primary-text-color) 50%),
+      linear-gradient(135deg, var(--primary-text-color) 50%, transparent 50%);
+    background-position: 
+      calc(100% - 20px) calc(1em + 2px),
+      calc(100% - 15px) calc(1em + 2px);
+    background-size: 5px 5px, 5px 5px;
+    background-repeat: no-repeat;
+    
+    &:focus {
+      outline: none;
+      background-color: var(--ai-glass-bg-hover);
+      border: 2px solid transparent;
+      background-clip: padding-box;
+      box-shadow: 
+        var(--ai-shadow-md),
+        inset 0 0 0 2px var(--ai-accent-gradient);
+    }
+    
+    &:hover:not(:focus) {
+      background-color: var(--ai-glass-bg-hover);
+      transform: translateY(-2px);
+      box-shadow: var(--ai-shadow-sm);
+    }
+  }
+
+  // ===== RESPONSIVE DESIGN SYSTEM =====
+  @media (max-width: 1024px) {
+    .ai-edit-popup {
+      width: 95vw;
+      max-height: 90vh;
+    }
+  }
+
+  @media (max-width: 768px) {
+    .wrapper, .ai_wrapper {
+      padding-left: var(--ai-space-md);
+      padding-right: var(--ai-space-md);
+    }
+    
+    .chat, .ai_chat {
+      gap: var(--ai-space-md);
+    }
+    
+    .profile, .ai_profile {
+      height: 40px;
+      width: 40px;
+      border-radius: 14px;
+    }
+    
+    .inputBox {
+      padding: var(--ai-space-sm);
+      gap: var(--ai-space-sm);
+    }
+    
+    .sendBtn, .stopGenerationBtn {
+      height: 50px;
+      width: 50px;
+      font-size: 1.1rem;
+    }
+    
+    .ai-edit-popup-header {
+      padding: var(--ai-space-lg) var(--ai-space-lg);
+    }
+  }
+
+  @media (max-width: 480px) {
+    .main-sidebar-cont {
+      padding: var(--ai-space-lg);
+      border-radius: 16px;
+    }
+    
+    .ai-edit-popup {
+      width: 98vw;
+      margin: 0 1vw;
+      border-radius: 20px;
+    }
+    
+    .message, .ai_message {
+      font-size: 0.9rem;
+      padding: var(--ai-space-md) var(--ai-space-lg);
+    }
+    
+    .profile, .ai_profile {
+      height: 36px;
+      width: 36px;
+      border-radius: 12px;
+    }
+  }
+
+  // ===== UTILITY CLASSES =====
+  .hide { display: none !important; }
+  .show { display: block !important; }
+  .fade-in { animation: ai-morph-in 0.5s var(--ai-ease-out-back) forwards; }
+  .pulse { animation: ai-neural-pulse 2s ease-in-out infinite; }
+  .glow { animation: ai-quantum-glow 3s ease-in-out infinite; }
+
+  // ===== ACCESSIBILITY ENHANCEMENTS =====
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+
+  @media (prefers-contrast: high) {
+    :root {
+      --ai-glass-bg: var(--primary-color);
+      --ai-glass-border: var(--border-color);
+      --ai-shadow-md: 0 4px 16px rgba(0, 0, 0, 0.5);
+    }
+    
+    .ai-edit-popup, .codeBlock, .diff-container {
+      border-width: 3px;
+    }
+    
+    .generatorBtn, .ai-edit-btn.primary {
+      border: 2px solid currentColor;
+    }
+  }
+
+  // ===== PERFORMANCE OPTIMIZATIONS =====
+  * {
+    // Enable hardware acceleration for smooth animations
+    transform: translateZ(0);
+    backface-visibility: hidden;
+    perspective: 1000px;
+  }
+  
+  // Optimize repaints for animated elements
+  .profile, .ai_profile, .generatorBtn, .sendBtn, .stopGenerationBtn {
+    will-change: transform, box-shadow;
+  }
+  
+  // Optimize backdrop-filter performance
+  .main-sidebar-cont, .ai-edit-popup, .inputBox {
+    contain: layout style paint;
+  }
+}
+
+// ===== DARK MODE ENHANCEMENTS =====
+@media (prefers-color-scheme: dark) {
+  :root {
+    --ai-glass-bg: rgba(0, 0, 0, 0.2);
+    --ai-glass-bg-hover: rgba(0, 0, 0, 0.3);
+    --ai-glass-border: rgba(255, 255, 255, 0.1);
+    --ai-glass-border-hover: rgba(255, 255, 255, 0.2);
+  }
+}
+
+// ===== PRINT STYLES =====
+@media print {
+  #acode-ai-assistant {
+    .inputBox, .sendBtn, .stopGenerationBtn, .copy-button {
+      display: none !important;
+    }
+    
+    .ai_wrapper, .wrapper {
+      break-inside: avoid;
+      page-break-inside: avoid;
+    }
+    
+    * {
+      animation: none !important;
+      transition: none !important;
+      box-shadow: none !important;
+      backdrop-filter: none !important;
+    }
+  }
+}
