@@ -37,6 +37,9 @@ let CURRENT_SESSION_FILEPATH = null;
 
 class AIAssistant {
   constructor() {
+  // Initialize baseUrl for assets (critical for UI to work)
+  this.baseUrl = window.DATA_STORAGE + plugin.id + "/";
+  
   // Cache untuk responses
   this.responseCache = new Map();
   this.cacheTimeout = 30 * 60 * 1000; // 30 menit
@@ -83,44 +86,6 @@ class AIAssistant {
       this.$markdownItFile,
       this.$style,
     );
-    
-  // Initialize markdown-it immediately to ensure it's available
-  this.$mdIt = null;
-  const waitForMarkdownIt = () => {
-    return new Promise((resolve) => {
-      const checkMarkdown = () => {
-        if (window.markdownit) {
-          this.$mdIt = window.markdownit({
-            html: false,
-            xhtmlOut: false,
-            breaks: false,
-            linkify: false,
-            typographer: false,
-            quotes: '""\'\'',
-            highlight: function (str, lang) {
-              const copyBtn = document.createElement("button");
-              copyBtn.classList.add("copy-button");
-              copyBtn.innerHTML = copyIconSvg;
-              copyBtn.setAttribute("data-str", str);
-              const codesArea = `<pre class="hljs codesArea"><code>${window.hljs ? window.hljs.highlightAuto(str).value : str}</code></pre>`;
-              const codeBlock = `<div class="codeBlock">${copyBtn.outerHTML}${codesArea}</div>`;
-              return codeBlock;
-            },
-          });
-          resolve();
-        } else {
-          setTimeout(checkMarkdown, 100);
-        }
-      };
-      checkMarkdown();
-    });
-  };
-
-  this.$markdownItFile.onload = () => {
-    waitForMarkdownIt().then(() => {
-      console.log("Markdown-it initialized successfully");
-    });
-  };
 
     /**
      * Adding command for starting cli assistant
@@ -152,7 +117,7 @@ class AIAssistant {
           window.toast("Please select some code first", 3000);
         }
       }
-    }, "âœ¨", 'all');
+    }, "✨", 'all');
 
     $page.id = "acode-ai-assistant";
     $page.settitle("AI Assistant");
@@ -480,6 +445,9 @@ case 'toggle-realtime':
     mainApp.append(this.$inputBox, this.$chatBox);
     this.$page.append(mainApp);
     
+    // Add critical send button event listener (was missing!)
+    this.$sendBtn.addEventListener("click", this.sendQuery.bind(this));
+    
     // Setup real-time AI features after UI elements are created
     this.setupRealTimeAI();
     this.messageHistories = {};
@@ -492,86 +460,24 @@ case 'toggle-realtime':
   
   async run() {
     try {
-      // Ensure highlight.js is loaded
-      if (!window.hljs) {
-        console.log("Waiting for highlight.js to load...");
-        await new Promise(resolve => {
-          const checkHljs = () => {
-            if (window.hljs) {
-              resolve();
-            } else {
-              setTimeout(checkHljs, 100);
-            }
-          };
-          checkHljs();
-        });
-      }
-      
-      // Ensure markdown-it is loaded and initialized properly
-      if (!this.$mdIt) {
-        console.log("Initializing markdown-it...");
-        if (window.markdownit) {
-          this.$mdIt = window.markdownit({
-            html: false,
-            xhtmlOut: false,
-            breaks: true, // Enable line breaks for better formatting
-            linkify: true, // Enable auto-linking
-            typographer: true,
-            quotes: "&quot;&quot;''",
-            highlight: function (str, lang) {
-              const copyBtn = document.createElement("button");
-              copyBtn.classList.add("copy-button");
-              copyBtn.innerHTML = copyIconSvg;
-              copyBtn.setAttribute("data-str", str);
-              
-              let highlighted;
-              if (window.hljs && lang && window.hljs.getLanguage(lang)) {
-                try {
-                  highlighted = window.hljs.highlight(str, { language: lang, ignoreIllegals: true }).value;
-                } catch (e) {
-                  console.error("Error highlighting code:", e);
-                  highlighted = window.hljs ? window.hljs.highlightAuto(str).value : str;
-                }
-              } else {
-                highlighted = window.hljs ? window.hljs.highlightAuto(str).value : str;
-              }
-              
-              const codesArea = `<pre class="hljs codesArea"><code>${highlighted}</code></pre>`;
-              const codeBlock = `<div class="codeBlock">${copyBtn.outerHTML}${codesArea}</div>`;
-              return codeBlock;
-            },
-          });
-        } else {
-          console.warn("markdown-it not available yet, waiting...");
-          await new Promise(resolve => {
-            const checkMarkdownIt = () => {
-              if (window.markdownit) {
-                this.$mdIt = window.markdownit({
-                  html: false,
-                  xhtmlOut: false,
-                  breaks: true,
-                  linkify: true,
-                  typographer: true,
-                  quotes: "&quot;&quot;''",
-                  highlight: function (str, lang) {
-                    const copyBtn = document.createElement("button");
-                    copyBtn.classList.add("copy-button");
-                    copyBtn.innerHTML = copyIconSvg;
-                    copyBtn.setAttribute("data-str", str);
-                    const codesArea = `<pre class="hljs codesArea"><code>${window.hljs ? window.hljs.highlightAuto(str).value : str}</code></pre>`;
-                    const codeBlock = `<div class="codeBlock">${copyBtn.outerHTML}${codesArea}</div>`;
-                    return codeBlock;
-                  },
-                });
-                resolve();
-              } else {
-                setTimeout(checkMarkdownIt, 100);
-              }
-            };
-            checkMarkdownIt();
-          });
-        }
-      }
+      // Initialize markdown-it with simple pattern like main.js
+      this.$mdIt = window.markdownit({
+        html: false,
+        xhtmlOut: false,
+        breaks: false,
+        linkify: false,
+        typographer: false,
+        quotes: '""\'\'',
+        highlight: function (str, lang) {
+          const copyBtn = document.createElement("button");
+          copyBtn.classList.add("copy-button");
+          copyBtn.innerHTML = copyIconSvg;
+          copyBtn.setAttribute("data-str", str);
+          const codesArea = `<pre class="hljs codesArea"><code>${hljs.highlightAuto(str).value}</code></pre>`;
+          const codeBlock = `<div class="codeBlock">${copyBtn.outerHTML}${codesArea}</div>`;
+          return codeBlock;
+        },
+      });
       
       // Authentication and API key handling
       let passPhrase;
@@ -623,7 +529,7 @@ case 'toggle-realtime':
           providerNme = OPENAI_LIKE;
           await fs(window.DATA_STORAGE).createFile("secret.key", passPhrase);
           await this.apiKeyManager.saveAPIKey(OPENAI_LIKE, token);
-          window.toast("Configuration saved ðŸŽ‰", 3000);
+          window.toast("Configuration saved 🎉", 3000);
         } 
         // Handle other providers
         else {
@@ -650,18 +556,13 @@ case 'toggle-realtime':
           token = apiKey;
           await fs(window.DATA_STORAGE).createFile("secret.key", passPhrase);
           await this.apiKeyManager.saveAPIKey(providerNme, token);
-          window.toast("Configuration saved ðŸŽ‰", 3000);
+          window.toast("Configuration saved 🎉", 3000);
         }
       }
 
       let model = window.localStorage.getItem("ai-assistant-model-name");
       this.initiateModel(providerNme, token, model);
 
-      // Set up event listeners
-      if (!this.$sendBtn.hasEventListener) {
-        this.$sendBtn.addEventListener("click", this.sendQuery.bind(this));
-        this.$sendBtn.hasEventListener = true;
-      }
       
       // Add keyboard shortcut for sending messages
       this.$chatTextarea.addEventListener("keydown", (e) => {
@@ -874,7 +775,7 @@ case 'toggle-realtime':
             .substring(
               0,
               25,
-            )}...</p><div><button class="delete-history-btn" style="height:25px;width:25px;border:none;padding:5px;outline:none;border-radius:50%;background:var(--error-text-color);text-align:center;">âœ—</button></div>
+            )}...</p><div><button class="delete-history-btn" style="height:25px;width:25px;border:none;padding:5px;outline:none;border-radius:50%;background:var(--error-text-color);text-align:center;">✗</button></div>
                 </li>`;
       }
       return elems;
@@ -1391,9 +1292,9 @@ case 'toggle-realtime':
     // made change in last element
     if (loadingDots.length != 0) {
       this.$loadInterval = setInterval(() => {
-        loadingDots[loadingDots.length - 1].innerText += "â€¢";
-        if (loadingDots[loadingDots.length - 1].innerText == "â€¢â€¢â€¢â€¢â€¢â€¢") {
-          loadingDots[loadingDots.length - 1].innerText = "â€¢";
+        loadingDots[loadingDots.length - 1].innerText += "•";
+        if (loadingDots[loadingDots.length - 1].innerText == "••••••") {
+          loadingDots[loadingDots.length - 1].innerText = "•";
         }
       }, 300);
     }
@@ -2433,7 +2334,7 @@ case 'toggle-realtime':
     });
     
     const closeBtn = tag("button", {
-      innerHTML: "Ã—",
+      innerHTML: "×",
       style: `
         background: none;
         border: none;
@@ -2656,7 +2557,7 @@ case 'toggle-realtime':
   
   const closeBtn = tag("button", {
     className: "ai-edit-popup-close",
-    innerHTML: "Ã—"
+    innerHTML: "×"
   });
   
   header.append(title, closeBtn);
@@ -2961,7 +2862,7 @@ case 'toggle-realtime':
   this.realTimeEnabled = !this.realTimeEnabled;
   
   if (this.realTimeEnabled) {
-    window.toast("Real-time AI Assistant enabled âœ¨", 3000);
+    window.toast("Real-time AI Assistant enabled ✨", 3000);
     this.showRealTimeStatus(true);
     this.analyzeCurrentFile();
   } else {
@@ -2977,7 +2878,7 @@ showRealTimeStatus(enabled) {
   const statusElement = document.querySelector('.realtime-ai-status') || 
     tag("div", { className: "realtime-ai-status" });
   
-  statusElement.textContent = enabled ? "ðŸ¤– AI Active" : "";
+  statusElement.textContent = enabled ? "🤖 AI Active" : "";
   statusElement.style.cssText = `
     position: fixed;
     top: 10px;
@@ -3163,7 +3064,7 @@ showMissingImports(imports) {
   });
   
   const closeBtn = tag("button", {
-    textContent: "Ã—",
+    textContent: "×",
     style: `
       position: absolute;
       top: 5px;
