@@ -84,6 +84,8 @@ class AIAssistant {
       this.$style,
     );
     
+  // Initialize markdown-it immediately to ensure it's available
+  this.$mdIt = null;
   const waitForMarkdownIt = () => {
     return new Promise((resolve) => {
       const checkMarkdown = () => {
@@ -115,7 +117,9 @@ class AIAssistant {
   };
 
   this.$markdownItFile.onload = () => {
-    waitForMarkdownIt();
+    waitForMarkdownIt().then(() => {
+      console.log("Markdown-it initialized successfully");
+    });
   };
 
     /**
@@ -469,7 +473,7 @@ case 'toggle-realtime':
     this.$stopGenerationBtn.innerHTML = stopIconSvg;
     this.$stopGenerationBtn.onclick = this.stopGenerating.bind(this);
     this.$inputBox.append(this.$chatTextarea, this.$sendBtn, this.$stopGenerationBtn);
-    mainApp.append(this.$inputBox, this.$chatBox);
+    mainApp.append(this.$chatBox, this.$inputBox);
     this.$page.append(mainApp);
     this.messageHistories = {};
     this.messageSessionConfig = {
@@ -480,6 +484,7 @@ case 'toggle-realtime':
   }
   
   async run() {
+    // Initialize markdown-it if not already initialized
     if (!this.$mdIt && window.markdownit) {
       this.$mdIt = window.markdownit({
         html: false,
@@ -487,7 +492,7 @@ case 'toggle-realtime':
         breaks: false,
         linkify: false,
         typographer: false,
-        quotes: "\"\"''",
+        quotes: "&quot;&quot;''",
         highlight: function (str, lang) {
           const copyBtn = document.createElement("button");
           copyBtn.classList.add("copy-button");
@@ -578,24 +583,27 @@ case 'toggle-realtime':
       let model = window.localStorage.getItem("ai-assistant-model-name");
 
       this.initiateModel(providerNme, token, model)
-      this.$mdIt = window.markdownit({
-        html: false,
-        xhtmlOut: false,
-        breaks: false,
-        linkify: false,
-        typographer: false,
-        quotes: "“”‘’",
-        highlight: function (str, lang) {
-          const copyBtn = document.createElement("button");
-          copyBtn.classList.add("copy-button");
-          copyBtn.innerHTML = copyIconSvg;
-          copyBtn.setAttribute("data-str", str);
-          const codesArea = `<pre class="hljs codesArea"><code>${hljs.highlightAuto(str).value
-            }</code></pre>`;
-          const codeBlock = `<div class="codeBlock">${copyBtn.outerHTML}${codesArea}</div>`;
-          return codeBlock;
-        },
-      });
+      
+      // Make sure markdown-it is initialized
+      if (!this.$mdIt && window.markdownit) {
+        this.$mdIt = window.markdownit({
+          html: false,
+          xhtmlOut: false,
+          breaks: false,
+          linkify: false,
+          typographer: false,
+          quotes: """''",
+          highlight: function (str, lang) {
+            const copyBtn = document.createElement("button");
+            copyBtn.classList.add("copy-button");
+            copyBtn.innerHTML = copyIconSvg;
+            copyBtn.setAttribute("data-str", str);
+            const codesArea = `<pre class="hljs codesArea"><code>${window.hljs ? window.hljs.highlightAuto(str).value : str}</code></pre>`;
+            const codeBlock = `<div class="codeBlock">${copyBtn.outerHTML}${codesArea}</div>`;
+            return codeBlock;
+          },
+        });
+      }
 
       this.$sendBtn.addEventListener("click", this.sendQuery.bind(this));
 
@@ -981,11 +989,11 @@ case 'toggle-realtime':
       className: "ai_message",
     });
     
-    // Pastikan this.$mdIt sudah diinisialisasi
+    // Check if markdown-it is initialized
     if (this.$mdIt && typeof this.$mdIt.render === 'function') {
       msg.innerHTML = this.$mdIt.render(message);
     } else {
-      // Fallback jika markdown-it belum ready
+      // Fallback if markdown-it isn't ready
       msg.textContent = message;
     }
     
@@ -1018,7 +1026,7 @@ case 'toggle-realtime':
 
   async getCliResponse(question) {
   try {
-    // Pastikan elemen DOM ada
+    // Make sure we have response boxes
     const responseBoxes = Array.from(document.querySelectorAll(".ai_message"));
     if (responseBoxes.length === 0) {
       console.error("No response box found");
@@ -1048,7 +1056,7 @@ case 'toggle-realtime':
           this.scrollToBottom();
           setTimeout(streamCache, 10);
         } else {
-          // Pastikan markdown renderer ada
+          // Ensure markdown renderer is available
           if (this.$mdIt && typeof this.$mdIt.render === 'function') {
             const renderedHtml = this.$mdIt.render(cachedResponse);
             targetElem.innerHTML = renderedHtml;
@@ -1075,7 +1083,7 @@ case 'toggle-realtime':
       return;
     }
 
-    // Original AI request code...
+    // Original AI request code
     this.abortController = new AbortController();
     const { signal } = this.abortController;
 
@@ -1130,7 +1138,7 @@ case 'toggle-realtime':
     // Cache the response
     this.setCachedResponse(question, result);
     
-    // Render markdown jika tersedia
+    // Render markdown if available
     if (this.$mdIt && typeof this.$mdIt.render === 'function') {
       const renderedHtml = this.$mdIt.render(result);
       targetElem.innerHTML = renderedHtml;
@@ -1645,7 +1653,7 @@ case 'toggle-realtime':
     const imports = [];
     
     // Match import/require patterns
-    const importRegex = /(?:import.*from\s+['"]([^'"]+)['"]|require\(['"]([^'"]+)['"])/g;
+    const importRegex = /(?:import.*from\s+['"]([^'"]+)['"]|require\(['"]([^'"]+)['"]\))/g;
     let match;
     
     while ((match = importRegex.exec(content)) !== null) {
@@ -2079,21 +2087,7 @@ case 'toggle-realtime':
     }
     
     const systemPrompt = `You are a professional code explainer. Analyze the provided code and explain it in detail, professionally, and comprehensively.`;
-    const userPrompt = `Please explain this code in detail:
-
-**File: ${activeFile ? activeFile.name : 'Unknown'}**
-
-**Selected Code:**
-\`\`\`
-${selectedText}
-\`\`\`
-
-**Full File Content:**
-\`\`\`
-${fileContent}
-\`\`\`
-
-Please provide a detailed and professional explanation of what this code does, how it works, its dependencies, and any potential improvements.`;
+    const userPrompt = `Please explain this code in detail:\n\n**File: ${activeFile ? activeFile.name : 'Unknown'}**\n\n**Selected Code:**\n\`\`\`\n${selectedText}\n\`\`\`\n\n**Full File Content:**\n\`\`\`\n${fileContent}\n\`\`\`\n\nPlease provide a detailed and professional explanation of what this code does, how it works, its dependencies, and any potential improvements.`;
 
     this.appendUserQuery(userPrompt);
     this.scrollToBottom();
@@ -2152,7 +2146,7 @@ Please provide a detailed and professional explanation of what this code does, h
   
   actions.append(cancelBtn, generateBtn);
   body.append(promptArea, actions);
-  popup.append(header, body); // PERBAIKAN: hapus actions dari sini
+  popup.append(header, body);
   
   // Event listeners
   closeBtn.onclick = cancelBtn.onclick = () => {
@@ -2207,25 +2201,7 @@ Please provide a detailed and professional explanation of what this code does, h
   
   const systemPrompt = `You are a professional code generator. Generate clean, efficient, and well-documented code based on user requirements. Consider the current file context and dependencies.`;
   
-  const enhancedPrompt = `${systemPrompt}
-
-**Current File: ${activeFile ? activeFile.name : 'New File'}**
-**File Type: ${fileExtension}**
-
-**Current File Content:**
-\`\`\`
-${fileContent}
-\`\`\`
-
-**User Request:** ${userPrompt}
-
-Please generate the requested code. Consider:
-1. Current file dependencies and imports
-2. Existing code structure and patterns
-3. Best practices for ${fileExtension} files
-4. Proper error handling and optimization
-
-Generate the code and insert it at the current cursor position.`;
+  const enhancedPrompt = `${systemPrompt}\n\n**Current File: ${activeFile ? activeFile.name : 'New File'}**\n**File Type: ${fileExtension}**\n\n**Current File Content:**\n\`\`\`\n${fileContent}\n\`\`\`\n\n**User Request:** ${userPrompt}\n\nPlease generate the requested code. Consider:\n1. Current file dependencies and imports\n2. Existing code structure and patterns\n3. Best practices for ${fileExtension} files\n4. Proper error handling and optimization\n\nGenerate the code and insert it at the current cursor position.`;
 
   // Show loading
   const loadingToast = window.toast("Generating code...", 0);
@@ -2268,13 +2244,7 @@ Generate the code and insert it at the current cursor position.`;
   
   const systemPrompt = `You are a code optimization expert. Analyze the provided function and suggest optimizations for better performance, readability, and maintainability.`;
   
-  const userPrompt = `Please optimize this function:
-
-\`\`\`
-${selectedText}
-\`\`\`
-
-Provide optimized version with explanations of improvements made.`;
+  const userPrompt = `Please optimize this function:\n\n\`\`\`\n${selectedText}\n\`\`\`\n\nProvide optimized version with explanations of improvements made.`;
 
   this.appendUserQuery(userPrompt);
   this.appendGptResponse("");
@@ -2289,17 +2259,7 @@ Provide optimized version with explanations of improvements made.`;
   
   const systemPrompt = `You are a documentation expert. Add comprehensive, professional comments to the provided code.`;
   
-  const userPrompt = `Please add detailed comments to this code:
-
-\`\`\`
-${selectedText}
-\`\`\`
-
-Add comments explaining:
-1. What each section does
-2. Parameter descriptions
-3. Return value explanations
-4. Any complex logic`;
+  const userPrompt = `Please add detailed comments to this code:\n\n\`\`\`\n${selectedText}\n\`\`\`\n\nAdd comments explaining:\n1. What each section does\n2. Parameter descriptions\n3. Return value explanations\n4. Any complex logic`;
 
   this.appendUserQuery(userPrompt);
   this.appendGptResponse("");
@@ -2319,13 +2279,7 @@ Add comments explaining:
     // Generate docs for selection
     const systemPrompt = `You are a technical documentation expert. Generate comprehensive documentation for the provided code.`;
     
-    const userPrompt = `Generate professional documentation for this code:
-
-\`\`\`
-${selectedText}
-\`\`\`
-
-Include JSDoc comments, usage examples, and API documentation.`;
+    const userPrompt = `Generate professional documentation for this code:\n\n\`\`\`\n${selectedText}\n\`\`\`\n\nInclude JSDoc comments, usage examples, and API documentation.`;
 
     this.appendUserQuery(userPrompt);
     this.appendGptResponse("");
@@ -2337,20 +2291,7 @@ Include JSDoc comments, usage examples, and API documentation.`;
     
     const systemPrompt = `You are a technical documentation expert. Generate comprehensive documentation for the entire file.`;
     
-    const userPrompt = `Generate complete documentation for this file:
-
-**File: ${activeFile.name}**
-
-\`\`\`
-${fullContent}
-\`\`\`
-
-Generate:
-1. File overview and purpose
-2. Function/class documentation
-3. Usage examples
-4. API reference
-5. Dependencies and requirements`;
+    const userPrompt = `Generate complete documentation for this file:\n\n**File: ${activeFile.name}**\n\n\`\`\`\n${fullContent}\n\`\`\`\n\nGenerate:\n1. File overview and purpose\n2. Function/class documentation\n3. Usage examples\n4. API reference\n5. Dependencies and requirements`;
 
     this.appendUserQuery(userPrompt);
     this.appendGptResponse("");
@@ -2393,13 +2334,7 @@ Generate:
   
   const systemPrompt = `You are a code refactoring expert. Rewrite the provided code to be cleaner, more efficient, and follow best practices while maintaining the same functionality.`;
   
-  const userPrompt = `Please rewrite this code to be cleaner and more efficient:
-
-\`\`\`
-${selectedText}
-\`\`\`
-
-Provide the rewritten version with explanations of improvements made.`;
+  const userPrompt = `Please rewrite this code to be cleaner and more efficient:\n\n\`\`\`\n${selectedText}\n\`\`\`\n\nProvide the rewritten version with explanations of improvements made.`;
 
   this.appendUserQuery(userPrompt);
   this.appendGptResponse("");
@@ -2580,31 +2515,7 @@ async analyzeCurrentCode() {
 async performRealTimeAnalysis(content, currentLine, cursorPos, activeFile) {
   const fileExtension = activeFile.name.split('.').pop();
   
-  const prompt = `Analyze this ${fileExtension} code in real-time and provide suggestions:
-
-**Current Line ${cursorPos.row + 1}:** ${currentLine}
-
-**Full Code:**
-\`\`\`${fileExtension}
-${content}
-\`\`\`
-
-**Cursor Position:** Line ${cursorPos.row + 1}, Column ${cursorPos.column + 1}
-
-Provide JSON response with:
-{
-  "syntax_errors": [{"line": number, "message": "error description", "severity": "error|warning"}],
-  "missing_imports": ["import suggestions"],
-  "code_suggestions": [{"line": number, "suggestion": "improvement suggestion", "type": "optimization|style|bug"}],
-  "auto_complete": ["completion1", "completion2"],
-  "quick_fixes": [{"line": number, "issue": "problem", "fix": "solution"}]
-}
-
-Focus on:
-1. Syntax errors and missing imports
-2. Code improvements at cursor position
-3. Auto-completion suggestions
-4. Quick fixes for common issues`;
+  const prompt = `Analyze this ${fileExtension} code in real-time and provide suggestions:\n\n**Current Line ${cursorPos.row + 1}:** ${currentLine}\n\n**Full Code:**\n\`\`\`${fileExtension}\n${content}\n\`\`\`\n\n**Cursor Position:** Line ${cursorPos.row + 1}, Column ${cursorPos.column + 1}\n\nProvide JSON response with:\n{\n  "syntax_errors": [{"line": number, "message": "error description", "severity": "error|warning"}],\n  "missing_imports": ["import suggestions"],\n  "code_suggestions": [{"line": number, "suggestion": "improvement suggestion", "type": "optimization|style|bug"}],\n  "auto_complete": ["completion1", "completion2"],\n  "quick_fixes": [{"line": number, "issue": "problem", "fix": "solution"}]\n}\n\nFocus on:\n1. Syntax errors and missing imports\n2. Code improvements at cursor position\n3. Auto-completion suggestions\n4. Quick fixes for common issues`;
 
   try {
     const response = await this.getAiResponse(prompt);
