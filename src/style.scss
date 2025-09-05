@@ -1,0 +1,1060 @@
+// Galaxy Theme Modern Complex for Acode Android
+// Variables
+:root {
+  // Galaxy Color Palette
+  --galaxy-deep-space: #0a0a0f;
+  --galaxy-nebula: #1a1a2e;
+  --galaxy-cosmic: #16213e;
+  --galaxy-star-blue: #00d4ff;
+  --galaxy-star-purple: #8b5cf6;
+  --galaxy-star-green: #00ff88;
+  --galaxy-star-pink: #ff0080;
+  --galaxy-void: #0f172a;
+  --galaxy-glass: rgba(255, 255, 255, 0.08);
+  --galaxy-glass-border: rgba(255, 255, 255, 0.12);
+  
+  // Text Colors
+  --galaxy-text-primary: #ffffff;
+  --galaxy-text-secondary: #94a3b8;
+  --galaxy-text-muted: #64748b;
+  
+  // Galaxy Gradients
+  --galaxy-gradient-primary: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  --galaxy-gradient-cosmic: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+  --galaxy-gradient-nebula: linear-gradient(45deg, #00d4ff, #8b5cf6, #00ff88, #ff0080);
+  --galaxy-gradient-void: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%);
+  
+  // Shadows & Effects
+  --galaxy-shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.4);
+  --galaxy-shadow-md: 0 4px 16px rgba(0, 0, 0, 0.5);
+  --galaxy-shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.6);
+  --galaxy-shadow-cosmic: 0 0 25px rgba(0, 212, 255, 0.4);
+  --galaxy-shadow-nebula: 0 0 35px rgba(139, 92, 246, 0.5);
+  
+  // Transitions
+  --galaxy-transition-fast: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  --galaxy-transition-normal: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  --galaxy-transition-slow: 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+// Galaxy Animations
+@keyframes galaxy-pulse {
+  0%, 100% { 
+    opacity: 1; 
+    transform: scale(1);
+  }
+  50% { 
+    opacity: 0.8; 
+    transform: scale(1.02);
+  }
+}
+
+@keyframes galaxy-glow {
+  0%, 100% { 
+    box-shadow: 0 0 20px rgba(0, 212, 255, 0.3);
+    filter: brightness(1);
+  }
+  50% { 
+    box-shadow: 0 0 40px rgba(0, 212, 255, 0.6);
+    filter: brightness(1.1);
+  }
+}
+
+@keyframes galaxy-float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-5px); }
+}
+
+@keyframes galaxy-slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes galaxy-fade-in {
+  from { opacity: 0; filter: blur(10px); }
+  to { opacity: 1; filter: blur(0); }
+}
+
+@keyframes galaxy-typing {
+  0%, 50% { opacity: 1; }
+  51%, 100% { opacity: 0.3; }
+}
+
+@keyframes galaxy-nebula-flow {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+@keyframes galaxy-stars-twinkle {
+  0%, 100% { opacity: 0.8; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.1); }
+}
+
+// Main App Container with Galaxy Background
+#acode-ai-assistant {
+  background: var(--galaxy-deep-space);
+  color: var(--galaxy-text-primary);
+  font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  height: 100vh;
+  overflow: hidden;
+  position: relative;
+  
+  // Galaxy Background Layer - Load from plugin directory
+  &::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-image: url('./assets/galaxy.png');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    opacity: 0.3;
+    z-index: 0;
+  }
+  
+  // Cosmic Overlay Effects
+  &::after {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: 
+      radial-gradient(circle at 20% 80%, rgba(0, 212, 255, 0.15) 0%, transparent 50%),
+      radial-gradient(circle at 80% 20%, rgba(139, 92, 246, 0.15) 0%, transparent 50%),
+      radial-gradient(circle at 40% 40%, rgba(0, 255, 136, 0.1) 0%, transparent 50%);
+    pointer-events: none;
+    z-index: 1;
+    animation: galaxy-nebula-flow 20s ease-in-out infinite;
+    background-size: 200% 200%;
+  }
+  
+  .mainApp {
+    position: relative;
+    z-index: 2;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    backdrop-filter: blur(5px);
+  }
+}
+
+// Enhanced Header with Galaxy Theme
+.page-header {
+  background: var(--galaxy-glass);
+  backdrop-filter: blur(25px);
+  border-bottom: 1px solid var(--galaxy-glass-border);
+  padding: 16px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: relative;
+  box-shadow: var(--galaxy-shadow-sm);
+  
+  &::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: var(--galaxy-gradient-nebula);
+    opacity: 0.4;
+    animation: galaxy-nebula-flow 15s linear infinite;
+    background-size: 200% 200%;
+  }
+  
+  .page-title {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--galaxy-text-primary);
+    text-shadow: 0 0 10px rgba(0, 212, 255, 0.3);
+  }
+  
+  .icon {
+    color: var(--galaxy-star-blue);
+    font-size: 22px;
+    padding: 10px;
+    border-radius: 12px;
+    background: var(--galaxy-glass);
+    border: 1px solid var(--galaxy-glass-border);
+    cursor: pointer;
+    transition: all var(--galaxy-transition-fast);
+    position: relative;
+    overflow: hidden;
+    
+    &::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+      transition: left 0.5s;
+    }
+    
+    &:hover {
+      background: var(--galaxy-star-blue);
+      color: var(--galaxy-deep-space);
+      box-shadow: var(--galaxy-shadow-cosmic);
+      transform: translateY(-3px) scale(1.05);
+      
+      &::before {
+        left: 100%;
+      }
+    }
+    
+    &:active {
+      transform: translateY(-1px) scale(0.98);
+    }
+  }
+}
+
+// Provider Dropdown with Galaxy Styling
+.provider-dropdown {
+  .provider-select {
+    background: var(--galaxy-glass);
+    border: 1px solid var(--galaxy-glass-border);
+    border-radius: 12px;
+    color: var(--galaxy-text-primary);
+    padding: 12px 16px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all var(--galaxy-transition-fast);
+    backdrop-filter: blur(10px);
+    
+    &:hover {
+      border-color: var(--galaxy-star-blue);
+      box-shadow: var(--galaxy-shadow-cosmic);
+      background: var(--galaxy-nebula);
+    }
+    
+    &:focus {
+      outline: none;
+      border-color: var(--galaxy-star-purple);
+      box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.3);
+    }
+    
+    option {
+      background: var(--galaxy-nebula);
+      color: var(--galaxy-text-primary);
+      padding: 8px;
+    }
+  }
+}
+
+// Chat Container with Improved Layout
+.chatBox {
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px 20px;
+  scroll-behavior: smooth;
+  position: relative;
+  
+  // Custom Scrollbar
+  &::-webkit-scrollbar {
+    width: 8px;
+  }
+  
+  &::-webkit-scrollbar-track {
+    background: var(--galaxy-glass);
+    border-radius: 4px;
+  }
+  
+  &::-webkit-scrollbar-thumb {
+    background: var(--galaxy-gradient-cosmic);
+    border-radius: 4px;
+    
+    &:hover {
+      background: var(--galaxy-star-purple);
+    }
+  }
+  
+  // Floating particles effect
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-image: 
+      radial-gradient(2px 2px at 20px 30px, rgba(255, 255, 255, 0.3), transparent),
+      radial-gradient(2px 2px at 40px 70px, rgba(0, 212, 255, 0.4), transparent),
+      radial-gradient(1px 1px at 90px 40px, rgba(139, 92, 246, 0.3), transparent);
+    background-repeat: repeat;
+    background-size: 100px 100px;
+    animation: galaxy-stars-twinkle 4s ease-in-out infinite;
+    pointer-events: none;
+    opacity: 0.6;
+  }
+}
+
+// Enhanced Chat Messages
+.wrapper, .ai_wrapper {
+  margin-bottom: 28px;
+  animation: galaxy-slide-up 0.5s ease-out;
+  position: relative;
+}
+
+.chat, .ai_chat {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+  max-width: 80%;
+  position: relative;
+}
+
+// User Messages (Right Side)
+.wrapper .chat {
+  margin-left: auto;
+  flex-direction: row-reverse;
+  
+  .message {
+    background: var(--galaxy-gradient-cosmic);
+    color: white;
+    padding: 18px 24px;
+    border-radius: 24px 24px 8px 24px;
+    box-shadow: var(--galaxy-shadow-md);
+    position: relative;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    
+    &::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: var(--galaxy-gradient-nebula);
+      border-radius: inherit;
+      opacity: 0;
+      transition: opacity var(--galaxy-transition-fast);
+      z-index: -1;
+    }
+    
+    &:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--galaxy-shadow-lg);
+      
+      &::before {
+        opacity: 0.2;
+      }
+    }
+  }
+}
+
+// AI Messages (Left Side)
+.ai_wrapper .ai_chat {
+  .ai_message {
+    background: var(--galaxy-glass);
+    backdrop-filter: blur(25px);
+    border: 1px solid var(--galaxy-glass-border);
+    color: var(--galaxy-text-primary);
+    padding: 18px 24px;
+    border-radius: 24px 24px 24px 8px;
+    box-shadow: var(--galaxy-shadow-md);
+    position: relative;
+    line-height: 1.7;
+    
+    &::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: var(--galaxy-gradient-nebula);
+      border-radius: inherit;
+      opacity: 0;
+      transition: opacity var(--galaxy-transition-fast);
+      z-index: -1;
+    }
+    
+    &:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--galaxy-shadow-lg);
+      
+      &::before {
+        opacity: 0.1;
+      }
+    }
+  }
+}
+
+// Enhanced Profile Images - Fixed aspect ratio and positioning
+.profile, .ai_profile {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 2px solid var(--galaxy-star-blue);
+  box-shadow: var(--galaxy-shadow-cosmic);
+  position: relative;
+  flex-shrink: 0;
+  display: inline-block;
+  
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
+    display: block;
+  }
+  
+  &::after {
+    content: '';
+    position: absolute;
+    top: -2px;
+    left: -2px;
+    right: -2px;
+    bottom: -2px;
+    border-radius: 50%;
+    background: var(--galaxy-gradient-nebula);
+    z-index: -1;
+    animation: galaxy-nebula-flow 10s linear infinite;
+    background-size: 200% 200%;
+  }
+}
+
+.ai_profile {
+  border-color: var(--galaxy-star-purple);
+  box-shadow: var(--galaxy-shadow-nebula);
+  animation: galaxy-glow 3s ease-in-out infinite;
+}
+
+// Redesigned Input Container (Bottom)
+.inputBox {
+  padding: 20px;
+  background: var(--galaxy-glass);
+  backdrop-filter: blur(30px);
+  border-top: 1px solid var(--galaxy-glass-border);
+  display: flex;
+  gap: 16px;
+  align-items: flex-end;
+  position: relative;
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.3);
+  
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: var(--galaxy-gradient-nebula);
+    opacity: 0.5;
+    animation: galaxy-nebula-flow 12s linear infinite;
+    background-size: 200% 200%;
+  }
+}
+
+// Enhanced Chat Textarea
+.chatTextarea {
+  flex: 1;
+  background: var(--galaxy-nebula);
+  border: 1px solid var(--galaxy-glass-border);
+  border-radius: 20px;
+  color: var(--galaxy-text-primary);
+  padding: 18px 24px;
+  font-size: 16px;
+  line-height: 1.6;
+  resize: none;
+  min-height: 28px;
+  max-height: 140px;
+  transition: all var(--galaxy-transition-fast);
+  font-family: inherit;
+  backdrop-filter: blur(10px);
+  
+  &::placeholder {
+    color: var(--galaxy-text-muted);
+  }
+  
+  &:focus {
+    outline: none;
+    border-color: var(--galaxy-star-blue);
+    box-shadow: 0 0 0 3px rgba(0, 212, 255, 0.3);
+    background: var(--galaxy-cosmic);
+    transform: translateY(-2px);
+  }
+  
+  &:hover {
+    border-color: var(--galaxy-star-purple);
+    box-shadow: var(--galaxy-shadow-sm);
+  }
+}
+
+// Enhanced Action Buttons
+.sendBtn, .stopGenerationBtn {
+  width: 52px;
+  height: 52px;
+  border: none;
+  border-radius: 50%;
+  background: var(--galaxy-gradient-cosmic);
+  color: white;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--galaxy-transition-fast);
+  box-shadow: var(--galaxy-shadow-md);
+  position: relative;
+  overflow: hidden;
+  
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: var(--galaxy-gradient-nebula);
+    opacity: 0;
+    transition: opacity var(--galaxy-transition-fast);
+    border-radius: inherit;
+  }
+  
+  svg {
+    width: 22px;
+    height: 22px;
+    z-index: 1;
+  }
+  
+  &:hover {
+    transform: translateY(-4px) scale(1.1);
+    box-shadow: var(--galaxy-shadow-lg);
+    animation: galaxy-glow 1s ease-in-out;
+    
+    &::before {
+      opacity: 0.3;
+    }
+  }
+  
+  &:active {
+    transform: translateY(-2px) scale(1.05);
+  }
+  
+  &.hide {
+    opacity: 0;
+    pointer-events: none;
+    transform: scale(0.7);
+  }
+}
+
+.stopGenerationBtn {
+  background: linear-gradient(135deg, #ff4757, #ff3838, #ff6b7a);
+  
+  &:hover {
+    background: linear-gradient(135deg, #ff3838, #ff2f2f, #ff5757);
+  }
+}
+
+// Enhanced Code Blocks
+.codeBlock {
+  position: relative;
+  margin: 20px 0;
+  border-radius: 16px;
+  overflow: hidden;
+  background: var(--galaxy-void);
+  border: 1px solid var(--galaxy-glass-border);
+  box-shadow: var(--galaxy-shadow-md);
+  
+  .copy-button {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    background: var(--galaxy-glass);
+    border: 1px solid var(--galaxy-glass-border);
+    border-radius: 8px;
+    color: var(--galaxy-text-secondary);
+    padding: 8px 12px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all var(--galaxy-transition-fast);
+    z-index: 2;
+    backdrop-filter: blur(10px);
+    
+    &:hover {
+      background: var(--galaxy-star-blue);
+      color: var(--galaxy-deep-space);
+      transform: translateY(-2px);
+      box-shadow: var(--galaxy-shadow-cosmic);
+    }
+    
+    svg {
+      width: 16px;
+      height: 16px;
+    }
+  }
+  
+  .codesArea {
+    margin: 0;
+    padding: 24px;
+    background: transparent;
+    overflow-x: auto;
+    
+    code {
+      font-family: 'JetBrains Mono', 'Fira Code', Consolas, monospace;
+      font-size: 14px;
+      line-height: 1.6;
+      color: var(--galaxy-text-primary);
+    }
+  }
+}
+
+// Mobile Responsive Design
+@media (max-width: 768px) {
+  .page-header {
+    padding: 12px 16px;
+    
+    .page-title {
+      font-size: 16px;
+    }
+    
+    .icon {
+      font-size: 20px;
+      padding: 8px;
+    }
+  }
+  
+  .chatBox {
+    padding: 16px 12px;
+  }
+  
+  .inputBox {
+    padding: 16px;
+    gap: 12px;
+  }
+  
+  .chat, .ai_chat {
+    max-width: 90%;
+    gap: 12px;
+  }
+  
+  .message, .ai_message {
+    padding: 14px 18px;
+    font-size: 14px;
+    border-radius: 20px 20px 6px 20px;
+  }
+  
+  .ai_message {
+    border-radius: 20px 20px 20px 6px;
+  }
+  
+  .profile, .ai_profile {
+    width: 36px;
+    height: 36px;
+  }
+  
+  .chatTextarea {
+    font-size: 16px; // Prevent zoom on iOS
+    padding: 14px 18px;
+    border-radius: 16px;
+  }
+  
+  .sendBtn, .stopGenerationBtn {
+    width: 46px;
+    height: 46px;
+    
+    svg {
+      width: 20px;
+      height: 20px;
+    }
+  }
+}
+
+// Performance optimizations for Android
+@media (max-width: 480px) {
+  #acode-ai-assistant {
+    &::after {
+      animation: none; // Disable heavy animations on small screens
+    }
+  }
+  
+  .chatBox::before {
+    display: none; // Remove particle effects on very small screens
+  }
+  
+  .profile, .ai_profile {
+    &::after {
+      animation: none;
+    }
+  }
+}
+
+// Dark mode enhancements
+@media (prefers-color-scheme: dark) {
+  :root {
+    --galaxy-glass: rgba(255, 255, 255, 0.05);
+    --galaxy-glass-border: rgba(255, 255, 255, 0.1);
+  }
+}
+
+// Reduced motion support
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+// Selection styles
+::selection {
+  background: var(--galaxy-star-blue);
+  color: var(--galaxy-deep-space);
+}
+
+// Focus styles for accessibility
+*:focus-visible {
+  outline: 2px solid var(--galaxy-star-blue);
+  outline-offset: 2px;
+}
+
+// Utility classes
+.hide {
+  display: none !important;
+}
+
+.galaxy-glow {
+  animation: galaxy-glow 2s ease-in-out infinite;
+}
+
+.galaxy-float {
+  animation: galaxy-float 3s ease-in-out infinite;
+}
+
+// ===================================
+// AI EDIT POPUP FLOATING WINDOW STYLES
+// ===================================
+
+// Main popup container (floating window)
+.ai-edit-popup {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 90%;
+  max-width: 500px;
+  background: var(--galaxy-nebula);
+  color: var(--galaxy-text-primary);
+  border-radius: 16px;
+  box-shadow: var(--galaxy-shadow-lg);
+  z-index: 9999;
+  border: 1px solid var(--galaxy-glass-border);
+  backdrop-filter: blur(25px);
+  animation: galaxy-slide-up 0.3s ease-out;
+  overflow: hidden;
+  
+  // Galaxy-themed overlay
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: var(--galaxy-gradient-cosmic);
+    opacity: 0.05;
+    pointer-events: none;
+    z-index: 0;
+  }
+  
+  // Floating glow effect
+  &::after {
+    content: '';
+    position: absolute;
+    top: -2px;
+    left: -2px;
+    right: -2px;
+    bottom: -2px;
+    background: var(--galaxy-gradient-nebula);
+    border-radius: 18px;
+    z-index: -1;
+    opacity: 0.3;
+    animation: galaxy-nebula-flow 8s linear infinite;
+    background-size: 200% 200%;
+  }
+}
+
+// Popup header with title and close button
+.ai-edit-popup-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--galaxy-glass-border);
+  background: var(--galaxy-glass);
+  backdrop-filter: blur(10px);
+  position: relative;
+  z-index: 1;
+  
+  &::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: var(--galaxy-gradient-nebula);
+    opacity: 0.3;
+  }
+}
+
+// Popup title
+.ai-edit-popup-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--galaxy-text-primary);
+  text-shadow: 0 0 10px rgba(0, 212, 255, 0.3);
+  margin: 0;
+}
+
+// Close button (X)
+.ai-edit-popup-close {
+  background: var(--galaxy-glass);
+  border: 1px solid var(--galaxy-glass-border);
+  color: var(--galaxy-text-secondary);
+  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 20px;
+  font-weight: bold;
+  transition: all var(--galaxy-transition-fast);
+  backdrop-filter: blur(10px);
+  
+  &:hover {
+    background: var(--galaxy-star-blue);
+    color: var(--galaxy-deep-space);
+    transform: scale(1.1);
+    box-shadow: var(--galaxy-shadow-cosmic);
+  }
+  
+  &:active {
+    transform: scale(0.95);
+  }
+}
+
+// Popup body containing content
+.ai-edit-popup-body {
+  padding: 24px;
+  position: relative;
+  z-index: 1;
+}
+
+// Textarea for AI prompt input
+.ai-edit-prompt {
+  width: 100%;
+  min-height: 120px;
+  max-height: 200px;
+  background: var(--galaxy-cosmic);
+  border: 1px solid var(--galaxy-glass-border);
+  border-radius: 12px;
+  color: var(--galaxy-text-primary);
+  padding: 16px 20px;
+  font-size: 14px;
+  line-height: 1.6;
+  resize: vertical;
+  transition: all var(--galaxy-transition-fast);
+  font-family: inherit;
+  backdrop-filter: blur(10px);
+  box-sizing: border-box;
+  
+  &::placeholder {
+    color: var(--galaxy-text-muted);
+    opacity: 0.8;
+  }
+  
+  &:focus {
+    outline: none;
+    border-color: var(--galaxy-star-blue);
+    box-shadow: 0 0 0 3px rgba(0, 212, 255, 0.3);
+    background: var(--galaxy-nebula);
+    transform: translateY(-2px);
+  }
+  
+  &:hover {
+    border-color: var(--galaxy-star-purple);
+    box-shadow: var(--galaxy-shadow-sm);
+  }
+  
+  // Auto-expand behavior
+  &:focus {
+    min-height: 140px;
+  }
+}
+
+// Actions container for buttons
+.ai-edit-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  margin-top: 20px;
+  align-items: center;
+}
+
+// Base button styles for AI edit popup
+.ai-edit-btn {
+  padding: 12px 24px;
+  border: none;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--galaxy-transition-fast);
+  position: relative;
+  overflow: hidden;
+  backdrop-filter: blur(10px);
+  
+  // Hover effect overlay
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    transition: left 0.5s;
+  }
+  
+  &:hover::before {
+    left: 100%;
+  }
+  
+  &:active {
+    transform: translateY(1px) scale(0.98);
+  }
+}
+
+// Primary button (Edit Code)
+.ai-edit-btn.primary {
+  background: var(--galaxy-gradient-cosmic);
+  color: white;
+  border: 1px solid var(--galaxy-star-blue);
+  box-shadow: var(--galaxy-shadow-md);
+  
+  &:hover {
+    background: var(--galaxy-star-blue);
+    color: var(--galaxy-deep-space);
+    transform: translateY(-3px) scale(1.05);
+    box-shadow: var(--galaxy-shadow-cosmic);
+  }
+  
+  &:focus {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(0, 212, 255, 0.4);
+  }
+}
+
+// Secondary button (Cancel)
+.ai-edit-btn.secondary {
+  background: var(--galaxy-glass);
+  color: var(--galaxy-text-secondary);
+  border: 1px solid var(--galaxy-glass-border);
+  
+  &:hover {
+    background: var(--galaxy-text-muted);
+    color: var(--galaxy-deep-space);
+    transform: translateY(-2px);
+    box-shadow: var(--galaxy-shadow-sm);
+  }
+  
+  &:focus {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(148, 163, 184, 0.3);
+  }
+}
+
+// Dark backdrop when popup is open
+.ai-edit-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(5px);
+  z-index: 9998;
+  animation: galaxy-fade-in 0.3s ease-out;
+}
+
+// Mobile responsive styles for popup
+@media (max-width: 768px) {
+  .ai-edit-popup {
+    width: 95%;
+    margin: 0 auto;
+    max-height: 80vh;
+    overflow-y: auto;
+  }
+  
+  .ai-edit-popup-header {
+    padding: 16px 20px;
+  }
+  
+  .ai-edit-popup-title {
+    font-size: 16px;
+  }
+  
+  .ai-edit-popup-body {
+    padding: 20px;
+  }
+  
+  .ai-edit-prompt {
+    min-height: 100px;
+    font-size: 16px; // Prevent zoom on iOS
+  }
+  
+  .ai-edit-actions {
+    flex-direction: column-reverse;
+    gap: 10px;
+  }
+  
+  .ai-edit-btn {
+    width: 100%;
+    padding: 14px 20px;
+  }
+}
+
+// Small screen optimizations
+@media (max-width: 480px) {
+  .ai-edit-popup {
+    width: 98%;
+    top: 20px;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    height: auto;
+    max-height: calc(100vh - 40px);
+  }
+  
+  .ai-edit-popup-header {
+    padding: 12px 16px;
+  }
+  
+  .ai-edit-popup-body {
+    padding: 16px;
+  }
+  
+  .ai-edit-prompt {
+    min-height: 80px;
+    padding: 12px 16px;
+  }
+}
