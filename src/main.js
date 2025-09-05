@@ -458,23 +458,30 @@ case 'toggle-realtime':
       className: "inputBox",
     });
     
-    this.setupRealTimeAI();
+    // Create UI elements in the correct order
     this.$chatTextarea = tag("textarea", {
       className: "chatTextarea",
       placeholder: "Type your query...",
     });
+    
     this.$sendBtn = tag("button", {
       className: "sendBtn",
     });
     this.$sendBtn.innerHTML = sendIconSvg;
+    
     this.$stopGenerationBtn = tag("button", {
       className: "stopGenerationBtn hide",
     });
     this.$stopGenerationBtn.innerHTML = stopIconSvg;
     this.$stopGenerationBtn.onclick = this.stopGenerating.bind(this);
+    
+    // Append elements in the correct order
     this.$inputBox.append(this.$chatTextarea, this.$sendBtn, this.$stopGenerationBtn);
     mainApp.append(this.$chatBox, this.$inputBox);
     this.$page.append(mainApp);
+    
+    // Setup real-time AI features after UI elements are created
+    this.setupRealTimeAI();
     this.messageHistories = {};
     this.messageSessionConfig = {
       configurable: {
@@ -484,27 +491,89 @@ case 'toggle-realtime':
   }
   
   async run() {
-    // Initialize markdown-it if not already initialized
-    if (!this.$mdIt && window.markdownit) {
-      this.$mdIt = window.markdownit({
-        html: false,
-        xhtmlOut: false,
-        breaks: false,
-        linkify: false,
-        typographer: false,
-        quotes: "&quot;&quot;''",
-        highlight: function (str, lang) {
-          const copyBtn = document.createElement("button");
-          copyBtn.classList.add("copy-button");
-          copyBtn.innerHTML = copyIconSvg;
-          copyBtn.setAttribute("data-str", str);
-          const codesArea = `<pre class="hljs codesArea"><code>${window.hljs ? window.hljs.highlightAuto(str).value : str}</code></pre>`;
-          const codeBlock = `<div class="codeBlock">${copyBtn.outerHTML}${codesArea}</div>`;
-          return codeBlock;
-        },
-      });
-    }
     try {
+      // Ensure highlight.js is loaded
+      if (!window.hljs) {
+        console.log("Waiting for highlight.js to load...");
+        await new Promise(resolve => {
+          const checkHljs = () => {
+            if (window.hljs) {
+              resolve();
+            } else {
+              setTimeout(checkHljs, 100);
+            }
+          };
+          checkHljs();
+        });
+      }
+      
+      // Ensure markdown-it is loaded and initialized properly
+      if (!this.$mdIt) {
+        console.log("Initializing markdown-it...");
+        if (window.markdownit) {
+          this.$mdIt = window.markdownit({
+            html: false,
+            xhtmlOut: false,
+            breaks: true, // Enable line breaks for better formatting
+            linkify: true, // Enable auto-linking
+            typographer: true,
+            quotes: "&quot;&quot;''",
+            highlight: function (str, lang) {
+              const copyBtn = document.createElement("button");
+              copyBtn.classList.add("copy-button");
+              copyBtn.innerHTML = copyIconSvg;
+              copyBtn.setAttribute("data-str", str);
+              
+              let highlighted;
+              if (window.hljs && lang && window.hljs.getLanguage(lang)) {
+                try {
+                  highlighted = window.hljs.highlight(str, { language: lang, ignoreIllegals: true }).value;
+                } catch (e) {
+                  console.error("Error highlighting code:", e);
+                  highlighted = window.hljs ? window.hljs.highlightAuto(str).value : str;
+                }
+              } else {
+                highlighted = window.hljs ? window.hljs.highlightAuto(str).value : str;
+              }
+              
+              const codesArea = `<pre class="hljs codesArea"><code>${highlighted}</code></pre>`;
+              const codeBlock = `<div class="codeBlock">${copyBtn.outerHTML}${codesArea}</div>`;
+              return codeBlock;
+            },
+          });
+        } else {
+          console.warn("markdown-it not available yet, waiting...");
+          await new Promise(resolve => {
+            const checkMarkdownIt = () => {
+              if (window.markdownit) {
+                this.$mdIt = window.markdownit({
+                  html: false,
+                  xhtmlOut: false,
+                  breaks: true,
+                  linkify: true,
+                  typographer: true,
+                  quotes: "&quot;&quot;''",
+                  highlight: function (str, lang) {
+                    const copyBtn = document.createElement("button");
+                    copyBtn.classList.add("copy-button");
+                    copyBtn.innerHTML = copyIconSvg;
+                    copyBtn.setAttribute("data-str", str);
+                    const codesArea = `<pre class="hljs codesArea"><code>${window.hljs ? window.hljs.highlightAuto(str).value : str}</code></pre>`;
+                    const codeBlock = `<div class="codeBlock">${copyBtn.outerHTML}${codesArea}</div>`;
+                    return codeBlock;
+                  },
+                });
+                resolve();
+              } else {
+                setTimeout(checkMarkdownIt, 100);
+              }
+            };
+            checkMarkdownIt();
+          });
+        }
+      }
+      
+      // Authentication and API key handling
       let passPhrase;
       if (await fs(window.DATA_STORAGE + "secret.key").exists()) {
         passPhrase = await fs(window.DATA_STORAGE + "secret.key").readFile(
@@ -512,7 +581,7 @@ case 'toggle-realtime':
         );
       } else {
         let secretPassphrase = await prompt(
-          "Enter a secret pass pharse to save the api key",
+          "Enter a secret pass phrase to save the API key",
           "",
           "text",
           {
@@ -522,9 +591,11 @@ case 'toggle-realtime':
         if (!secretPassphrase) return;
         passPhrase = secretPassphrase;
       }
+      
       this.apiKeyManager = new APIKeyManager(passPhrase);
       let token;
       let providerNme = window.localStorage.getItem("ai-assistant-provider");
+      
       if (providerNme) {
         token = await this.apiKeyManager.getAPIKey(providerNme);
       } else {
@@ -533,7 +604,7 @@ case 'toggle-realtime':
         // Handle OpenAI-Like providers
         if (modelProvider === OPENAI_LIKE) {
           // Prompt for required information
-          const apiKey = await prompt("API Key", "", "text", { required: true });
+          const apiKey = await prompt("API Key", "", "password", { required: true });
           if (!apiKey) return;
 
           const baseUrl = await prompt("API Base URL", "https://api.openai.com/v1", "text", {
@@ -556,19 +627,22 @@ case 'toggle-realtime':
         } 
         // Handle other providers
         else {
-          // no prompt for api key in case of ollama
+          // No prompt for API key in case of Ollama
           let apiKey =
             modelProvider == AI_PROVIDERS[2]
               ? "No Need Of API Key"
-              : await prompt("API key of selected provider", "", "text", {
+              : await prompt("API key of selected provider", "", "password", {
                 required: true,
               });
           if (!apiKey) return;
+          
           loader.showTitleLoader();
           window.toast("Fetching available models from your account", 2000);
           let modelList = await getModelsFromProvider(modelProvider, apiKey);
           loader.removeTitleLoader();
+          
           const modelNme = await select("Select AI Model", modelList);
+          if (!modelNme) return;
 
           window.localStorage.setItem("ai-assistant-provider", modelProvider);
           window.localStorage.setItem("ai-assistant-model-name", modelNme);
@@ -581,35 +655,33 @@ case 'toggle-realtime':
       }
 
       let model = window.localStorage.getItem("ai-assistant-model-name");
+      this.initiateModel(providerNme, token, model);
 
-      this.initiateModel(providerNme, token, model)
-      
-      // Make sure markdown-it is initialized
-      if (!this.$mdIt && window.markdownit) {
-        this.$mdIt = window.markdownit({
-          html: false,
-          xhtmlOut: false,
-          breaks: false,
-          linkify: false,
-          typographer: false,
-          quotes: '""\'\'',
-          highlight: function (str, lang) {
-            const copyBtn = document.createElement("button");
-            copyBtn.classList.add("copy-button");
-            copyBtn.innerHTML = copyIconSvg;
-            copyBtn.setAttribute("data-str", str);
-            const codesArea = `<pre class="hljs codesArea"><code>${window.hljs ? window.hljs.highlightAuto(str).value : str}</code></pre>`;
-            const codeBlock = `<div class="codeBlock">${copyBtn.outerHTML}${codesArea}</div>`;
-            return codeBlock;
-          },
-        });
+      // Set up event listeners
+      if (!this.$sendBtn.hasEventListener) {
+        this.$sendBtn.addEventListener("click", this.sendQuery.bind(this));
+        this.$sendBtn.hasEventListener = true;
       }
+      
+      // Add keyboard shortcut for sending messages
+      this.$chatTextarea.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
+          e.preventDefault();
+          this.sendQuery();
+        }
+      });
 
-      this.$sendBtn.addEventListener("click", this.sendQuery.bind(this));
-
+      // Show the page
       this.$page.show();
+      
+      // Focus on the textarea
+      setTimeout(() => {
+        this.$chatTextarea.focus();
+      }, 300);
+      
     } catch (e) {
-      console.log(e);
+      console.error("Error in run method:", e);
+      window.toast("Error initializing AI Assistant: " + e.message, 5000);
     }
   }
 
@@ -975,6 +1047,27 @@ case 'toggle-realtime':
   add ai response to ui
   */
   try {
+    // Initialize markdown-it if not already initialized
+    if (!this.$mdIt && window.markdownit) {
+      this.$mdIt = window.markdownit({
+        html: false,
+        xhtmlOut: false,
+        breaks: true, // Enable line breaks
+        linkify: true, // Enable auto-linking
+        typographer: true,
+        quotes: '""\'\'',
+        highlight: function (str, lang) {
+          const copyBtn = document.createElement("button");
+          copyBtn.classList.add("copy-button");
+          copyBtn.innerHTML = copyIconSvg;
+          copyBtn.setAttribute("data-str", str);
+          const codesArea = `<pre class="hljs codesArea"><code>${window.hljs ? window.hljs.highlightAuto(str).value : str}</code></pre>`;
+          const codeBlock = `<div class="codeBlock">${copyBtn.outerHTML}${codesArea}</div>`;
+          return codeBlock;
+        },
+      });
+    }
+
     const ai_avatar = this.baseUrl + "assets/ai_assistant.svg";
     const gptChatBox = tag("div", { className: "ai_wrapper" });
     const chat = tag("div", { className: "ai_chat" });
@@ -989,22 +1082,26 @@ case 'toggle-realtime':
       className: "ai_message",
     });
     
-    // Check if markdown-it is initialized
+    // Render markdown with proper handling
     if (this.$mdIt && typeof this.$mdIt.render === 'function') {
       msg.innerHTML = this.$mdIt.render(message);
+      
+      // Add event listeners to copy buttons
+      setTimeout(() => {
+        const copyBtns = msg.querySelectorAll(".copy-button");
+        if (copyBtns && copyBtns.length > 0) {
+          for (const copyBtn of copyBtns) {
+            copyBtn.addEventListener("click", function () {
+              copy(this.dataset.str);
+              window.toast("Copied to clipboard", 3000);
+            });
+          }
+        }
+      }, 100);
     } else {
       // Fallback if markdown-it isn't ready
       msg.textContent = message;
-    }
-    
-    const copyBtns = msg.querySelectorAll(".copy-button");
-    if (copyBtns && copyBtns.length > 0) {
-      for (const copyBtn of copyBtns) {
-        copyBtn.addEventListener("click", function () {
-          copy(this.dataset.str);
-          window.toast("Copied to clipboard", 3000);
-        });
-      }
+      console.warn("Markdown renderer not available, falling back to plain text");
     }
 
     chat.append(...[profileImg, msg]);
@@ -1030,6 +1127,10 @@ case 'toggle-realtime':
     const responseBoxes = Array.from(document.querySelectorAll(".ai_message"));
     if (responseBoxes.length === 0) {
       console.error("No response box found");
+      // Create a response box if none exists
+      this.appendGptResponse("");
+      // Try again with the newly created box
+      setTimeout(() => this.getCliResponse(question), 100);
       return;
     }
     
@@ -1037,6 +1138,27 @@ case 'toggle-realtime':
     if (!targetElem) {
       console.error("Target element not found");
       return;
+    }
+
+    // Initialize markdown-it if not already initialized
+    if (!this.$mdIt && window.markdownit) {
+      this.$mdIt = window.markdownit({
+        html: false,
+        xhtmlOut: false,
+        breaks: true,
+        linkify: true,
+        typographer: true,
+        quotes: '""\'\'',
+        highlight: function (str, lang) {
+          const copyBtn = document.createElement("button");
+          copyBtn.classList.add("copy-button");
+          copyBtn.innerHTML = copyIconSvg;
+          copyBtn.setAttribute("data-str", str);
+          const codesArea = `<pre class="hljs codesArea"><code>${window.hljs ? window.hljs.highlightAuto(str).value : str}</code></pre>`;
+          const codeBlock = `<div class="codeBlock">${copyBtn.outerHTML}${codesArea}</div>`;
+          return codeBlock;
+        },
+      });
     }
 
     // Check cache first
@@ -1060,18 +1182,21 @@ case 'toggle-realtime':
           if (this.$mdIt && typeof this.$mdIt.render === 'function') {
             const renderedHtml = this.$mdIt.render(cachedResponse);
             targetElem.innerHTML = renderedHtml;
+            
+            // Add event listeners to copy buttons
+            setTimeout(() => {
+              const copyBtns = targetElem.querySelectorAll(".copy-button");
+              if (copyBtns && copyBtns.length > 0) {
+                for (const copyBtn of copyBtns) {
+                  copyBtn.addEventListener("click", function () {
+                    copy(this.dataset.str);
+                    window.toast("Copied to clipboard", 3000);
+                  });
+                }
+              }
+            }, 100);
           } else {
             targetElem.textContent = cachedResponse;
-          }
-          
-          const copyBtns = targetElem.querySelectorAll(".copy-button");
-          if (copyBtns && copyBtns.length > 0) {
-            for (const copyBtn of copyBtns) {
-              copyBtn.addEventListener("click", function () {
-                copy(this.dataset.str);
-                window.toast("Copied to clipboard", 3000);
-              });
-            }
           }
           
           this.$stopGenerationBtn.classList.add("hide");
@@ -1090,7 +1215,7 @@ case 'toggle-realtime':
     const prompt = ChatPromptTemplate.fromMessages([
       [
         "system",
-        `You are Renz AI CLI assistant for the open source plugin Renz Ai Cli for Acode code editor(open source vscode like code editor for Android). You help users with code editing, file operations, and AI-powered development tasks. You can read files, edit files, delete files, show diffs, search and replace across project files, and perform various coding tasks. Always be helpful and provide clear, actionable responses.`,
+        `You are Renz AI CLI assistant for the open source plugin Renz Ai Cli for Acode code editor(open source vscode like code editor for Android). You help users with code editing, file operations, and AI-powered development tasks. You can read files, edit files, delete files, show diffs, search and replace across project files, and perform various coding tasks. Always be helpful and provide clear, actionable responses. When asked to create files or edit code, provide complete, functional implementations.`,
       ],
       ["placeholder", "{chat_history}"],
       ["human", "{input}"],
@@ -1140,24 +1265,91 @@ case 'toggle-realtime':
     
     // Render markdown if available
     if (this.$mdIt && typeof this.$mdIt.render === 'function') {
-      const renderedHtml = this.$mdIt.render(result);
-      targetElem.innerHTML = renderedHtml;
+      try {
+        const renderedHtml = this.$mdIt.render(result);
+        targetElem.innerHTML = renderedHtml;
+        
+        // Add event listeners to copy buttons
+        setTimeout(() => {
+          const copyBtns = targetElem.querySelectorAll(".copy-button");
+          if (copyBtns && copyBtns.length > 0) {
+            for (const copyBtn of copyBtns) {
+              copyBtn.addEventListener("click", function () {
+                const codeText = this.dataset.str;
+                copy(codeText);
+                window.toast("Copied to clipboard", 3000);
+                
+                // Check if this is a complete file that could be created
+                if (question.toLowerCase().includes("create") || 
+                    question.toLowerCase().includes("generate") || 
+                    question.toLowerCase().includes("make a file")) {
+                  
+                  // Offer to create file from copied code
+                  setTimeout(() => {
+                    const createFile = confirm("Would you like to create a file with this code?");
+                    if (createFile) {
+                      const filename = prompt("Enter filename:", "", "text");
+                      if (filename) {
+                        fs(filename).writeFile(codeText)
+                          .then(() => {
+                            window.toast(`File created: ${filename}`, 3000);
+                            // Open the created file
+                            editorManager.openFile(filename);
+                          })
+                          .catch(err => {
+                            window.toast(`Error creating file: ${err.message}`, 3000);
+                          });
+                      }
+                    }
+                  }, 500);
+                }
+              });
+            }
+          }
+        }, 100);
+      } catch (renderError) {
+        console.error("Error rendering markdown:", renderError);
+        targetElem.textContent = result;
+      }
     } else {
       targetElem.textContent = result;
     }
     
-    const copyBtns = targetElem.querySelectorAll(".copy-button");
-    if (copyBtns && copyBtns.length > 0) {
-      for (const copyBtn of copyBtns) {
-        copyBtn.addEventListener("click", function () {
-          copy(this.dataset.str);
-          window.toast("Copied to clipboard", 3000);
-        });
-      }
-    }
-    
     this.$stopGenerationBtn.classList.add("hide");
     this.$sendBtn.classList.remove("hide");
+
+    // Check if the response contains code that could be used to create a file
+    if ((question.toLowerCase().includes("create") || 
+         question.toLowerCase().includes("generate") || 
+         question.toLowerCase().includes("make a file")) && 
+        result.includes("```")) {
+      
+      // Extract code blocks
+      const codeMatches = result.match(/```(?:\w+)?\s*([\s\S]*?)\s*```/g);
+      if (codeMatches && codeMatches.length > 0) {
+        // Get the first code block content
+        const codeContent = codeMatches[0].replace(/```(?:\w+)?\s*([\s\S]*?)\s*```/g, '$1').trim();
+        
+        // Offer to create file
+        setTimeout(() => {
+          const createFile = confirm("Would you like to create a file with the generated code?");
+          if (createFile) {
+            const filename = prompt("Enter filename:", "", "text");
+            if (filename) {
+              fs(filename).writeFile(codeContent)
+                .then(() => {
+                  window.toast(`File created: ${filename}`, 3000);
+                  // Open the created file
+                  editorManager.openFile(filename);
+                })
+                .catch(err => {
+                  window.toast(`Error creating file: ${err.message}`, 3000);
+                });
+            }
+          }
+        }, 1000);
+      }
+    }
 
     await this.saveHistory();
   } catch (error) {
@@ -1217,24 +1409,43 @@ case 'toggle-realtime':
       
       if (!description) return;
       
+      // Show loading indicator
+      const loadingToast = window.toast("Generating file based on your description...", 0);
+      
       const aiPrompt = `Based on this description: "${description}"
       
-      Suggest:
-      1. Appropriate filename with extension
-      2. Basic file structure/template
-      3. Initial content
+      Create:
+      1. Appropriate filename with extension (use descriptive names)
+      2. Complete file content based on the description
+      
+      The file should be fully functional and ready to use.
       
       Respond in JSON format:
       {
         "filename": "suggested_name.ext",
         "content": "file content here",
-        "explanation": "why this structure"
+        "explanation": "brief explanation of the file"
       }`;
       
       const response = await this.getAiResponse(aiPrompt);
       
+      // Hide loading indicator
+      if (loadingToast && typeof loadingToast.hide === 'function') {
+        loadingToast.hide();
+      }
+      
       try {
-        const suggestion = JSON.parse(response);
+        // Extract JSON from response if it's embedded in markdown
+        let jsonStr = response;
+        const jsonMatch = response.match(/```(?:json)?\s*(\{[\s\S]*?\})\s*```/);
+        if (jsonMatch && jsonMatch[1]) {
+          jsonStr = jsonMatch[1];
+        }
+        
+        // Parse the JSON response
+        const suggestion = JSON.parse(jsonStr);
+        
+        // Show confirmation dialog with the suggestion
         const confirmCreate = await multiPrompt("Create File", [
           {
             id: "filename",
@@ -1253,24 +1464,55 @@ case 'toggle-realtime':
         
         if (confirmCreate) {
           const fullPath = basePath ? `${basePath}/${confirmCreate.filename}` : confirmCreate.filename;
+          
+          // Create the file
           await fs(fullPath).writeFile(confirmCreate.content);
           window.toast(`File created: ${confirmCreate.filename}`, 3000);
           
-          // Open the created file
-          editorManager.addNewFile(confirmCreate.filename, {
-            text: confirmCreate.content
-          });
+          // Close the AI assistant page if it's open
+          if (this.$page && this.$page.isVisible) {
+            this.$page.hide();
+          }
+          
+          // Open the created file in the editor
+          const openedFile = await editorManager.openFile(fullPath);
+          if (!openedFile) {
+            // Fallback if direct opening fails
+            editorManager.addNewFile(confirmCreate.filename, {
+              text: confirmCreate.content
+            });
+          }
         }
       } catch (parseError) {
-        // Fallback if JSON parsing fails
-        const filename = await prompt("Enter filename:", "", "text", { required: true });
+        console.error("Error parsing AI response:", parseError);
+        
+        // Extract code blocks if JSON parsing fails
+        const codeMatch = response.match(/```(?:\w+)?\s*([\s\S]*?)\s*```/);
+        const extractedContent = codeMatch ? codeMatch[1] : response;
+        
+        // Fallback to manual filename input
+        const filename = await prompt("Enter filename for the generated content:", "", "text", { required: true });
         if (filename) {
           const fullPath = basePath ? `${basePath}/${filename}` : filename;
-          await fs(fullPath).writeFile(response);
+          await fs(fullPath).writeFile(extractedContent);
           window.toast(`File created: ${filename}`, 3000);
+          
+          // Close the AI assistant page if it's open
+          if (this.$page && this.$page.isVisible) {
+            this.$page.hide();
+          }
+          
+          // Open the created file
+          const openedFile = await editorManager.openFile(fullPath);
+          if (!openedFile) {
+            editorManager.addNewFile(filename, {
+              text: extractedContent
+            });
+          }
         }
       }
     } catch (error) {
+      console.error("Error in createFileWithAI:", error);
       window.toast(`Error creating file: ${error.message}`, 3000);
     }
   }
@@ -1521,34 +1763,133 @@ case 'toggle-realtime':
 
   async showFileDiff(originalContent, newContent, filename) {
     /*
-    Show diff between original and new content
+    Show diff between original and new content with enhanced visualization
     */
     try {
-      // Simple diff implementation
+      // Improved diff implementation
       const originalLines = originalContent.split('\n');
       const newLines = newContent.split('\n');
-      let diffHtml = `<div class="diff-container"><h4>Changes in ${filename}:</h4>`;
       
+      // Create header with file info
+      let diffHtml = `
+        <div class="diff-container">
+          <div class="diff-header">
+            <h4>Changes in ${filename}</h4>
+            <div class="diff-stats">
+              <span class="diff-summary">Showing changes from ${originalLines.length} to ${newLines.length} lines</span>
+            </div>
+          </div>
+          <div class="diff-content">
+      `;
+      
+      // Track consecutive unchanged lines for collapsing
+      let unchangedCount = 0;
+      let unchangedBuffer = [];
+      const contextLines = 3; // Number of context lines to show around changes
+      
+      // Function to flush unchanged lines with context
+      const flushUnchanged = () => {
+        if (unchangedCount <= contextLines * 2) {
+          // If small number of unchanged lines, show all
+          unchangedBuffer.forEach(line => {
+            diffHtml += line;
+          });
+        } else {
+          // Show only context lines at beginning and end
+          for (let i = 0; i < contextLines; i++) {
+            diffHtml += unchangedBuffer[i];
+          }
+          
+          // Add collapse indicator
+          diffHtml += `<div class="diff-collapse">... ${unchangedCount - (contextLines * 2)} more unchanged lines ...</div>`;
+          
+          // Show context lines at end
+          for (let i = unchangedBuffer.length - contextLines; i < unchangedBuffer.length; i++) {
+            diffHtml += unchangedBuffer[i];
+          }
+        }
+        
+        unchangedCount = 0;
+        unchangedBuffer = [];
+      };
+      
+      // Enhanced diff algorithm with context
       const maxLines = Math.max(originalLines.length, newLines.length);
+      let hasChanges = false;
       
       for (let i = 0; i < maxLines; i++) {
         const origLine = originalLines[i] || '';
         const newLine = newLines[i] || '';
         
+        // Escape HTML to prevent rendering issues
+        const escapeHtml = (text) => {
+          return text
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
+        };
+        
+        const escapedOrigLine = escapeHtml(origLine);
+        const escapedNewLine = escapeHtml(newLine);
+        
         if (origLine !== newLine) {
-          if (origLine && newLine) {
-            diffHtml += `<div class="diff-line modified"><span class="line-num">${i + 1}</span><span class="old-line">- ${origLine}</span><span class="new-line">+ ${newLine}</span></div>`;
-          } else if (origLine && !newLine) {
-            diffHtml += `<div class="diff-line deleted"><span class="line-num">${i + 1}</span><span class="old-line">- ${origLine}</span></div>`;
-          } else if (!origLine && newLine) {
-            diffHtml += `<div class="diff-line added"><span class="line-num">${i + 1}</span><span class="new-line">+ ${newLine}</span></div>`;
+          // Flush any accumulated unchanged lines before showing changes
+          if (unchangedCount > 0) {
+            flushUnchanged();
           }
+          
+          hasChanges = true;
+          
+          if (origLine && newLine) {
+            // Modified line
+            diffHtml += `<div class="diff-line modified">
+              <span class="line-num">${i + 1}</span>
+              <span class="old-line">- ${escapedOrigLine}</span>
+              <span class="new-line">+ ${escapedNewLine}</span>
+            </div>`;
+          } else if (origLine && !newLine) {
+            // Deleted line
+            diffHtml += `<div class="diff-line deleted">
+              <span class="line-num">${i + 1}</span>
+              <span class="old-line">- ${escapedOrigLine}</span>
+            </div>`;
+          } else if (!origLine && newLine) {
+            // Added line
+            diffHtml += `<div class="diff-line added">
+              <span class="line-num">${i + 1}</span>
+              <span class="new-line">+ ${escapedNewLine}</span>
+            </div>`;
+          }
+        } else {
+          // Unchanged line - accumulate for potential collapsing
+          unchangedCount++;
+          unchangedBuffer.push(`<div class="diff-line unchanged">
+            <span class="line-num">${i + 1}</span>
+            <span class="unchanged-line">${escapedOrigLine}</span>
+          </div>`);
         }
       }
       
-      diffHtml += '</div>';
+      // Flush any remaining unchanged lines
+      if (unchangedCount > 0) {
+        flushUnchanged();
+      }
+      
+      // If no changes detected, show a message
+      if (!hasChanges) {
+        diffHtml += `<div class="diff-no-changes">No changes detected</div>`;
+      }
+      
+      diffHtml += `
+          </div>
+        </div>
+      `;
+      
       return diffHtml;
     } catch (error) {
+      console.error("Error generating diff:", error);
       return `<div class="error">Error showing diff: ${error.message}</div>`;
     }
   }
@@ -1951,32 +2292,72 @@ case 'toggle-realtime':
     
     const currentContent = editor.getValue();
     const selection = editor.getSelectedText();
+    const fileExtension = activeFile.name.split('.').pop();
     
     let aiPrompt;
     if (selection) {
-      aiPrompt = `Here's the selected code:\n\`\`\`\n${selection}\n\`\`\`\n\nUser request: ${userPrompt}\n\nPlease provide the improved/edited version of just the selected code.`;
+      aiPrompt = `Here's the selected code to edit:\n\`\`\`${fileExtension}\n${selection}\n\`\`\`\n\nUser request: "${userPrompt}"\n\nPlease provide the improved/edited version of just the selected code. Make sure your changes are complete and functional. Return ONLY the edited code without any explanations or markdown formatting.`;
     } else {
-      aiPrompt = `Here's the full file content:\n\`\`\`\n${currentContent}\n\`\`\`\n\nUser request: ${userPrompt}\n\nPlease provide the complete improved file.`;
+      aiPrompt = `Here's the full file content to edit:\n\`\`\`${fileExtension}\n${currentContent}\n\`\`\`\n\nUser request: "${userPrompt}"\n\nPlease provide the complete improved file. Make sure your changes are complete and functional. Return ONLY the edited code without any explanations or markdown formatting.`;
     }
     
     const response = await this.getAiResponse(aiPrompt);
     
     if (response) {
-      // Extract code from response
-      const codeMatch = response.match(/```[\w]*\n([\s\S]*?)\n```/);
-      const newCode = codeMatch ? codeMatch[1] : response;
+      // Extract code from response, handling various formats
+      let newCode = response;
+      
+      // Try to extract code from markdown code blocks
+      const codeMatch = response.match(/```(?:\w+)?\s*([\s\S]*?)\s*```/);
+      if (codeMatch && codeMatch[1]) {
+        newCode = codeMatch[1];
+      } else {
+        // If no code block found, try to remove any explanations or markdown
+        const lines = response.split('\n');
+        const codeLines = lines.filter(line => 
+          !line.startsWith('#') && 
+          !line.startsWith('>') && 
+          !line.match(/^[0-9]+\.\s/) &&
+          !line.match(/^\*\s/)
+        );
+        newCode = codeLines.join('\n');
+      }
       
       // Show diff before applying
       const shouldApply = await this.showEditDiff(selection || currentContent, newCode, activeFile.name);
       
       if (shouldApply) {
         if (selection) {
-          editor.replaceSelection(newCode);
+          // Replace just the selected text
+          const currentPos = editor.getCursorPosition();
+          editor.session.replace(editor.selection.getRange(), newCode);
+          
+          // Try to maintain cursor position
+          editor.moveCursorToPosition(currentPos);
         } else {
-          editor.setValue(newCode);
+          // Replace entire file content
+          const currentPos = editor.getCursorPosition();
+          const scrollTop = editor.session.getScrollTop();
+          
+          editor.setValue(newCode, -1); // -1 to keep undo history
+          
+          // Restore cursor and scroll position
+          editor.moveCursorToPosition(currentPos);
+          editor.session.setScrollTop(scrollTop);
         }
         
-        window.toast("Code updated successfully!", 3000);
+        // Save the file if it exists on disk
+        if (activeFile.uri) {
+          try {
+            await fs(activeFile.uri).writeFile(editor.getValue());
+            window.toast("File updated and saved successfully!", 3000);
+          } catch (saveError) {
+            console.error("Error saving file:", saveError);
+            window.toast("Code updated but couldn't save file", 3000);
+          }
+        } else {
+          window.toast("Code updated successfully!", 3000);
+        }
       }
     } else {
       throw new Error("No response from AI");
@@ -1993,55 +2374,214 @@ case 'toggle-realtime':
 
 
   async showEditDiff(originalCode, newCode, filename) {
+    // Generate diff HTML
     const diffHtml = await this.showFileDiff(originalCode, newCode, filename);
     
+    // Create a modal dialog for the diff viewer
     const dialog = tag("div", {
-      className: "ai-edit-popup"
+      className: "ai-edit-popup",
+      style: `
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 90%;
+        max-width: 800px;
+        max-height: 80vh;
+        background: var(--primary-color);
+        color: var(--primary-text-color);
+        border-radius: 8px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        z-index: 1000;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+      `
+    });
+    
+    // Create a semi-transparent backdrop
+    const backdrop = tag("div", {
+      style: `
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 999;
+      `
     });
     
     const header = tag("div", {
-      className: "ai-edit-popup-header"
+      className: "ai-edit-popup-header",
+      style: `
+        padding: 15px;
+        border-bottom: 1px solid var(--border-color);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      `
     });
     
     const title = tag("div", {
       className: "ai-edit-popup-title",
-      textContent: "Review Changes"
+      textContent: `Review Changes: ${filename}`,
+      style: `
+        font-size: 18px;
+        font-weight: bold;
+      `
     });
     
-    header.appendChild(title);
+    const closeBtn = tag("button", {
+      innerHTML: "×",
+      style: `
+        background: none;
+        border: none;
+        font-size: 24px;
+        cursor: pointer;
+        color: var(--primary-text-color);
+      `
+    });
+    
+    header.append(title, closeBtn);
     
     const body = tag("div", {
       className: "ai-edit-popup-body",
-      innerHTML: diffHtml
+      innerHTML: diffHtml,
+      style: `
+        padding: 15px;
+        overflow-y: auto;
+        flex: 1;
+      `
     });
     
+    // Add custom styles for diff display
+    const diffStyles = tag("style", {
+      textContent: `
+        .diff-container {
+          font-family: monospace;
+          white-space: pre-wrap;
+          word-break: break-all;
+        }
+        .diff-line {
+          padding: 2px 5px;
+          margin: 2px 0;
+          border-radius: 3px;
+          position: relative;
+        }
+        .diff-line.added {
+          background-color: rgba(0, 255, 0, 0.1);
+          border-left: 3px solid #4CAF50;
+        }
+        .diff-line.deleted {
+          background-color: rgba(255, 0, 0, 0.1);
+          border-left: 3px solid #F44336;
+        }
+        .diff-line.modified {
+          background-color: rgba(255, 165, 0, 0.1);
+          border-left: 3px solid #FF9800;
+        }
+        .line-num {
+          display: inline-block;
+          width: 40px;
+          color: #888;
+          user-select: none;
+        }
+        .old-line {
+          display: block;
+          color: #F44336;
+          text-decoration: line-through;
+          margin-bottom: 5px;
+        }
+        .new-line {
+          display: block;
+          color: #4CAF50;
+        }
+      `
+    });
+    
+    document.head.appendChild(diffStyles);
+    
     const actions = tag("div", {
-      className: "ai-edit-actions"
+      className: "ai-edit-actions",
+      style: `
+        padding: 15px;
+        border-top: 1px solid var(--border-color);
+        display: flex;
+        justify-content: flex-end;
+        gap: 10px;
+      `
     });
     
     const cancelBtn = tag("button", {
       className: "ai-edit-btn secondary",
-      textContent: "Cancel"
+      textContent: "Cancel",
+      style: `
+        padding: 8px 16px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        background: var(--secondary-color);
+        color: var(--secondary-text-color);
+      `
     });
     
     const applyBtn = tag("button", {
       className: "ai-edit-btn primary",
-      textContent: "Apply Changes"
+      textContent: "Apply Changes",
+      style: `
+        padding: 8px 16px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        background: var(--accent-color);
+        color: var(--accent-text-color);
+        font-weight: bold;
+      `
     });
     
     actions.append(cancelBtn, applyBtn);
     dialog.append(header, body, actions);
-    document.body.appendChild(dialog);
+    document.body.append(backdrop, dialog);
+    
+    // Add event listeners for keyboard navigation
+    const handleKeyDown = (e) => {
+      if (e.key === "Escape") {
+        document.body.removeChild(dialog);
+        document.body.removeChild(backdrop);
+        document.removeEventListener("keydown", handleKeyDown);
+        resolve(false);
+      } else if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
+        document.body.removeChild(dialog);
+        document.body.removeChild(backdrop);
+        document.removeEventListener("keydown", handleKeyDown);
+        resolve(true);
+      }
+    };
+    
+    document.addEventListener("keydown", handleKeyDown);
     
     return new Promise((resolve) => {
-      cancelBtn.onclick = () => {
+      closeBtn.onclick = cancelBtn.onclick = () => {
         document.body.removeChild(dialog);
+        document.body.removeChild(backdrop);
+        document.removeEventListener("keydown", handleKeyDown);
         resolve(false);
       };
       
       applyBtn.onclick = () => {
         document.body.removeChild(dialog);
+        document.body.removeChild(backdrop);
+        document.removeEventListener("keydown", handleKeyDown);
         resolve(true);
+      };
+      
+      // Close when clicking on backdrop
+      backdrop.onclick = () => {
+        document.body.removeChild(dialog);
+        document.body.removeChild(backdrop);
+        document.removeEventListener("keydown", handleKeyDown);
+        resolve(false);
       };
     });
   }
