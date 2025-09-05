@@ -1,3 +1,4 @@
+
 import plugin from "../plugin.json";
 import style from "./style.scss";
 
@@ -117,7 +118,7 @@ class AIAssistant {
           window.toast("Please select some code first", 3000);
         }
       }
-    }, "✨", 'all');
+    }, "âœ¨", 'all');
 
     $page.id = "acode-ai-assistant";
     $page.settitle("AI Assistant");
@@ -460,24 +461,6 @@ case 'toggle-realtime':
   
   async run() {
     try {
-      // Initialize markdown-it with simple pattern like main.js
-      this.$mdIt = window.markdownit({
-        html: false,
-        xhtmlOut: false,
-        breaks: false,
-        linkify: false,
-        typographer: false,
-        quotes: '""\'\'',
-        highlight: function (str, lang) {
-          const copyBtn = document.createElement("button");
-          copyBtn.classList.add("copy-button");
-          copyBtn.innerHTML = copyIconSvg;
-          copyBtn.setAttribute("data-str", str);
-          const codesArea = `<pre class="hljs codesArea"><code>${hljs.highlightAuto(str).value}</code></pre>`;
-          const codeBlock = `<div class="codeBlock">${copyBtn.outerHTML}${codesArea}</div>`;
-          return codeBlock;
-        },
-      });
       
       // Authentication and API key handling
       let passPhrase;
@@ -529,7 +512,7 @@ case 'toggle-realtime':
           providerNme = OPENAI_LIKE;
           await fs(window.DATA_STORAGE).createFile("secret.key", passPhrase);
           await this.apiKeyManager.saveAPIKey(OPENAI_LIKE, token);
-          window.toast("Configuration saved 🎉", 3000);
+          window.toast("Configuration saved ðŸŽ‰", 3000);
         } 
         // Handle other providers
         else {
@@ -556,14 +539,32 @@ case 'toggle-realtime':
           token = apiKey;
           await fs(window.DATA_STORAGE).createFile("secret.key", passPhrase);
           await this.apiKeyManager.saveAPIKey(providerNme, token);
-          window.toast("Configuration saved 🎉", 3000);
+          window.toast("Configuration saved ðŸŽ‰", 3000);
         }
       }
 
       let model = window.localStorage.getItem("ai-assistant-model-name");
       this.initiateModel(providerNme, token, model);
 
-      
+      // Initialize markdown-it after all setup is done (like main.js)
+      this.$mdIt = window.markdownit({
+        html: false,
+        xhtmlOut: false,
+        breaks: false,
+        linkify: false,
+        typographer: false,
+        quotes: '""\'\'',
+        highlight: function (str, lang) {
+          const copyBtn = document.createElement("button");
+          copyBtn.classList.add("copy-button");
+          copyBtn.innerHTML = copyIconSvg;
+          copyBtn.setAttribute("data-str", str);
+          const codesArea = `<pre class="hljs codesArea"><code>${hljs.highlightAuto(str).value}</code></pre>`;
+          const codeBlock = `<div class="codeBlock">${copyBtn.outerHTML}${codesArea}</div>`;
+          return codeBlock;
+        },
+      });
+
       // Add keyboard shortcut for sending messages
       this.$chatTextarea.addEventListener("keydown", (e) => {
         if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
@@ -775,7 +776,7 @@ case 'toggle-realtime':
             .substring(
               0,
               25,
-            )}...</p><div><button class="delete-history-btn" style="height:25px;width:25px;border:none;padding:5px;outline:none;border-radius:50%;background:var(--error-text-color);text-align:center;">✗</button></div>
+            )}...</p><div><button class="delete-history-btn" style="height:25px;width:25px;border:none;padding:5px;outline:none;border-radius:50%;background:var(--error-text-color);text-align:center;">âœ—</button></div>
                 </li>`;
       }
       return elems;
@@ -1292,9 +1293,9 @@ case 'toggle-realtime':
     // made change in last element
     if (loadingDots.length != 0) {
       this.$loadInterval = setInterval(() => {
-        loadingDots[loadingDots.length - 1].innerText += "•";
-        if (loadingDots[loadingDots.length - 1].innerText == "••••••") {
-          loadingDots[loadingDots.length - 1].innerText = "•";
+        loadingDots[loadingDots.length - 1].innerText += "â€¢";
+        if (loadingDots[loadingDots.length - 1].innerText == "â€¢â€¢â€¢â€¢â€¢â€¢") {
+          loadingDots[loadingDots.length - 1].innerText = "â€¢";
         }
       }, 300);
     }
@@ -2334,7 +2335,7 @@ case 'toggle-realtime':
     });
     
     const closeBtn = tag("button", {
-      innerHTML: "×",
+      innerHTML: "Ã—",
       style: `
         background: none;
         border: none;
@@ -2557,7 +2558,7 @@ case 'toggle-realtime':
   
   const closeBtn = tag("button", {
     className: "ai-edit-popup-close",
-    innerHTML: "×"
+    innerHTML: "Ã—"
   });
   
   header.append(title, closeBtn);
@@ -2862,7 +2863,7 @@ case 'toggle-realtime':
   this.realTimeEnabled = !this.realTimeEnabled;
   
   if (this.realTimeEnabled) {
-    window.toast("Real-time AI Assistant enabled ✨", 3000);
+    window.toast("Real-time AI Assistant enabled âœ¨", 3000);
     this.showRealTimeStatus(true);
     this.analyzeCurrentFile();
   } else {
@@ -2878,7 +2879,7 @@ showRealTimeStatus(enabled) {
   const statusElement = document.querySelector('.realtime-ai-status') || 
     tag("div", { className: "realtime-ai-status" });
   
-  statusElement.textContent = enabled ? "🤖 AI Active" : "";
+  statusElement.textContent = enabled ? "ðŸ¤– AI Active" : "";
   statusElement.style.cssText = `
     position: fixed;
     top: 10px;
@@ -3064,7 +3065,7 @@ showMissingImports(imports) {
   });
   
   const closeBtn = tag("button", {
-    textContent: "×",
+    textContent: "Ã—",
     style: `
       position: absolute;
       top: 5px;
