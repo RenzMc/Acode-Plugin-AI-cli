@@ -550,7 +550,7 @@ case 'toggle-realtime':
         breaks: false,
         linkify: false,
         typographer: false,
-        quotes: """''",
+        quotes: "â€œâ€â€˜â€™",
         highlight: function (str, lang) {
           const copyBtn = document.createElement("button");
           copyBtn.classList.add("copy-button");
