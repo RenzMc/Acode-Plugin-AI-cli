@@ -446,8 +446,6 @@ case 'toggle-realtime':
     mainApp.append(this.$inputBox, this.$chatBox);
     this.$page.append(mainApp);
     
-    // Add critical send button event listener (was missing!)
-    this.$sendBtn.addEventListener("click", this.sendQuery.bind(this));
     
     // Setup real-time AI features after UI elements are created
     this.setupRealTimeAI();
@@ -544,26 +542,28 @@ case 'toggle-realtime':
       }
 
       let model = window.localStorage.getItem("ai-assistant-model-name");
-      this.initiateModel(providerNme, token, model);
 
-      // Initialize markdown-it after all setup is done (like main.js)
+      this.initiateModel(providerNme, token, model)
       this.$mdIt = window.markdownit({
         html: false,
         xhtmlOut: false,
         breaks: false,
         linkify: false,
         typographer: false,
-        quotes: '""\'\'',
+        quotes: """''",
         highlight: function (str, lang) {
           const copyBtn = document.createElement("button");
           copyBtn.classList.add("copy-button");
           copyBtn.innerHTML = copyIconSvg;
           copyBtn.setAttribute("data-str", str);
-          const codesArea = `<pre class="hljs codesArea"><code>${hljs.highlightAuto(str).value}</code></pre>`;
+          const codesArea = `<pre class="hljs codesArea"><code>${hljs.highlightAuto(str).value
+            }</code></pre>`;
           const codeBlock = `<div class="codeBlock">${copyBtn.outerHTML}${codesArea}</div>`;
           return codeBlock;
         },
       });
+
+      this.$sendBtn.addEventListener("click", this.sendQuery.bind(this));
 
       // Add keyboard shortcut for sending messages
       this.$chatTextarea.addEventListener("keydown", (e) => {
