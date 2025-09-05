@@ -1,4 +1,3 @@
-
 import plugin from "../plugin.json";
 import style from "./style.scss";
 
@@ -544,24 +543,7 @@ case 'toggle-realtime':
       let model = window.localStorage.getItem("ai-assistant-model-name");
 
       this.initiateModel(providerNme, token, model)
-      this.$mdIt = window.markdownit({
-        html: false,
-        xhtmlOut: false,
-        breaks: false,
-        linkify: false,
-        typographer: false,
-        quotes: "â€œâ€â€˜â€™",
-        highlight: function (str, lang) {
-          const copyBtn = document.createElement("button");
-          copyBtn.classList.add("copy-button");
-          copyBtn.innerHTML = copyIconSvg;
-          copyBtn.setAttribute("data-str", str);
-          const codesArea = `<pre class="hljs codesArea"><code>${hljs.highlightAuto(str).value
-            }</code></pre>`;
-          const codeBlock = `<div class="codeBlock">${copyBtn.outerHTML}${codesArea}</div>`;
-          return codeBlock;
-        },
-      });
+      this.initializeMarkdown();
 
       this.$sendBtn.addEventListener("click", this.sendQuery.bind(this));
 
@@ -945,9 +927,6 @@ case 'toggle-realtime':
   }
 
   async appendGptResponse(message) {
-  /*
-  add ai response to ui
-  */
   try {
     // Initialize markdown-it if not already initialized
     if (!this.$mdIt && window.markdownit) {
@@ -1035,32 +1014,11 @@ case 'toggle-realtime':
       setTimeout(() => this.getCliResponse(question), 100);
       return;
     }
-    
+
     const targetElem = responseBoxes[responseBoxes.length - 1];
     if (!targetElem) {
       console.error("Target element not found");
       return;
-    }
-
-    // Initialize markdown-it if not already initialized
-    if (!this.$mdIt && window.markdownit) {
-      this.$mdIt = window.markdownit({
-        html: false,
-        xhtmlOut: false,
-        breaks: true,
-        linkify: true,
-        typographer: true,
-        quotes: '""\'\'',
-        highlight: function (str, lang) {
-          const copyBtn = document.createElement("button");
-          copyBtn.classList.add("copy-button");
-          copyBtn.innerHTML = copyIconSvg;
-          copyBtn.setAttribute("data-str", str);
-          const codesArea = `<pre class="hljs codesArea"><code>${window.hljs ? window.hljs.highlightAuto(str).value : str}</code></pre>`;
-          const codeBlock = `<div class="codeBlock">${copyBtn.outerHTML}${codesArea}</div>`;
-          return codeBlock;
-        },
-      });
     }
 
     // Check cache first
@@ -1069,7 +1027,7 @@ case 'toggle-realtime':
       clearInterval(this.$loadInterval);
       this.$sendBtn.classList.add("hide");
       this.$stopGenerationBtn.classList.remove('hide');
-      
+
       // Simulate streaming for cached response
       targetElem.innerHTML = "";
       let index = 0;
@@ -1084,7 +1042,7 @@ case 'toggle-realtime':
           if (this.$mdIt && typeof this.$mdIt.render === 'function') {
             const renderedHtml = this.$mdIt.render(cachedResponse);
             targetElem.innerHTML = renderedHtml;
-            
+
             // Add event listeners to copy buttons
             setTimeout(() => {
               const copyBtns = targetElem.querySelectorAll(".copy-button");
@@ -1100,7 +1058,7 @@ case 'toggle-realtime':
           } else {
             targetElem.textContent = cachedResponse;
           }
-          
+
           this.$stopGenerationBtn.classList.add("hide");
           this.$sendBtn.classList.remove("hide");
           window.toast("Response from cache", 1500);
@@ -1122,7 +1080,7 @@ case 'toggle-realtime':
       ["placeholder", "{chat_history}"],
       ["human", "{input}"],
     ]);
-    
+
     const parser = new StringOutputParser();
     const chain = prompt.pipe(this.modelInstance).pipe(parser);
 
@@ -1133,7 +1091,7 @@ case 'toggle-realtime':
           this.messageHistories[sessionId] = new InMemoryChatMessageHistory();
         } else {
           let history = await this.messageHistories[sessionId].getMessages();
-          this.messageHistories[sessionId].addMessages(history.slice(-6))
+          this.messageHistories[sessionId].addMessages(history.slice(-6));
         }
         return this.messageHistories[sessionId];
       },
@@ -1151,26 +1109,26 @@ case 'toggle-realtime':
 
     clearInterval(this.$loadInterval);
     this.$sendBtn.classList.add("hide");
-    this.$stopGenerationBtn.classList.remove('hide');
-    
+    this.$stopGenerationBtn.classList.remove("hide");
+
     targetElem.innerHTML = "";
     let result = "";
-    
+
     for await (const chunk of stream) {
       result += chunk;
       targetElem.textContent += chunk;
       this.scrollToBottom();
     }
-    
+
     // Cache the response
     this.setCachedResponse(question, result);
-    
+
     // Render markdown if available
     if (this.$mdIt && typeof this.$mdIt.render === 'function') {
       try {
         const renderedHtml = this.$mdIt.render(result);
         targetElem.innerHTML = renderedHtml;
-        
+
         // Add event listeners to copy buttons
         setTimeout(() => {
           const copyBtns = targetElem.querySelectorAll(".copy-button");
@@ -1180,12 +1138,12 @@ case 'toggle-realtime':
                 const codeText = this.dataset.str;
                 copy(codeText);
                 window.toast("Copied to clipboard", 3000);
-                
+
                 // Check if this is a complete file that could be created
-                if (question.toLowerCase().includes("create") || 
-                    question.toLowerCase().includes("generate") || 
+                if (question.toLowerCase().includes("create") ||
+                    question.toLowerCase().includes("generate") ||
                     question.toLowerCase().includes("make a file")) {
-                  
+
                   // Offer to create file from copied code
                   setTimeout(() => {
                     const createFile = confirm("Would you like to create a file with this code?");
@@ -1216,22 +1174,22 @@ case 'toggle-realtime':
     } else {
       targetElem.textContent = result;
     }
-    
+
     this.$stopGenerationBtn.classList.add("hide");
     this.$sendBtn.classList.remove("hide");
 
     // Check if the response contains code that could be used to create a file
-    if ((question.toLowerCase().includes("create") || 
-         question.toLowerCase().includes("generate") || 
-         question.toLowerCase().includes("make a file")) && 
+    if ((question.toLowerCase().includes("create") ||
+         question.toLowerCase().includes("generate") ||
+         question.toLowerCase().includes("make a file")) &&
         result.includes("```")) {
-      
+
       // Extract code blocks
       const codeMatches = result.match(/```(?:\w+)?\s*([\s\S]*?)\s*```/g);
       if (codeMatches && codeMatches.length > 0) {
         // Get the first code block content
         const codeContent = codeMatches[0].replace(/```(?:\w+)?\s*([\s\S]*?)\s*```/g, '$1').trim();
-        
+
         // Offer to create file
         setTimeout(() => {
           const createFile = confirm("Would you like to create a file with the generated code?");
@@ -1256,16 +1214,16 @@ case 'toggle-realtime':
     await this.saveHistory();
   } catch (error) {
     console.error("Error in getCliResponse:", error);
-    
+
     const responseBoxes = Array.from(document.querySelectorAll(".ai_message"));
     clearInterval(this.$loadInterval);
-    
+
     if (responseBoxes.length > 0) {
       const targetElem = responseBoxes[responseBoxes.length - 1];
       if (targetElem) {
         targetElem.innerHTML = "";
         const $errorBox = tag("div", { className: "error-box" });
-        
+
         if (error.response) {
           $errorBox.innerText = `Status code: ${error.response.status}\n${JSON.stringify(error.response.data)}`;
         } else {
@@ -1274,7 +1232,7 @@ case 'toggle-realtime':
         targetElem.appendChild($errorBox);
       }
     }
-    
+
     this.$stopGenerationBtn.classList.add("hide");
     this.$sendBtn.classList.remove("hide");
   }
@@ -2769,6 +2727,29 @@ case 'toggle-realtime':
     }
   }
   
+  initializeMarkdown() {
+  if (!this.$mdIt && window.markdownit) {
+    this.$mdIt = window.markdownit({
+      html: false,
+      xhtmlOut: false,
+      breaks: true,
+      linkify: true,
+      typographer: true,
+      quotes: '""\'\'',
+      highlight: function (str, lang) {
+        const copyBtn = document.createElement("button");
+        copyBtn.classList.add("copy-button");
+        copyBtn.innerHTML = copyIconSvg;
+        copyBtn.setAttribute("data-str", str);
+        const codesArea = `<pre class="hljs codesArea"><code>${window.hljs ? window.hljs.highlightAuto(str).value : str}</code></pre>`;
+        const codeBlock = `<div class="codeBlock">${copyBtn.outerHTML}${codesArea}</div>`;
+        return codeBlock;
+      },
+    });
+  }
+  return this.$mdIt;
+}
+
   async rewriteCodeWithChat(selectedText) {
   if (!this.$page.isVisible) {
     await this.run();
@@ -3116,28 +3097,6 @@ addImportToFile(importStatement) {
   window.toast(`Added import: ${importStatement}`, 2000);
 }
 
-createSuggestionWidget() {
-  this.suggestionWidget = tag("div", {
-    className: "ai-suggestion-widget",
-    style: `
-      position: absolute;
-      background: #1e1e1e;
-      border: 1px solid #444;
-      border-radius: 4px;
-      padding: 8px;
-      max-width: 400px;
-      z-index: 1000;
-      display: none;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.3);
-      color: #fff;
-      font-family: monospace;
-      font-size: 12px;
-    `
-  });
-  
-  document.body.appendChild(this.suggestionWidget);
-}
-
 showContextualSuggestions() {
   const cursorPos = editor.getCursorPosition();
   const screenPos = editor.renderer.textToScreenCoordinates(cursorPos.row, cursorPos.column);
@@ -3185,19 +3144,6 @@ showContextualSuggestions() {
   }
 }
 
-applySuggestion(suggestion) {
-  if (typeof suggestion === 'string') {
-    editor.insert(suggestion);
-  } else if (suggestion.type === 'completion') {
-    editor.insert(suggestion.text);
-  } else if (suggestion.type === 'replacement') {
-    const range = suggestion.range || editor.getSelectionRange();
-    editor.session.replace(range, suggestion.text);
-  }
-  
-  window.toast("Applied AI suggestion", 1500);
-}
-
 hideSuggestionWidget() {
   if (this.suggestionWidget) {
     this.suggestionWidget.style.display = 'none';
@@ -3222,6 +3168,426 @@ getRealTimeCacheKey(content, cursorPos) {
   return `realtime_${contentHash}_${cursorPos.row}_${cursorPos.column}`;
 }
 
+createSuggestionWidget() {
+  if (this.suggestionWidget) {
+    this.suggestionWidget.remove();
+  }
+  
+  this.suggestionWidget = tag("div", {
+    className: "ai-suggestion-widget"
+  });
+  
+  document.body.appendChild(this.suggestionWidget);
+  return this.suggestionWidget;
+}
+
+showCodeSuggestions(suggestions) {
+  try {
+    if (!suggestions || suggestions.length === 0) {
+      if (this.suggestionWidget) {
+        this.suggestionWidget.style.display = 'none';
+      }
+      return;
+    }
+    
+    if (!this.suggestionWidget) {
+      this.createSuggestionWidget();
+    }
+    
+    // Clear previous suggestions
+    this.suggestionWidget.innerHTML = '';
+    
+    // Create header
+    const header = tag("div", {
+      className: "suggestion-header",
+      textContent: "💡 AI Suggestions"
+    });
+    
+    this.suggestionWidget.appendChild(header);
+    
+    // Create suggestion items
+    suggestions.forEach((suggestion, index) => {
+      const item = tag("div", {
+        className: "suggestion-item"
+      });
+      
+      const title = tag("div", {
+        className: "suggestion-title",
+        textContent: suggestion.title || `Suggestion ${index + 1}`
+      });
+      
+      const description = tag("div", {
+        className: "suggestion-description",
+        textContent: suggestion.description || suggestion.text
+      });
+      
+      item.append(title, description);
+      
+      // Add click handler
+      item.addEventListener('click', () => {
+        this.applySuggestion(suggestion);
+        this.suggestionWidget.style.display = 'none';
+      });
+      
+      this.suggestionWidget.appendChild(item);
+    });
+    
+    // Position and show widget
+    this.positionSuggestionWidget();
+    this.suggestionWidget.style.display = 'block';
+    
+  } catch (error) {
+    console.error('Error showing code suggestions:', error);
+  }
+}
+
+showAutoComplete(completions) {
+  try {
+    if (!completions || completions.length === 0) {
+      if (this.suggestionWidget) {
+        this.suggestionWidget.style.display = 'none';
+      }
+      return;
+    }
+    
+    if (!this.suggestionWidget) {
+      this.createSuggestionWidget();
+    }
+    
+    // Clear previous content
+    this.suggestionWidget.innerHTML = '';
+    
+    // Create header
+    const header = tag("div", {
+      className: "autocomplete-header",
+      textContent: "🔍 Auto Complete"
+    });
+    
+    this.suggestionWidget.appendChild(header);
+    
+    // Create completion items
+    completions.forEach((completion, index) => {
+      const item = tag("div", {
+        className: "completion-item"
+      });
+      
+      // Add icon based on completion type
+      const icon = tag("span", {
+        className: "completion-icon",
+        textContent: this.getCompletionIcon(completion.type || 'text')
+      });
+      
+      const content = tag("div", {
+        className: "completion-content"
+      });
+      
+      const label = tag("div", {
+        className: "completion-label",
+        textContent: completion.label || completion.text
+      });
+      
+      const detail = tag("div", {
+        className: "completion-detail",
+        textContent: completion.detail || completion.description || ''
+      });
+      
+      content.append(label, detail);
+      item.append(icon, content);
+      
+      // Add click handler
+      item.addEventListener('click', () => {
+        this.applyCompletion(completion);
+        this.suggestionWidget.style.display = 'none';
+      });
+      
+      this.suggestionWidget.appendChild(item);
+    });
+    
+    // Position and show widget
+    this.positionSuggestionWidget();
+    this.suggestionWidget.style.display = 'block';
+    
+  } catch (error) {
+    console.error('Error showing auto complete:', error);
+  }
+}
+
+showQuickFixes(fixes) {
+  try {
+    if (!fixes || fixes.length === 0) {
+      if (this.suggestionWidget) {
+        this.suggestionWidget.style.display = 'none';
+      }
+      return;
+    }
+    
+    if (!this.suggestionWidget) {
+      this.createSuggestionWidget();
+    }
+    
+    // Clear previous content
+    this.suggestionWidget.innerHTML = '';
+    
+    // Create header
+    const header = tag("div", {
+      className: "quickfix-header",
+      textContent: "🔧 Quick Fixes"
+    });
+    
+    this.suggestionWidget.appendChild(header);
+    
+    // Create fix items
+    fixes.forEach((fix, index) => {
+      const item = tag("div", {
+        className: "quickfix-item"
+      });
+      
+      const fixHeader = tag("div", {
+        className: "quickfix-item-header"
+      });
+      
+      const severity = tag("span", {
+        className: "fix-severity",
+        textContent: this.getSeverityIcon(fix.severity || 'error')
+      });
+      
+      const title = tag("span", {
+        className: "fix-title",
+        textContent: fix.title || `Fix ${index + 1}`
+      });
+      
+      fixHeader.append(severity, title);
+      
+      const description = tag("div", {
+        className: "fix-description",
+        textContent: fix.description || fix.message
+      });
+      
+      const action = tag("div", {
+        className: "fix-action",
+        textContent: fix.action || 'Apply Fix'
+      });
+      
+      item.append(fixHeader, description, action);
+      
+      // Add click handler
+      item.addEventListener('click', () => {
+        this.applyQuickFix(fix);
+        this.suggestionWidget.style.display = 'none';
+      });
+      
+      this.suggestionWidget.appendChild(item);
+    });
+    
+    // Position and show widget
+    this.positionSuggestionWidget();
+    this.suggestionWidget.style.display = 'block';
+    
+  } catch (error) {
+    console.error('Error showing quick fixes:', error);
+  }
+}
+
+positionSuggestionWidget() {
+  if (!this.suggestionWidget || !editor) return;
+  
+  try {
+    const cursorPosition = editor.getCursorPosition();
+    const renderer = editor.renderer;
+    const coords = renderer.textToScreenCoordinates(cursorPosition.row, cursorPosition.column);
+    
+    // Get editor container position
+    const editorContainer = editor.container;
+    const editorRect = editorContainer.getBoundingClientRect();
+    
+    // Calculate position relative to viewport
+    const left = coords.pageX;
+    const top = coords.pageY + 20; // Offset below cursor
+    
+    // Ensure widget stays within viewport
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
+    const widgetWidth = 400;
+    const widgetHeight = 300;
+    
+    let finalLeft = left;
+    let finalTop = top;
+    
+    // Adjust horizontal position
+    if (left + widgetWidth > viewportWidth) {
+      finalLeft = viewportWidth - widgetWidth - 10;
+    }
+    
+    // Adjust vertical position
+    if (top + widgetHeight > viewportHeight) {
+      finalTop = coords.pageY - widgetHeight - 10; // Show above cursor
+    }
+    
+    this.suggestionWidget.style.left = `${Math.max(10, finalLeft)}px`;
+    this.suggestionWidget.style.top = `${Math.max(10, finalTop)}px`;
+    
+  } catch (error) {
+    console.error('Error positioning suggestion widget:', error);
+    // Fallback positioning
+    this.suggestionWidget.style.left = '50px';
+    this.suggestionWidget.style.top = '100px';
+  }
+}
+
+getCompletionIcon(type) {
+  const icons = {
+    'function': '🔧',
+    'variable': '📦',
+    'class': '🏗️',
+    'method': '⚙️',
+    'property': '🔗',
+    'keyword': '🔑',
+    'snippet': '📝',
+    'text': '📄',
+    'module': '📚',
+    'file': '📁'
+  };
+  return icons[type] || '📄';
+}
+
+getSeverityIcon(severity) {
+  const icons = {
+    'error': '❌',
+    'warning': '⚠️',
+    'info': 'ℹ️',
+    'hint': '💡'
+  };
+  return icons[severity] || '❌';
+}
+
+applySuggestion(suggestion) {
+  try {
+    if (!editor || !suggestion) return;
+    
+    const cursor = editor.getCursorPosition();
+    
+    if (suggestion.insertText) {
+      editor.session.insert(cursor, suggestion.insertText);
+    } else if (suggestion.replaceRange && suggestion.newText) {
+      const range = new editor.Range(
+        suggestion.replaceRange.start.row,
+        suggestion.replaceRange.start.column,
+        suggestion.replaceRange.end.row,
+        suggestion.replaceRange.end.column
+      );
+      editor.session.replace(range, suggestion.newText);
+    }
+    
+    // Execute any additional actions
+    if (suggestion.command) {
+      editor.execCommand(suggestion.command);
+    }
+    
+    window.toast('Suggestion applied', 2000);
+    
+  } catch (error) {
+    console.error('Error applying suggestion:', error);
+    window.toast('Error applying suggestion', 3000);
+  }
+}
+
+applyCompletion(completion) {
+  try {
+    if (!editor || !completion) return;
+    
+    const cursor = editor.getCursorPosition();
+    const session = editor.session;
+    
+    // Get current line and determine insertion point
+    const line = session.getLine(cursor.row);
+    const insertText = completion.insertText || completion.label || completion.text;
+    
+    if (completion.range) {
+      // Replace specific range
+      const range = new editor.Range(
+        completion.range.start.row,
+        completion.range.start.column,
+        completion.range.end.row,
+        completion.range.end.column
+      );
+      session.replace(range, insertText);
+    } else {
+      // Insert at cursor position
+      session.insert(cursor, insertText);
+    }
+    
+    // Handle cursor positioning after insertion
+    if (completion.cursorOffset) {
+      const newPos = {
+        row: cursor.row,
+        column: cursor.column + completion.cursorOffset
+      };
+      editor.moveCursorToPosition(newPos);
+    }
+    
+    window.toast('Completion applied', 2000);
+    
+  } catch (error) {
+    console.error('Error applying completion:', error);
+    window.toast('Error applying completion', 3000);
+  }
+}
+
+applyQuickFix(fix) {
+  try {
+    if (!editor || !fix) return;
+    
+    // Apply text edits if provided
+    if (fix.edits && Array.isArray(fix.edits)) {
+      // Apply edits in reverse order to maintain positions
+      const sortedEdits = fix.edits.sort((a, b) => {
+        if (a.range.start.row !== b.range.start.row) {
+          return b.range.start.row - a.range.start.row;
+        }
+        return b.range.start.column - a.range.start.column;
+      });
+      
+      sortedEdits.forEach(edit => {
+        const range = new editor.Range(
+          edit.range.start.row,
+          edit.range.start.column,
+          edit.range.end.row,
+          edit.range.end.column
+        );
+        editor.session.replace(range, edit.newText || '');
+      });
+    }
+    
+    // Execute command if provided
+    if (fix.command) {
+      if (typeof fix.command === 'string') {
+        editor.execCommand(fix.command);
+      } else if (fix.command.id) {
+        // Handle complex command objects
+        editor.execCommand(fix.command.id, fix.command.arguments);
+      }
+    }
+    
+    // Show success message
+    window.toast(fix.successMessage || 'Quick fix applied', 2000);
+    
+    // Remove error markers if this fix resolves them
+    if (fix.resolvesMarkers && this.errorMarkers) {
+      fix.resolvesMarkers.forEach(markerId => {
+        const markerIndex = this.errorMarkers.findIndex(m => m.id === markerId);
+        if (markerIndex !== -1) {
+          editor.session.removeMarker(this.errorMarkers[markerIndex].aceMarkerId);
+          this.errorMarkers.splice(markerIndex, 1);
+        }
+      });
+    }
+    
+  } catch (error) {
+    console.error('Error applying quick fix:', error);
+    window.toast('Error applying quick fix', 3000);
+  }
+}
+
 async analyzeCurrentFile() {
   if (!this.realTimeEnabled) return;
   
@@ -3244,7 +3610,6 @@ async analyzeCurrentFile() {
     console.error('File analysis error:', error);
   }
 }
-
 
   async destroy() {
   try {
