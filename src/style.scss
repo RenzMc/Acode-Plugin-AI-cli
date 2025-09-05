@@ -105,6 +105,8 @@
   height: 100vh;
   overflow: hidden;
   position: relative;
+  display: flex;
+  flex-direction: column;
   
   // Galaxy Background Layer - Load from plugin directory
   &::before {
@@ -436,7 +438,7 @@
   animation: galaxy-glow 3s ease-in-out infinite;
 }
 
-// Redesigned Input Container (Bottom)
+// Redesigned Input Container (Bottom) - Fixed positioning
 .inputBox {
   padding: 20px;
   background: var(--galaxy-glass);
@@ -445,7 +447,11 @@
   display: flex;
   gap: 16px;
   align-items: flex-end;
-  position: relative;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
   box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.3);
   
   &::before {

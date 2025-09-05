@@ -477,12 +477,18 @@ case 'toggle-realtime':
 
   // Setup Command Palette Integration
   setupCommandPaletteIntegration() {
-    // Add AI command to access all available commands
+    // Add AI command to palette (tanpa override Ctrl+Shift+P)
     editor.commands.addCommand({
       name: "ai_command_palette",
       description: "AI Command Palette Control", 
-      bindKey: { win: "Ctrl-Shift-P", mac: "Cmd-Shift-P" },
       exec: () => this.showAiCommandPalette()
+    });
+    
+    // Add AI chat command to palette
+    editor.commands.addCommand({
+      name: "ai_chat_command",
+      description: "Execute Command via AI Chat",
+      exec: () => this.executeCommandViaChat()
     });
   }
 
@@ -641,6 +647,73 @@ Return ONLY the terminal command, no explanations.
     }
   }
 
+  async executeCommandViaChat() {
+    try {
+      // Show AI assistant if not visible
+      if (!this.$page || !this.$page.isVisible) {
+        await this.run();
+      }
+      
+      // Add system message to show available commands
+      const availableCommands = this.getAvailableCommands();
+      const commandList = availableCommands.slice(0, 20).map(cmd => `• ${cmd.name}`).join('\n');
+      
+      this.appendSystemMessage(`Available Commands:\n${commandList}\n\nType: "run command [name]" or describe what you want to do`);
+      
+      // Focus on chat input
+      if (this.$chatTextarea) {
+        this.$chatTextarea.focus();
+      }
+      
+    } catch (error) {
+      window.toast("❌ Error opening AI chat", 3000);
+    }
+  }
+
+  async executeCommandFromChat(commandRequest) {
+    try {
+      const availableCommands = this.getAvailableCommands();
+      
+      // Let AI decide which command to run
+      const aiPrompt = `COMMAND EXECUTION FROM CHAT
+
+**AVAILABLE COMMANDS:**
+${availableCommands.slice(0, 50).map(cmd => `• ${cmd.name}: ${cmd.description || 'No description'}`).join('\n')}
+
+**USER REQUEST:** "${commandRequest}"
+
+**TASK:** 
+Analyze the user request and determine which Acode command best matches their intent.
+
+**RESPONSE FORMAT:**
+Return ONLY the exact command name from the list above. If no exact match, return "UNKNOWN".
+
+**COMMAND TO EXECUTE:**`;
+
+      // Show processing message
+      this.appendSystemMessage(`🔄 Processing command: "${commandRequest}"`);
+      
+      const response = await this.getAiResponse(aiPrompt);
+      const commandName = response.trim().replace(/[^a-zA-Z0-9_-]/g, '');
+      
+      if (commandName && commandName !== 'UNKNOWN') {
+        // Execute the command
+        const command = editor.commands.commands[commandName];
+        if (command) {
+          command.exec();
+          this.appendSystemMessage(`✅ Executed command: ${commandName}`);
+        } else {
+          this.appendSystemMessage(`❌ Command not found: ${commandName}`);
+        }
+      } else {
+        this.appendSystemMessage(`❌ Could not determine command from request: "${commandRequest}"`);
+      }
+      
+    } catch (error) {
+      this.appendSystemMessage(`❌ Error processing command: ${error.message}`);
+    }
+  }
+
   appendSystemMessage(message) {
     if (this.$chatBox) {
       const systemMsg = tag("div", {
@@ -654,6 +727,7 @@ Return ONLY the terminal command, no explanations.
           border-radius: 8px;
           font-family: monospace;
           font-size: 14px;
+          white-space: pre-line;
         `,
         textContent: message
       });
@@ -1111,18 +1185,35 @@ Return ONLY the terminal command, no explanations.
     */
     const chatText = this.$chatTextarea;
     if (chatText.value != "") {
+      // Switch button states immediately
+      this.$sendBtn.classList.add("hide");
+      this.$stopGenerationBtn.classList.remove("hide");
+      
       this.appendUserQuery(chatText.value);
       this.scrollToBottom();
       this.appendGptResponse("");
       this.loader();
-      this.getCliResponse(chatText.value);
+      
+      // Store query for potential stop operation
+      this.currentQuery = chatText.value;
+      
+      try {
+        await this.getCliResponse(chatText.value);
+      } catch (error) {
+        // Handle errors and reset buttons
+        this.showError(error);
+        this.$stopGenerationBtn.classList.add("hide");
+        this.$sendBtn.classList.remove("hide");
+        clearInterval(this.$loadInterval);
+      }
+      
       chatText.value = "";
     }
   }
 
   async appendUserQuery(message) {
     /*
-    add user query to ui
+    add user query to ui with markdown support
     */
     try {
       const userAvatar = this.baseUrl + "assets/user_avatar.png";
@@ -1136,14 +1227,34 @@ Return ONLY the terminal command, no explanations.
         }),
       });
       const msg = tag("div", {
-        className: "message",
-        textContent: message,
+        className: "message user_message",
       });
+      
+      // Add markdown support for user messages like AI messages
+      if (this.$mdIt && typeof this.$mdIt.render === 'function') {
+        try {
+          const renderedHtml = this.$mdIt.render(message);
+          msg.innerHTML = renderedHtml;
+          
+          // Apply syntax highlighting to user messages too
+          msg.querySelectorAll('pre code').forEach((block) => {
+            if (window.hljs && window.hljs.highlightElement) {
+              window.hljs.highlightElement(block);
+            }
+          });
+        } catch (err) {
+          // Fallback to plain text if markdown fails
+          msg.textContent = message;
+        }
+      } else {
+        msg.textContent = message;
+      }
+      
       chat.append(...[profileImg, msg]);
       userChatBox.append(chat);
       this.$chatBox.appendChild(userChatBox);
     } catch (err) {
-      window.alert(err);
+      window.toast("Error displaying user message", 3000);
     }
   }
 
@@ -1268,12 +1379,58 @@ Return ONLY the terminal command, no explanations.
   }
 }
 
+  showError(error) {
+    // Show detailed error information
+    const responseBoxes = Array.from(document.querySelectorAll(".ai_message"));
+    if (responseBoxes.length > 0) {
+      const lastResponse = responseBoxes[responseBoxes.length - 1];
+      
+      let errorMessage = "❌ Error occurred";
+      if (error && error.message) {
+        if (error.message.includes('429')) {
+          errorMessage = "❌ API Rate limit exceeded. Please wait and try again.";
+        } else if (error.message.includes('401')) {
+          errorMessage = "❌ Invalid API key. Please check your API key settings.";
+        } else if (error.message.includes('network') || error.message.includes('fetch')) {
+          errorMessage = "❌ Network error. Please check your internet connection.";
+        } else if (error.message.includes('timeout')) {
+          errorMessage = "❌ Request timeout. Please try again.";
+        } else {
+          errorMessage = `❌ Error: ${error.message}`;
+        }
+      }
+      
+      lastResponse.innerHTML = `<div style="color: #ff6b6b; padding: 12px; background: rgba(255,107,107,0.1); border-radius: 8px; border-left: 3px solid #ff6b6b;">${errorMessage}</div>`;
+    }
+    
+    window.toast(errorMessage, 4000);
+  }
+
   async stopGenerating() {
-    // Currently this doesn't works and I have no idea about , If you can , feel free to open pr
-    // it doesn't work 
-    this.abortController.abort();
+    // Stop generation and reset UI
+    if (this.abortController) {
+      this.abortController.abort();
+    }
+    
+    // Clear loading interval
+    if (this.$loadInterval) {
+      clearInterval(this.$loadInterval);
+    }
+    
+    // Reset buttons
     this.$stopGenerationBtn.classList.add("hide");
     this.$sendBtn.classList.remove("hide");
+    
+    // Show stopped message in last AI response
+    const responseBoxes = Array.from(document.querySelectorAll(".ai_message"));
+    if (responseBoxes.length > 0) {
+      const lastResponse = responseBoxes[responseBoxes.length - 1];
+      if (lastResponse.textContent.trim() === '' || lastResponse.innerHTML.includes('😖')) {
+        lastResponse.innerHTML = '<em style="color: #ff6b6b;">Response stopped by user</em>';
+      }
+    }
+    
+    window.toast("⏹️ Generation stopped", 2000);
   }
 
   async getCliResponse(question) {
