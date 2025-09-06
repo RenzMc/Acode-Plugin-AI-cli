@@ -12,9 +12,10 @@
     "assets/insert-context.svg",
     "assets/github-dark.css",
     "assets/highlight.min.js",
-    "assets/markdown-it.min.js"
+    "assets/markdown-it.min.js",
+    "assets/galaxy.png"
   ],
-  "price": 0,
+  "price": 20,
   "author": {
     "name": "Renz",
     "email": "renzaja11@gmail.com",
