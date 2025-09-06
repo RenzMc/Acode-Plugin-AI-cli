@@ -33,6 +33,43 @@
   box-sizing: border-box;
 }
 
+// Fix for native dialogs and alerts - prevent our styles from affecting them
+body > .dialog-backdrop,
+body > .dialog-wrapper,
+body > [role="dialog"],
+body > .alert-wrapper,
+dialog,
+.native-dialog,
+.system-dialog {
+  // Reset any inherited styles that might affect native dialogs
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif !important;
+  line-height: 1.4 !important;
+  letter-spacing: normal !important;
+  text-align: left !important;
+  
+  // Ensure proper display
+  display: block !important;
+  position: fixed !important;
+  z-index: 10000 !important;
+  
+  // Reset any background interference
+  background: white !important;
+  color: black !important;
+  border: 1px solid #ccc !important;
+  border-radius: 8px !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3) !important;
+  
+  // Ensure text is readable
+  * {
+    color: inherit !important;
+    font-family: inherit !important;
+    line-height: inherit !important;
+  }
+}
+
+// Scope all plugin styles to prevent interference with system UI
+#acode-ai-assistant {
+  
 // Main app container
 .mainApp {
   display: flex;
@@ -1001,3 +1038,5 @@ textarea {
     --galaxy-text-muted: #6c757d;
   }
 }
+
+} // Close scope for #acode-ai-assistant
