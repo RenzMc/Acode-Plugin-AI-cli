@@ -41,55 +41,71 @@ export class APIKeyManager {
 
   // Encrypt a value using AES-GCM
   async _encrypt(value) {
-    const key = await this._importKey(this.secret);
-    const iv = crypto.getRandomValues(new Uint8Array(12)); // Initialization vector
-    const encrypted = await crypto.subtle.encrypt(
-      {
-        name: "AES-GCM",
-        iv: iv
-      },
-      key,
-      this._encode(value)
-    );
-    return { iv, encrypted };
+    try {
+      const key = await this._importKey(this.secret);
+      const iv = crypto.getRandomValues(new Uint8Array(12)); // Initialization vector
+      const encrypted = await crypto.subtle.encrypt(
+        {
+          name: "AES-GCM",
+          iv: iv
+        },
+        key,
+        this._encode(value)
+      );
+      return { iv, encrypted };
+    } catch (error) {
+      throw new Error(`Encryption failed: ${error.message}`);
+    }
   }
 
   // Decrypt a value using AES-GCM
   async _decrypt(encrypted, iv) {
-    const key = await this._importKey(this.secret);
-    const decrypted = await crypto.subtle.decrypt(
-      {
-        name: "AES-GCM",
-        iv: iv
-      },
-      key,
-      encrypted
-    );
-    return this._decode(decrypted);
+    try {
+      const key = await this._importKey(this.secret);
+      const decrypted = await crypto.subtle.decrypt(
+        {
+          name: "AES-GCM",
+          iv: iv
+        },
+        key,
+        encrypted
+      );
+      return this._decode(decrypted);
+    } catch (error) {
+      throw new Error(`Decryption failed: ${error.message}`);
+    }
   }
 
   // Save API key
   async saveAPIKey(provider, apiKey) {
-    const { iv, encrypted } = await this._encrypt(apiKey);
-    const storageValue = {
-      iv: Array.from(iv),
-      encrypted: Array.from(new Uint8Array(encrypted))
-    };
-    localStorage.setItem(provider, JSON.stringify(storageValue));
+    try {
+      const { iv, encrypted } = await this._encrypt(apiKey);
+      const storageValue = {
+        iv: Array.from(iv),
+        encrypted: Array.from(new Uint8Array(encrypted))
+      };
+      localStorage.setItem(provider, JSON.stringify(storageValue));
+    } catch (error) {
+      throw new Error(`Failed to save API key for ${provider}: ${error.message}`);
+    }
   }
 
   // Retrieve API key
   async getAPIKey(provider) {
-    const storageValue = localStorage.getItem(provider);
-    if (!storageValue) {
-      return null;
+    try {
+      const storageValue = localStorage.getItem(provider);
+      if (!storageValue) {
+        return null;
+      }
+      const { iv, encrypted } = JSON.parse(storageValue);
+      const decryptedKey = await this._decrypt(
+        new Uint8Array(encrypted),
+        new Uint8Array(iv)
+      );
+      return decryptedKey;
+    } catch (error) {
+      throw new Error(`Failed to retrieve API key for ${provider}: ${error.message}`);
     }
-    const { iv, encrypted } = JSON.parse(storageValue);
-    const decryptedKey = await this._decrypt(
-      new Uint8Array(encrypted),
-      new Uint8Array(iv)
-    );
-    return decryptedKey;
   }
 
   // Delete API key
