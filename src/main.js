@@ -40,25 +40,35 @@ class AIAssistant {
   constructor() {
   // Initialize baseUrl for assets (critical for UI to work)
   this.baseUrl = window.DATA_STORAGE + plugin.id + "/";
-  
+
   // Cache untuk responses
   this.responseCache = new Map();
   this.cacheTimeout = 30 * 60 * 1000; // 30 menit
-  
+
   // File operations cache
   this.fileCache = new Map();
   this.projectStructure = null;
   this.lastStructureScan = null;
-  
+
   // Real-time AI properties
   this.realTimeEnabled = false;
   this.realTimeDebounceTimer = null;
-  this.realTimeDelay = 2000; // 1 detik delay
+  this.realTimeDelay = 5000; // 5 detik delay for better token efficiency
   this.lastAnalyzedContent = "";
   this.currentSuggestions = [];
   this.suggestionWidget = null;
   this.errorMarkers = [];
   this.realTimeAnalysisCache = new Map();
+
+  // Token usage tracking
+  this.tokenUsage = {
+    total: 0,
+    today: 0,
+    session: 0,
+    lastReset: new Date().toDateString()
+  };
+  this.loadTokenUsage();
+  this.updateTokenDisplay = this.updateTokenDisplay.bind(this);
 }
 
   async init($page) {
@@ -110,7 +120,7 @@ class AIAssistant {
         "Generate Docs",
         "Edit with AI"
       ]);
-      
+
       if (opt) {
         if (opt === "Run Current File") {
           await this.runCurrentFile();
@@ -162,11 +172,11 @@ class AIAssistant {
   if (activeFile) {
     const content = editor.getValue();
     const contextPrompt = `Current file: ${activeFile && activeFile.name ? activeFile.name : 'Unknown'}\n\nContent:\n\`\`\`\n${content || ''}\n\`\`\`\n\nHow can I help you with this code?`;
-    
+
     if (!this.$page.isVisible) {
       await this.run();
     }
-    
+
     this.$chatTextarea.value = contextPrompt;
     this.$chatTextarea.focus();
   } else {
@@ -177,11 +187,22 @@ class AIAssistant {
     // Add provider dropdown to toolbar
     const providerDropdown = this.createProviderDropdown();
     
-    this.$page.header.append(providerDropdown, newChatBtn, insertContextBtn, historyBtn, menuBtn);
+    // Add token usage display
+    const tokenDisplay = this.createTokenDisplay();
+
+    // Add search button
+    const searchBtn = tag("span", {
+      className: "icon",
+      textContent: "🔍",
+      title: "Search in chat"
+    });
+    searchBtn.onclick = () => this.searchInChat();
+
+    this.$page.header.append(providerDropdown, tokenDisplay, searchBtn, newChatBtn, insertContextBtn, historyBtn, menuBtn);
 
     historyBtn.onclick = this.myHistory.bind(this);
     newChatBtn.onclick = this.newChat.bind(this);
-    
+
 // AI Edit Current File
 editor.commands.addCommand({
   name: "ai_edit_current_file",
@@ -266,7 +287,7 @@ editor.commands.addCommand({
   exec: () => {
     const selectedText = editor.getSelectedText();
     const activeFile = editorManager.activeFile;
-    
+
     if (selectedText) {
       this.generateDocsWithChat(selectedText);
     } else if (activeFile) {
@@ -305,14 +326,18 @@ editor.commands.addCommand({
       <li action="model-provider" provider="">Provider: ${window.localStorage.getItem("ai-assistant-provider")}</li>
       <li action="model" modelNme="">Model: ${window.localStorage.getItem("ai-assistant-model-name")}</li>
       <li action="clear-cache">Clear Cache</li>
+      <li action="clear-chat">Clear Chat History</li>
+      <li action="export-chat">Export Conversation</li>
+      <li action="copy-all">Copy All Messages</li>
       <li action="create-file-ai">Create File with AI</li>
       <li action="organize-project">Organize Project</li>
       <li action="bulk-operations">Bulk Operations</li>
+      <li action="settings">Settings</li>
       `;
     },
     ...contextMenuOption
   })
-  
+
     $menu.onclick = async (e) => {
       $menu.hide();
       const action = e.target.getAttribute('action');
@@ -374,7 +399,7 @@ editor.commands.addCommand({
             }
           }
           break;
-          
+
       case 'clear-cache':
         this.clearCache();
         break;
@@ -387,11 +412,23 @@ editor.commands.addCommand({
       case 'bulk-operations':
         await this.bulkFileOperations();
         break;
+      case 'clear-chat':
+        await this.clearChatHistory();
+        break;
+      case 'export-chat':
+        await this.exportConversation();
+        break;
+      case 'copy-all':
+        await this.copyAllMessages();
+        break;
+      case 'settings':
+        await this.showSettings();
+        break;
 case 'toggle-realtime':
   this.toggleRealTimeAI();
   break;
-  
-        
+
+
         case 'model':
           let provider = window.localStorage.getItem("ai-assistant-provider");
           let apiKey = await this.apiKeyManager.getAPIKey(provider);
@@ -434,39 +471,39 @@ case 'toggle-realtime':
     this.$inputBox = tag("div", {
       className: "inputBox",
     });
-    
+
     // Create UI elements in the correct order
     this.$chatTextarea = tag("textarea", {
       className: "chatTextarea",
       placeholder: "Type your query...",
     });
-    
+
     this.$sendBtn = tag("button", {
       className: "sendBtn",
     });
     this.$sendBtn.innerHTML = sendIconSvg;
-    
+
     this.$stopGenerationBtn = tag("button", {
       className: "stopGenerationBtn hide",
     });
     this.$stopGenerationBtn.innerHTML = stopIconSvg;
     this.$stopGenerationBtn.onclick = this.stopGenerating.bind(this);
-    
+
     // Append elements in the correct order (fixed order to match main.js)
     this.$inputBox.append(this.$chatTextarea, this.$sendBtn, this.$stopGenerationBtn);
     mainApp.append(this.$inputBox, this.$chatBox);
     this.$page.append(mainApp);
-    
-    
+
+
     // Setup real-time AI features after UI elements are created
     this.setupRealTimeAI();
-    
+
     // Add command palette control for AI
     this.setupCommandPaletteIntegration();
-    
+
     // Add terminal command execution capability
     this.setupTerminalCommands();
-    
+
     this.messageHistories = {};
     this.messageSessionConfig = {
       configurable: {
@@ -483,7 +520,7 @@ case 'toggle-realtime':
       description: "AI Command Palette Control", 
       exec: () => this.showAiCommandPalette()
     });
-    
+
     // Add AI chat command to palette
     editor.commands.addCommand({
       name: "ai_chat_command",
@@ -496,16 +533,16 @@ case 'toggle-realtime':
     try {
       // Get all available commands from Acode
       const availableCommands = this.getAvailableCommands();
-      
+
       const userRequest = await prompt(
         "Ask AI to run a command (e.g., 'format code', 'toggle sidebar', 'open file')", 
         "", 
         "text", 
         { required: true }
       );
-      
+
       if (!userRequest) return;
-      
+
       // Let AI decide which command to run
       const aiPrompt = `ACODE COMMAND EXECUTION REQUEST
 
@@ -529,7 +566,7 @@ Return ONLY the exact command name from the list above. If no exact match, retur
 
       const response = await this.getAiResponse(aiPrompt);
       const commandName = response.trim().replace(/[^a-zA-Z0-9_-]/g, '');
-      
+
       if (commandName && commandName !== 'UNKNOWN') {
         // Execute the command
         const command = editor.commands.commands[commandName];
@@ -542,7 +579,7 @@ Return ONLY the exact command name from the list above. If no exact match, retur
       } else {
         window.toast("❌ Could not determine command from request", 3000);
       }
-      
+
     } catch (error) {
       window.toast("❌ Error with command palette", 3000);
     }
@@ -576,9 +613,9 @@ Return ONLY the exact command name from the list above. If no exact match, retur
         "text", 
         { required: true }
       );
-      
+
       if (!userCommand) return;
-      
+
       // Check if it's a direct command or needs AI interpretation
       if (userCommand.includes(' ') && !userCommand.startsWith('/') && !userCommand.includes('&&')) {
         // Looks like natural language, let AI convert it
@@ -606,7 +643,7 @@ Return ONLY the terminal command, no explanations.
 
         const response = await this.getAiResponse(aiPrompt);
         const safeCommand = response.trim().replace(/[;&|`$()]/g, ''); // Basic safety filtering
-        
+
         if (safeCommand && !safeCommand.includes('rm ') && !safeCommand.includes('delete')) {
           this.executeTerminalCommand(safeCommand);
         } else {
@@ -616,7 +653,7 @@ Return ONLY the terminal command, no explanations.
         // Direct command execution
         this.executeTerminalCommand(userCommand);
       }
-      
+
     } catch (error) {
       window.toast("❌ Error with terminal execution", 3000);
     }
@@ -632,16 +669,16 @@ Return ONLY the terminal command, no explanations.
         "text", 
         { required: false }
       );
-      
+
       if (confirmation !== null) {
         // Simulate terminal execution - in real implementation this would 
         // interface with Acode's terminal or system shell
         window.toast(`🚀 Command executed: ${command}`, 4000);
-        
+
         // Add to chat as system message
         this.appendSystemMessage(`Terminal: ${command}`);
       }
-      
+
     } catch (error) {
       window.toast("❌ Failed to execute terminal command", 3000);
     }
@@ -653,18 +690,18 @@ Return ONLY the terminal command, no explanations.
       if (!this.$page || !this.$page.isVisible) {
         await this.run();
       }
-      
+
       // Add system message to show available commands
       const availableCommands = this.getAvailableCommands();
       const commandList = availableCommands.slice(0, 20).map(cmd => `• ${cmd.name}`).join('\n');
-      
+
       this.appendSystemMessage(`Available Commands:\n${commandList}\n\nType: "run command [name]" or describe what you want to do`);
-      
+
       // Focus on chat input
       if (this.$chatTextarea) {
         this.$chatTextarea.focus();
       }
-      
+
     } catch (error) {
       window.toast("❌ Error opening AI chat", 3000);
     }
@@ -673,7 +710,7 @@ Return ONLY the terminal command, no explanations.
   async executeCommandFromChat(commandRequest) {
     try {
       const availableCommands = this.getAvailableCommands();
-      
+
       // Let AI decide which command to run
       const aiPrompt = `COMMAND EXECUTION FROM CHAT
 
@@ -692,10 +729,10 @@ Return ONLY the exact command name from the list above. If no exact match, retur
 
       // Show processing message
       this.appendSystemMessage(`🔄 Processing command: "${commandRequest}"`);
-      
+
       const response = await this.getAiResponse(aiPrompt);
       const commandName = response.trim().replace(/[^a-zA-Z0-9_-]/g, '');
-      
+
       if (commandName && commandName !== 'UNKNOWN') {
         // Execute the command
         const command = editor.commands.commands[commandName];
@@ -708,7 +745,7 @@ Return ONLY the exact command name from the list above. If no exact match, retur
       } else {
         this.appendSystemMessage(`❌ Could not determine command from request: "${commandRequest}"`);
       }
-      
+
     } catch (error) {
       this.appendSystemMessage(`❌ Error processing command: ${error.message}`);
     }
@@ -731,15 +768,15 @@ Return ONLY the exact command name from the list above. If no exact match, retur
         `,
         textContent: message
       });
-      
+
       this.$chatBox.appendChild(systemMsg);
       this.scrollToBottom();
     }
   }
-  
+
   async run() {
     try {
-      
+
       // Authentication and API key handling
       let passPhrase;
       if (await fs(window.DATA_STORAGE + "secret.key").exists()) {
@@ -758,11 +795,11 @@ Return ONLY the exact command name from the list above. If no exact match, retur
         if (!secretPassphrase) return;
         passPhrase = secretPassphrase;
       }
-      
+
       this.apiKeyManager = new APIKeyManager(passPhrase);
       let token;
       let providerNme = window.localStorage.getItem("ai-assistant-provider");
-      
+
       if (providerNme) {
         token = await this.apiKeyManager.getAPIKey(providerNme);
       } else {
@@ -802,12 +839,12 @@ Return ONLY the exact command name from the list above. If no exact match, retur
                 required: true,
               });
           if (!apiKey) return;
-          
+
           loader.showTitleLoader();
           window.toast("Fetching available models from your account", 2000);
           let modelList = await getModelsFromProvider(modelProvider, apiKey);
           loader.removeTitleLoader();
-          
+
           const modelNme = await select("Select AI Model", modelList);
           if (!modelNme) return;
 
@@ -838,12 +875,12 @@ Return ONLY the exact command name from the list above. If no exact match, retur
 
       // Show the page
       this.$page.show();
-      
+
       // Focus on the textarea
       setTimeout(() => {
         this.$chatTextarea.focus();
       }, 300);
-      
+
     } catch (e) {
       console.error("Error in run method:", e);
       window.toast("Error initializing Renz Ai: " + e.message, 5000);
@@ -928,22 +965,22 @@ Return ONLY the exact command name from the list above. If no exact match, retur
     if (!fileName || typeof fileName !== 'string') {
       return 'untitled_file';
     }
-    
+
     // Remove dangerous characters and symbols
     const sanitizedFileName = fileName
       .replace(/[^\w\s.-]/gi, "")  // Keep only word chars, spaces, dots, hyphens
       .replace(/\.\.+/g, ".")     // Replace multiple dots with single dot
       .replace(/^\.|\.$/, "");    // Remove leading/trailing dots
-    
+
     // Trim leading and trailing spaces
     const trimmedFileName = sanitizedFileName.trim();
-    
+
     // Replace spaces and multiple underscores with single underscore
     const finalFileName = trimmedFileName
       .replace(/\s+/g, "_")
       .replace(/_+/g, "_")
       .replace(/^_|_$/, "");  // Remove leading/trailing underscores
-    
+
     // Ensure we have a valid filename
     return finalFileName.length > 0 ? finalFileName : 'untitled_file';
   }
@@ -1188,15 +1225,15 @@ Return ONLY the exact command name from the list above. If no exact match, retur
       // Switch button states immediately
       this.$sendBtn.classList.add("hide");
       this.$stopGenerationBtn.classList.remove("hide");
-      
+
       this.appendUserQuery(chatText.value);
       this.scrollToBottom();
       this.appendGptResponse("");
       this.loader();
-      
+
       // Store query for potential stop operation
       this.currentQuery = chatText.value;
-      
+
       try {
         await this.getCliResponse(chatText.value);
       } catch (error) {
@@ -1206,7 +1243,7 @@ Return ONLY the exact command name from the list above. If no exact match, retur
         this.$sendBtn.classList.remove("hide");
         clearInterval(this.$loadInterval);
       }
-      
+
       chatText.value = "";
     }
   }
@@ -1229,13 +1266,13 @@ Return ONLY the exact command name from the list above. If no exact match, retur
       const msg = tag("div", {
         className: "message user_message",
       });
-      
+
       // Add markdown support for user messages like AI messages
       if (this.$mdIt && typeof this.$mdIt.render === 'function') {
         try {
           const renderedHtml = this.$mdIt.render(message);
           msg.innerHTML = renderedHtml;
-          
+
           // Apply syntax highlighting to user messages too
           msg.querySelectorAll('pre code').forEach((block) => {
             if (window.hljs && window.hljs.highlightElement) {
@@ -1249,7 +1286,7 @@ Return ONLY the exact command name from the list above. If no exact match, retur
       } else {
         msg.textContent = message;
       }
-      
+
       chat.append(...[profileImg, msg]);
       userChatBox.append(chat);
       this.$chatBox.appendChild(userChatBox);
@@ -1294,24 +1331,24 @@ Return ONLY the exact command name from the list above. If no exact match, retur
     const msg = tag("div", {
       className: "ai_message",
     });
-    
+
     // Enhanced markdown rendering with better formatting
     if (this.$mdIt && typeof this.$mdIt.render === 'function') {
       try {
         // Enhanced pre-processing with no sanitization for full markdown support
         let processedMessage = message; // Use raw message for full markdown rendering
-        
+
         // Full markdown rendering without pre-processing interference
         const renderedHtml = this.$mdIt.render(processedMessage);
         msg.innerHTML = renderedHtml;
-        
+
         // Apply syntax highlighting to all code blocks
         msg.querySelectorAll('pre code').forEach((block) => {
           if (window.hljs && window.hljs.highlightElement) {
             window.hljs.highlightElement(block);
           }
         });
-        
+
         // Enhanced styling for better readability
         msg.style.cssText = `
           line-height: 1.6;
@@ -1321,7 +1358,7 @@ Return ONLY the exact command name from the list above. If no exact match, retur
           word-wrap: break-word;
           white-space: pre-wrap;
         `;
-        
+
         // Add event listeners to copy buttons with improved feedback
         setTimeout(() => {
           const copyBtns = msg.querySelectorAll(".copy-button");
@@ -1342,7 +1379,7 @@ Return ONLY the exact command name from the list above. If no exact match, retur
             }
           }
         }, 100);
-        
+
       } catch (renderError) {
         console.error('Markdown render error:', renderError);
         // Fallback with styled plain text
@@ -1384,7 +1421,7 @@ Return ONLY the exact command name from the list above. If no exact match, retur
     const responseBoxes = Array.from(document.querySelectorAll(".ai_message"));
     if (responseBoxes.length > 0) {
       const lastResponse = responseBoxes[responseBoxes.length - 1];
-      
+
       let errorMessage = "❌ Error occurred";
       if (error && error.message) {
         if (error.message.includes('429')) {
@@ -1399,10 +1436,10 @@ Return ONLY the exact command name from the list above. If no exact match, retur
           errorMessage = `❌ Error: ${error.message}`;
         }
       }
-      
+
       lastResponse.innerHTML = `<div style="color: #ff6b6b; padding: 12px; background: rgba(255,107,107,0.1); border-radius: 8px; border-left: 3px solid #ff6b6b;">${errorMessage}</div>`;
     }
-    
+
     window.toast(errorMessage, 4000);
   }
 
@@ -1411,16 +1448,16 @@ Return ONLY the exact command name from the list above. If no exact match, retur
     if (this.abortController) {
       this.abortController.abort();
     }
-    
+
     // Clear loading interval
     if (this.$loadInterval) {
       clearInterval(this.$loadInterval);
     }
-    
+
     // Reset buttons
     this.$stopGenerationBtn.classList.add("hide");
     this.$sendBtn.classList.remove("hide");
-    
+
     // Show stopped message in last AI response
     const responseBoxes = Array.from(document.querySelectorAll(".ai_message"));
     if (responseBoxes.length > 0) {
@@ -1429,7 +1466,7 @@ Return ONLY the exact command name from the list above. If no exact match, retur
         lastResponse.innerHTML = '<em style="color: #ff6b6b;">Response stopped by user</em>';
       }
     }
-    
+
     window.toast("⏹️ Generation stopped", 2000);
   }
 
@@ -1473,7 +1510,7 @@ Return ONLY the exact command name from the list above. If no exact match, retur
           if (this.$mdIt && typeof this.$mdIt.render === 'function') {
             const renderedHtml = this.$mdIt.render(cachedResponse);
             targetElem.innerHTML = renderedHtml;
-            
+
             // Apply syntax highlighting to cached responses
             targetElem.querySelectorAll('pre code').forEach((block) => {
               if (window.hljs && window.hljs.highlightElement) {
@@ -1526,7 +1563,7 @@ Return ONLY the exact command name from the list above. If no exact match, retur
     const projectName = currentFileDir.split('/').pop() || 'Unknown Project';
     const editorContent = activeFile && editor ? editor.getValue() : '';
     const cursorPos = editor ? editor.getCursorPosition() : { row: 0, column: 0 };
-    
+
     const systemPromptWithContext = `You are Renz AI CLI assistant for the open source plugin Renz Ai Cli for Acode code editor (open source vscode like code editor for Android).
 
 CURRENT WORKSPACE CONTEXT:
@@ -1596,7 +1633,7 @@ Be helpful and utilize the current file/project context in your responses.`;
     let displayBuffer = "";
     let lastRenderTime = 0;
     const renderDelay = 50; // Render every 50ms for smoother streaming
-    
+
     // Enhanced styling for streaming response
     targetElem.style.cssText = `
       line-height: 1.6;
@@ -1611,7 +1648,7 @@ Be helpful and utilize the current file/project context in your responses.`;
       border-radius: 0 8px 8px 0;
       animation: pulse 2s infinite;
     `;
-    
+
     // Add cursor animation for streaming effect
     const cursor = tag("span", {
       textContent: "▊",
@@ -1623,11 +1660,11 @@ Be helpful and utilize the current file/project context in your responses.`;
       `
     });
     targetElem.appendChild(cursor);
-    
+
     for await (const chunk of stream) {
       result += chunk;
       displayBuffer += chunk;
-      
+
       // Throttled rendering for performance
       const now = Date.now();
       if (now - lastRenderTime > renderDelay || chunk.includes('\n')) {
@@ -1635,7 +1672,7 @@ Be helpful and utilize the current file/project context in your responses.`;
         if (cursor.parentNode) {
           cursor.remove();
         }
-        
+
         // Update content with better formatting
         const lines = displayBuffer.split('\n');
         targetElem.innerHTML = lines.map((line, index) => {
@@ -1644,21 +1681,21 @@ Be helpful and utilize the current file/project context in your responses.`;
           }
           return '<br>';
         }).join('');
-        
+
         // Add cursor back
         targetElem.appendChild(cursor);
-        
+
         displayBuffer = "";
         lastRenderTime = now;
         this.scrollToBottom();
       }
     }
-    
+
     // Remove cursor after streaming is complete
     if (cursor && cursor.parentNode) {
       cursor.remove();
     }
-    
+
     // Remove streaming styles
     targetElem.style.animation = "";
     targetElem.style.border = "";
@@ -1672,11 +1709,11 @@ Be helpful and utilize the current file/project context in your responses.`;
       try {
         // Use raw result for full markdown support without pre-processing
         const renderedHtml = this.$mdIt.render(result);
-        
+
         // Apply with fade-in animation
         targetElem.style.opacity = "0";
         targetElem.innerHTML = renderedHtml;
-        
+
         // Enhanced styling for final response
         targetElem.style.cssText = `
           line-height: 1.6;
@@ -1691,12 +1728,12 @@ Be helpful and utilize the current file/project context in your responses.`;
           opacity: 0;
           transition: opacity 0.5s ease-in;
         `;
-        
+
         // Fade in
         setTimeout(() => {
           targetElem.style.opacity = "1";
         }, 100);
-        
+
         // Style code blocks and other elements
         setTimeout(() => {
           const codeBlocks = targetElem.querySelectorAll('pre code');
@@ -1708,7 +1745,7 @@ Be helpful and utilize the current file/project context in your responses.`;
               border: 1px solid rgba(255,255,255,0.1);
             `;
           });
-          
+
           const inlineCodes = targetElem.querySelectorAll('.inline-code');
           inlineCodes.forEach(code => {
             code.style.cssText = `
@@ -1815,13 +1852,13 @@ Be helpful and utilize the current file/project context in your responses.`;
     console.error("Error in getCliResponse:", error);
 
     const responseBoxes = Array.from(document.querySelectorAll(".ai_message"));
-    
+
     // Clean up intervals and UI states
     if (this.$loadInterval) {
       clearInterval(this.$loadInterval);
       this.$loadInterval = null;
     }
-    
+
     // Reset button states
     if (this.$stopGenerationBtn) {
       this.$stopGenerationBtn.classList.add("hide");
@@ -1841,7 +1878,7 @@ Be helpful and utilize the current file/project context in your responses.`;
           color: white;
           margin: 8px 0;
         `;
-        
+
         const $errorBox = tag("div", { 
           className: "error-box",
           style: `
@@ -1850,14 +1887,14 @@ Be helpful and utilize the current file/project context in your responses.`;
             gap: 8px;
           `
         });
-        
+
         const errorIcon = tag("span", {
           textContent: "⚠️",
           style: "font-size: 18px;"
         });
-        
+
         const errorText = tag("div");
-        
+
         if (error.response) {
           errorText.innerHTML = `<strong>API Error (${error.response.status}):</strong><br>${error.response.data?.error?.message || JSON.stringify(error.response.data)}`;
         } else if (error.name === 'AbortError') {
@@ -1865,13 +1902,13 @@ Be helpful and utilize the current file/project context in your responses.`;
         } else {
           errorText.innerHTML = `<strong>Error:</strong><br>${error.message || 'Unknown error occurred'}`;
         }
-        
+
         $errorBox.append(errorIcon, errorText);
         targetElem.appendChild($errorBox);
-        
+
         // Auto-scroll to show error
         this.scrollToBottom();
-        
+
         // Show error toast
         window.toast("❌ AI request failed. Check your connection and API key.", 4000);
       }
@@ -1916,17 +1953,17 @@ Be helpful and utilize the current file/project context in your responses.`;
       const description = await prompt("Describe the file you want to create:", "", "text", {
         required: true
       });
-      
+
       if (!description) return;
-      
+
       // Show loading indicator
       const loadingToast = window.toast("Generating file based on your description...", 0);
-      
+
       // Get current directory context
       const activeFile = editorManager.activeFile;
       const currentDir = activeFile ? (activeFile.location || activeFile.uri?.split('/').slice(0, -1).join('/') || '/') : '/';
       const workingDir = currentDir !== '/' ? currentDir : '/sdcard';
-      
+
       const aiPrompt = `FILE CREATION REQUEST
 
 **CONTEXT:**
@@ -1954,25 +1991,25 @@ Respond with clean JSON only (no markdown, no explanations):
 3. Write production-ready, well-commented code
 4. Ensure proper syntax and structure
 5. Make the file immediately usable`;
-      
+
       const response = await this.getAiResponse(aiPrompt);
-      
+
       // Hide loading indicator
       if (loadingToast && typeof loadingToast.hide === 'function') {
         loadingToast.hide();
       }
-      
+
       try {
         // Enhanced JSON extraction with better error handling
         let cleanResponse = response.trim();
-        
+
         // Try multiple extraction patterns
         const extractionPatterns = [
           /```(?:json)?\s*(\{[\s\S]*?\})\s*```/,  // Standard JSON in code blocks
           /```[\s\S]*?(\{[\s\S]*?\})[\s\S]*?```/, // JSON inside any code block
           /(\{[\s\S]*?\})/                        // Any JSON-like structure
         ];
-        
+
         let jsonStr = null;
         for (const pattern of extractionPatterns) {
           const match = cleanResponse.match(pattern);
@@ -1981,19 +2018,19 @@ Respond with clean JSON only (no markdown, no explanations):
             break;
           }
         }
-        
+
         if (!jsonStr) {
           jsonStr = cleanResponse;
         }
-        
+
         // Parse the JSON response with better error handling
         const suggestion = JSON.parse(jsonStr);
-        
+
         // Validate required fields
         if (!suggestion.filename || !suggestion.content) {
           throw new Error('AI response missing required fields (filename or content)');
         }
-        
+
         // Enhanced confirmation dialog with more information
         const confirmCreate = await multiPrompt("Create AI-Generated File", [
           {
@@ -2016,21 +2053,21 @@ Respond with clean JSON only (no markdown, no explanations):
             type: "textarea"
           }
         ]);
-        
+
         if (confirmCreate) {
           const fileName = confirmCreate.filename;
           const content = confirmCreate.content;
           let targetDir = confirmCreate.targetPath || workingDir;
-          
+
           try {
             // Validate and sanitize the target directory
             if (!targetDir || targetDir.trim() === '') {
               targetDir = workingDir;
             }
-            
+
             // Use provided path or allow user to browse for directory
             let finalTargetDir = targetDir;
-            
+
             // If user wants to browse for a different location
             if (targetDir === workingDir) {
               try {
@@ -2044,20 +2081,20 @@ Respond with clean JSON only (no markdown, no explanations):
                 // Silent handling - no need to log user cancellation
               }
             }
-            
+
             // Ensure the target directory exists and create the file
             const targetFs = await fs(finalTargetDir);
             const createdFileUrl = await targetFs.createFile(fileName, content);
-            
+
             // Show success message with full path information
             const relativePath = createdFileUrl.replace(/^.*\//, '');
             window.toast(`✅ File created successfully!\n📁 ${finalTargetDir}/${relativePath}`, 4000);
-            
+
             // Close the AI assistant page if it's open
             if (this.$page && this.$page.isVisible) {
               this.$page.hide();
             }
-            
+
             // Open the created file in the editor
             try {
               await editorManager.openFile(createdFileUrl);
@@ -2077,23 +2114,23 @@ Respond with clean JSON only (no markdown, no explanations):
         }
       } catch (parseError) {
         // Handle parsing error without console logging
-        
+
         // Extract code blocks if JSON parsing fails
         const codeMatch = response.match(/```(?:\w+)?\s*([\s\S]*?)\s*```/);
         const extractedContent = codeMatch ? codeMatch[1] : response;
-        
+
         // Fallback to manual filename input
         const filename = await prompt("Enter filename for the generated content:", "", "text", { required: true });
         if (filename) {
           const fullPath = basePath ? `${basePath}/${filename}` : filename;
           await fs(fullPath).writeFile(extractedContent);
           window.toast(`File created: ${filename}`, 3000);
-          
+
           // Close the AI assistant page if it's open
           if (this.$page && this.$page.isVisible) {
             this.$page.hide();
           }
-          
+
           // Open the created file
           const openedFile = await editorManager.openFile(fullPath);
           if (!openedFile) {
@@ -2114,35 +2151,35 @@ Respond with clean JSON only (no markdown, no explanations):
       if (!await fs(filePath).exists()) {
         throw new Error("File not found");
       }
-      
+
       const content = await fs(filePath).readFile('utf8');
       const currentName = filePath.split('/').pop();
-      
+
       const aiPrompt = `Analyze this file content and suggest a better filename:
-      
+
       Current name: ${currentName}
       Content:
       \`\`\`
       ${content.substring(0, 1000)}
       \`\`\`
-      
+
       Suggest 3 alternative filenames that better describe the file's purpose. Consider:
       1. File content and functionality
       2. Naming conventions
       3. Descriptive but concise names
-      
+
       Respond with just the filenames, one per line.`;
-      
+
       const response = await this.getAiResponse(aiPrompt);
       const suggestions = response.split('\n').filter(name => name.trim());
-      
+
       const selectedName = await select("Choose new filename:", [currentName, ...suggestions]);
-      
+
       if (selectedName && selectedName !== currentName) {
         const newPath = filePath.replace(currentName, selectedName);
         await fs(filePath).moveTo(newPath);
         window.toast(`File renamed to: ${selectedName}`, 3000);
-        
+
         // Update editor if file is open
         const openFile = editorManager.getFile(filePath);
         if (openFile) {
@@ -2157,33 +2194,44 @@ Respond with clean JSON only (no markdown, no explanations):
 
   async organizeProjectStructure() {
     try {
+      loader.showTitleLoader();
+      window.toast("Scanning project structure...", 2000);
+
       const projectFiles = await this.scanProjectStructure();
-      
-      const aiPrompt = `Analyze this project structure and suggest improvements:
-      
-      Current structure:
-      ${JSON.stringify(projectFiles, null, 2)}
-      
-      Suggest:
-      1. Better folder organization
-      2. Files that should be moved
-      3. New folders to create
-      4. Files that might be redundant
-      
-      Provide actionable reorganization steps.`;
-      
+
+      if (!projectFiles || projectFiles.length === 0) {
+        loader.removeTitleLoader();
+        window.toast("No project files found to organize", 3000);
+        return;
+      }
+
+      const aiPrompt = `Project structure analysis for organization:
+
+Files found: ${projectFiles.length}
+${projectFiles.slice(0, 20).map(f => `- ${f.name} (${f.type})`).join('\n')}
+
+Suggest improvements:
+1. Better folder organization
+2. Files to move/group
+3. New directories needed
+4. Cleanup recommendations
+
+Response format: Clear actionable steps.`;
+
       const response = await this.getAiResponse(aiPrompt);
-      
+      loader.removeTitleLoader();
+
       // Show suggestions in chat
       if (!this.$page.isVisible) {
         await this.run();
       }
-      
-      this.appendUserQuery("Analyze and suggest project structure improvements");
-      this.appendGptResponse(response);
-      
+
+      this.appendUserQuery("📁 Analyze and suggest project structure improvements");
+      this.appendGptResponse(`📋 **Project Organization Analysis**\n\n${response}\n\n✨ *Use bulk operations to implement these suggestions*`);
+
     } catch (error) {
-      window.toast(`Error analyzing project: ${error.message}`, 3000);
+      loader.removeTitleLoader();
+      window.toast(`❌ Error analyzing project: ${error.message}`, 3000);
     }
   }
 
@@ -2193,39 +2241,44 @@ Respond with clean JSON only (no markdown, no explanations):
         (Date.now() - this.lastStructureScan) < 300000) {
       return this.projectStructure;
     }
-    
+
     try {
       const structure = {};
       const scanDir = async (dirPath, depth = 0) => {
         if (depth > 3) return; // Limit depth
-        
-        if (await fs(dirPath).exists()) {
-          const items = await fs(dirPath).lsDir();
-          structure[dirPath] = {
-            files: [],
-            folders: []
-          };
-          
-          for (const item of items) {
-            if (item.isDirectory && !item.name.startsWith('.')) {
-              structure[dirPath].folders.push(item.name);
-              await scanDir(`${dirPath}/${item.name}`, depth + 1);
-            } else if (item.isFile) {
-              structure[dirPath].files.push({
-                name: item.name,
-                size: item.length,
-                extension: item.name.split('.').pop()
-              });
+
+        try {
+          const dirFs = fs(dirPath);
+          if (dirFs && await dirFs.exists()) {
+            const items = await dirFs.lsDir();
+            structure[dirPath] = {
+              files: [],
+              folders: []
+            };
+
+            for (const item of items) {
+              if (item.isDirectory && !item.name.startsWith('.')) {
+                structure[dirPath].folders.push(item.name);
+                await scanDir(`${dirPath}/${item.name}`, depth + 1);
+              } else if (item.isFile) {
+                structure[dirPath].files.push({
+                  name: item.name,
+                  size: item.length || 0,
+                  extension: item.name.split('.').pop() || 'unknown'
+                });
+              }
             }
           }
+        } catch (error) {
+          console.warn(`Error scanning directory ${dirPath}:`, error);
         }
       };
-      
+
       await scanDir(window.PLUGIN_DIR || '/sdcard');
-      
+
       this.projectStructure = structure;
       this.lastStructureScan = Date.now();
-      
+
       return structure;
     } catch (error) {
       console.error('Error scanning project structure:', error);
@@ -2242,7 +2295,7 @@ Respond with clean JSON only (no markdown, no explanations):
         "Add headers to files",
         "Convert file formats"
       ]);
-      
+
       switch (operation) {
         case "Rename multiple files":
           await this.bulkRenameFiles();
@@ -2267,23 +2320,28 @@ Respond with clean JSON only (no markdown, no explanations):
 
   async bulkRenameFiles() {
     try {
+      const files = await this.selectMultipleFiles();
+      if (!files.length) {
+        window.toast("No files selected", 3000);
+        return;
+      }
+
       const pattern = await prompt("Enter naming pattern (use {index} for numbers):", "file_{index}.js", "text");
       if (!pattern) return;
-      
-      const files = await this.selectMultipleFiles();
-      if (!files.length) return;
-      
+
       const confirmRename = await select(`Rename ${files.length} files using pattern: ${pattern}?`, ["Yes", "No"]);
       if (confirmRename === "Yes") {
+        loader.showTitleLoader();
         let renamedCount = 0;
+
         for (let i = 0; i < files.length; i++) {
           try {
-            const fileFs = await fs(files[i]);
-            const oldName = files[i].split('/').pop();
-            const extension = oldName.includes('.') ? '.' + oldName.split('.').pop() : '';
-            const newName = pattern.replace('{index}', i + 1).replace(/\.[^.]*$/, '') + extension;
-            
+            const fileFs = fs(files[i]);
             if (await fileFs.exists()) {
+              const oldName = files[i].split('/').pop();
+              const extension = oldName.includes('.') ? '.' + oldName.split('.').pop() : '';
+              const newName = pattern.replace('{index}', i + 1).replace(/\.[^.]*$/, '') + extension;
+
               await fileFs.renameTo(newName);
               renamedCount++;
             }
@@ -2291,50 +2349,73 @@ Respond with clean JSON only (no markdown, no explanations):
             console.error(`Error renaming file ${files[i]}:`, err);
           }
         }
-        window.toast(`Renamed ${renamedCount} files`, 3000);
+
+        loader.removeTitleLoader();
+        window.toast(`✅ Renamed ${renamedCount} files`, 4000);
       }
     } catch (error) {
-      window.toast(`Bulk rename error: ${error.message}`, 3000);
+      loader.removeTitleLoader();
+      window.toast(`❌ Bulk rename error: ${error.message}`, 3000);
     }
   }
 
   async bulkMoveFiles() {
     try {
-      const fileBrowser = acode.require('fileBrowser');
-      
-      // Select target folder
-      const targetResult = await fileBrowser('folder', 'Select target folder for files');
-      if (!targetResult) return;
-      
-      const targetFolder = targetResult.url;
+      // First select files to move
       const files = await this.selectMultipleFiles();
-      if (!files.length) return;
-      
-      // Ensure target folder exists
-      const targetFs = await fs(targetFolder);
-      if (!await targetFs.exists()) {
-        window.toast("Target folder not accessible", 3000);
+      if (!files.length) {
+        window.toast("No files selected", 3000);
         return;
       }
-      
+
+      const fileBrowser = acode.require('fileBrowser');
+
+      // Then select target folder
+      const targetResult = await fileBrowser('folder', 'Select target folder for files');
+      if (!targetResult) {
+        window.toast("No target folder selected", 3000);
+        return;
+      }
+
+      const targetFolder = targetResult.url;
+
+      // Ensure target folder exists
+      try {
+        const targetFs = fs(targetFolder);
+        if (!await targetFs.exists()) {
+          window.toast("Target folder not accessible", 3000);
+          return;
+        }
+      } catch (err) {
+        window.toast("Cannot access target folder", 3000);
+        return;
+      }
+
       const confirmMove = await select(`Move ${files.length} files to ${targetResult.name}?`, ["Yes", "No"]);
       if (confirmMove === "Yes") {
+        loader.showTitleLoader();
         let movedCount = 0;
+
         for (const filePath of files) {
           try {
-            const fileFs = await fs(filePath);
-            const fileName = filePath.split('/').pop();
-            const newPath = `${targetFolder}/${fileName}`;
-            await fileFs.moveTo(newPath);
-            movedCount++;
+            const fileFs = fs(filePath);
+            if (await fileFs.exists()) {
+              const fileName = filePath.split('/').pop();
+              const newPath = `${targetFolder}/${fileName}`;
+              await fileFs.moveTo(newPath);
+              movedCount++;
+            }
           } catch (err) {
             console.error(`Error moving file ${filePath}:`, err);
           }
         }
-        window.toast(`Moved ${movedCount} files to ${targetResult.name}`, 3000);
+
+        loader.removeTitleLoader();
+        window.toast(`✅ Moved ${movedCount} files to ${targetResult.name}`, 4000);
       }
     } catch (error) {
-      window.toast(`Bulk move error: ${error.message}`, 3000);
+      loader.removeTitleLoader();
+      window.toast(`❌ Bulk move error: ${error.message}`, 3000);
     }
   }
 
@@ -2349,26 +2430,26 @@ Respond with clean JSON only (no markdown, no explanations):
           required: true
         }
       ]);
-      
+
       if (!extensions) return;
-      
+
       const extensionList = extensions.extensions.split(',').map(ext => ext.trim());
       const unusedFiles = await this.getAllProjectFiles(extensionList);
-      
+
       if (!unusedFiles.length) {
         window.toast("No unused files found", 3000);
         return;
       }
-      
+
       const fileList = unusedFiles.map(f => f.split('/').pop()).join('\n');
       const confirmDelete = await select(`Delete ${unusedFiles.length} unused files?\n\n${fileList.substring(0, 200)}${fileList.length > 200 ? '...' : ''}`, ["Yes", "No"]);
-      
+
       if (confirmDelete === "Yes") {
         let deletedCount = 0;
         for (const filePath of unusedFiles) {
           try {
-            const fileFs = await fs(filePath);
-            if (await fileFs.exists()) {
+            const fileFs = fs(filePath);
+            if (fileFs && await fileFs.exists()) {
               await fileFs.delete();
               deletedCount++;
             }
@@ -2407,33 +2488,33 @@ Respond with clean JSON only (no markdown, no explanations):
           required: true
         }
       ]);
-      
+
       if (!headerInfo) return;
-      
+
       const extensionList = headerInfo.extensions.split(',').map(ext => ext.trim());
       const files = await this.getAllProjectFiles(extensionList);
-      
+
       if (!files.length) {
         window.toast("No matching files found", 3000);
         return;
       }
-      
+
       const confirmAdd = await select(`Add headers to ${files.length} files?`, ["Yes", "No"]);
       if (confirmAdd === "Yes") {
         let processedCount = 0;
         for (const filePath of files) {
           try {
-            const fileFs = await fs(filePath);
-            if (await fileFs.exists()) {
+            const fileFs = fs(filePath);
+            if (fileFs && await fileFs.exists()) {
               const content = await fileFs.readFile('utf8');
               const fileName = filePath.split('/').pop();
               const currentDate = new Date().toLocaleDateString();
-              
+
               const header = headerInfo.header
                 .replace('{filename}', fileName)
                 .replace('{date}', currentDate)
                 .replace('{author}', headerInfo.author);
-              
+
               // Check if header already exists
               if (!content.startsWith(header.trim())) {
                 const newContent = header + content;
@@ -2470,35 +2551,37 @@ Respond with clean JSON only (no markdown, no explanations):
           required: true
         }
       ]);
-      
+
       if (!conversion) return;
-      
+
       const files = await this.getAllProjectFiles([conversion.fromExt]);
-      
+
       if (!files.length) {
         window.toast(`No ${conversion.fromExt} files found`, 3000);
         return;
       }
-      
+
       const confirmConvert = await select(`Convert ${files.length} files from ${conversion.fromExt} to ${conversion.toExt}?`, ["Yes", "No"]);
       if (confirmConvert === "Yes") {
         let convertedCount = 0;
         for (const filePath of files) {
           try {
-            const fileFs = await fs(filePath);
-            if (await fileFs.exists()) {
+            const fileFs = fs(filePath);
+            if (fileFs && await fileFs.exists()) {
               const content = await fileFs.readFile('utf8');
               const baseName = filePath.replace(conversion.fromExt, '');
               const newPath = baseName + conversion.toExt;
-              
+
               // Create new file with converted extension
               const parentDir = filePath.substring(0, filePath.lastIndexOf('/'));
-              const parentFs = await fs(parentDir);
+              const parentFs = fs(parentDir);
               const newFileName = newPath.split('/').pop();
-              
-              await parentFs.createFile(newFileName, content);
-              await fileFs.delete(); // Delete original file
-              convertedCount++;
+
+              if (parentFs) {
+                await parentFs.createFile(newFileName, content);
+                await fileFs.delete(); // Delete original file
+                convertedCount++;
+              }
             }
           } catch (err) {
             console.error(`Error converting file ${filePath}:`, err);
@@ -2516,41 +2599,40 @@ Respond with clean JSON only (no markdown, no explanations):
       const fileBrowser = acode.require('fileBrowser');
       const fileList = acode.require('fileList');
       const selectedFiles = [];
-      
+
       // Get all open folders for context
       const openFolders = await fileList();
-      
+
       if (openFolders.length === 0) {
         window.toast("Please open a folder first", 3000);
         return [];
       }
-      
-      // Show selection dialog
-      const continueSelection = true;
+
+      let continueSelection = true;
       let selectionCount = 0;
-      
+
       while (continueSelection && selectionCount < 10) { // Limit to 10 files
         try {
-          const result = await fileBrowser('file', `Select files (${selectionCount} selected)`, true, [{
-            name: openFolders[0].name,
-            url: openFolders[0].url
-          }]);
-          
+          const result = await fileBrowser('file', `Select files (${selectionCount} selected)`, false, openFolders);
+
           if (result && result.url && !selectedFiles.includes(result.url)) {
             selectedFiles.push(result.url);
             selectionCount++;
-            
+
             const continuePrompt = await select(`Added ${result.name}. Continue selecting?`, ["Yes", "Done"]);
-            if (continuePrompt === "Done") {
-              break;
+            if (continuePrompt === "Done" || continuePrompt === null) {
+              continueSelection = false;
             }
+          } else {
+            // User cancelled or no file selected
+            continueSelection = false;
           }
         } catch (error) {
           // User cancelled or error occurred
-          break;
+          continueSelection = false;
         }
       }
-      
+
       return selectedFiles;
     } catch (error) {
       console.error('Error in selectMultipleFiles:', error);
@@ -2581,7 +2663,7 @@ Respond with clean JSON only (no markdown, no explanations):
     */
     try {
       const fileFs = await fs(filePath);
-      
+
       // Create backup before editing
       if (await fileFs.exists()) {
         const originalContent = await fileFs.readFile('utf8');
@@ -2589,16 +2671,16 @@ Respond with clean JSON only (no markdown, no explanations):
         const parentDir = filePath.substring(0, filePath.lastIndexOf('/'));
         const parentFs = await fs(parentDir);
         const backupFileName = backupPath.split('/').pop();
-        
+
         // Create backup file
         await parentFs.createFile(backupFileName, originalContent);
-        
+
         // Store backup info for undo
         this.storeUndoInfo(filePath, originalContent);
-        
+
         // Write new content
         await fileFs.writeFile(newContent);
-        
+
         // Update open editor file if it's currently open
         const activeFile = editorManager.activeFile;
         if (activeFile && (activeFile.uri === filePath || activeFile.location + '/' + activeFile.filename === filePath)) {
@@ -2612,7 +2694,7 @@ Respond with clean JSON only (no markdown, no explanations):
         const parentFs = await fs(parentDir);
         await parentFs.createFile(fileName, newContent);
       }
-      
+
       return { success: true, message: `File edited successfully: ${filePath.split('/').pop()}` };
     } catch (error) {
       console.error('Error editing file content:', error);
@@ -2630,7 +2712,7 @@ Respond with clean JSON only (no markdown, no explanations):
         const content = await fs(filePath).readFile('utf8');
         const backupPath = window.DATA_STORAGE + 'deleted_files/' + Date.now() + '_' + filePath.split('/').pop();
         await fs(backupPath).writeFile(content);
-        
+
         await fs(filePath).delete();
         return { success: true, message: `File deleted successfully: ${filePath}` };
       } else {
@@ -2649,7 +2731,7 @@ Respond with clean JSON only (no markdown, no explanations):
       // Improved diff implementation
       const originalLines = originalContent.split('\n');
       const newLines = newContent.split('\n');
-      
+
       // Create header with file info
       let diffHtml = `
         <div class="diff-container">
@@ -2661,12 +2743,12 @@ Respond with clean JSON only (no markdown, no explanations):
           </div>
           <div class="diff-content">
       `;
-      
+
       // Track consecutive unchanged lines for collapsing
       let unchangedCount = 0;
       let unchangedBuffer = [];
       const contextLines = 3; // Number of context lines to show around changes
-      
+
       // Function to flush unchanged lines with context
       const flushUnchanged = () => {
         if (unchangedCount <= contextLines * 2) {
@@ -2679,45 +2761,45 @@ Respond with clean JSON only (no markdown, no explanations):
           for (let i = 0; i < contextLines; i++) {
             diffHtml += unchangedBuffer[i];
           }
-          
+
           // Add collapse indicator
           diffHtml += `<div class="diff-collapse">... ${unchangedCount - (contextLines * 2)} more unchanged lines ...</div>`;
-          
+
           // Show context lines at end
           for (let i = unchangedBuffer.length - contextLines; i < unchangedBuffer.length; i++) {
             diffHtml += unchangedBuffer[i];
           }
         }
-        
+
         unchangedCount = 0;
         unchangedBuffer = [];
       };
-      
+
       // Enhanced diff algorithm with context
       const maxLines = Math.max(originalLines.length, newLines.length);
       let hasChanges = false;
-      
+
       for (let i = 0; i < maxLines; i++) {
         const origLine = originalLines[i] || '';
         const newLine = newLines[i] || '';
-        
+
         // Remove HTML escaping to preserve markdown formatting
         const escapeHtml = (text) => {
           // Return text as-is to preserve markdown and code formatting
           return text;
         };
-        
+
         const escapedOrigLine = origLine; // No escaping for better formatting
         const escapedNewLine = newLine; // No escaping for better formatting
-        
+
         if (origLine !== newLine) {
           // Flush any accumulated unchanged lines before showing changes
           if (unchangedCount > 0) {
             flushUnchanged();
           }
-          
+
           hasChanges = true;
-          
+
           if (origLine && newLine) {
             // Modified line
             diffHtml += `<div class="diff-line modified">
@@ -2747,22 +2829,22 @@ Respond with clean JSON only (no markdown, no explanations):
           </div>`);
         }
       }
-      
+
       // Flush any remaining unchanged lines
       if (unchangedCount > 0) {
         flushUnchanged();
       }
-      
+
       // If no changes detected, show a message
       if (!hasChanges) {
         diffHtml += `<div class="diff-no-changes">No changes detected</div>`;
       }
-      
+
       diffHtml += `
           </div>
         </div>
       `;
-      
+
       return diffHtml;
     } catch (error) {
       console.error("Error generating diff:", error);
@@ -2777,7 +2859,7 @@ Respond with clean JSON only (no markdown, no explanations):
     try {
       const results = [];
       const projectFiles = await this.getAllProjectFiles(fileExtensions);
-      
+
       for (const filePath of projectFiles) {
         if (await fs(filePath).exists()) {
           const content = await fs(filePath).readFile('utf8');
@@ -2791,7 +2873,7 @@ Respond with clean JSON only (no markdown, no explanations):
           }
         }
       }
-      
+
       return { success: true, results, message: `Replaced "${searchTerm}" with "${replaceTerm}" in ${results.length} files` };
     } catch (error) {
       return { success: false, error: error.message };
@@ -2820,11 +2902,11 @@ Respond with clean JSON only (no markdown, no explanations):
           }
         }
       };
-      
+
       // Scan open folders first, fallback to root directories
       const fileList = acode.require('fileList');
       const openFolders = await fileList();
-      
+
       if (openFolders.length > 0) {
         for (const folder of openFolders) {
           await scanDirectory(folder.url);
@@ -2854,7 +2936,7 @@ Respond with clean JSON only (no markdown, no explanations):
     */
     if (!this.undoStack) this.undoStack = [];
     this.undoStack.push({ filePath, content, timestamp: Date.now() });
-    
+
     // Keep only last 10 undo operations
     if (this.undoStack.length > 10) {
       this.undoStack.shift();
@@ -2869,18 +2951,18 @@ Respond with clean JSON only (no markdown, no explanations):
       if (!this.undoStack || this.undoStack.length === 0) {
         return { success: false, error: 'No operations to undo' };
       }
-      
+
       const lastOp = this.undoStack.pop();
       const fileFs = await fs(lastOp.filePath);
       await fileFs.writeFile(lastOp.content);
-      
+
       // Update open editor file if it's currently open
       const activeFile = editorManager.activeFile;
       if (activeFile && (activeFile.uri === lastOp.filePath || activeFile.location + '/' + activeFile.filename === lastOp.filePath)) {
         activeFile.session.setValue(lastOp.content);
         activeFile.isUnsaved = false;
       }
-      
+
       return { success: true, message: `Undone changes to ${lastOp.filePath.split('/').pop()}` };
     } catch (error) {
       console.error('Error in undoLastOperation:', error);
@@ -2893,27 +2975,27 @@ Respond with clean JSON only (no markdown, no explanations):
     if (!await fs(currentFilePath).exists()) {
       return { success: false, error: 'Current file not found' };
     }
-    
+
     const content = await fs(currentFilePath).readFile('utf8');
     const imports = [];
-    
+
     // Match import/require patterns
     const importRegex = /(?:import.*from\s+['"]([^'"]+)['"]|require\(['"]([^'"]+)['"]\))/g;
     let match;
-    
+
     while ((match = importRegex.exec(content)) !== null) {
       const importPath = match[1] || match[2];
       if (importPath && !importPath.startsWith('http') && !importPath.includes('node_modules')) {
         imports.push(importPath);
       }
     }
-    
+
     const relatedFiles = [];
     const basePath = currentFilePath.substring(0, currentFilePath.lastIndexOf('/'));
-    
+
     for (const importPath of imports) {
       let resolvedPath;
-      
+
       // Resolve relative paths
       if (importPath.startsWith('./')) {
         resolvedPath = `${basePath}/${importPath.substring(2)}`;
@@ -2921,14 +3003,14 @@ Respond with clean JSON only (no markdown, no explanations):
         // Handle multiple levels of ../
         const upLevels = (importPath.match(/\.\.\//g) || []).length;
         let parentPath = basePath;
-        
+
         for (let i = 0; i < upLevels; i++) {
           const lastSlash = parentPath.lastIndexOf('/');
           if (lastSlash > 0) {
             parentPath = parentPath.substring(0, lastSlash);
           }
         }
-        
+
         const remainingPath = importPath.replace(/\.\.\//g, '');
         resolvedPath = `${parentPath}/${remainingPath}`;
       } else if (importPath.startsWith('/')) {
@@ -2936,11 +3018,11 @@ Respond with clean JSON only (no markdown, no explanations):
       } else {
         resolvedPath = `${basePath}/${importPath}`;
       }
-      
+
       // Try different extensions
       const extensions = ['', '.js', '.json', '.ts', '.jsx', '.tsx', '.vue', '.css', '.scss'];
       let found = false;
-      
+
       for (const ext of extensions) {
         const fullPath = resolvedPath + ext;
         try {
@@ -2955,12 +3037,12 @@ Respond with clean JSON only (no markdown, no explanations):
           continue;
         }
       }
-      
+
       if (!found) {
         console.warn(`Could not resolve import: ${importPath}`);
       }
     }
-    
+
     return { success: true, files: relatedFiles, imports };
   } catch (error) {
     console.error('Error reading related files:', error);
@@ -2974,12 +3056,12 @@ Respond with clean JSON only (no markdown, no explanations):
     const dropdown = tag("div", {
       className: "provider-dropdown"
     });
-    
+
     const select = tag("select", {
       className: "provider-select",
       id: "ai-provider-select"
     });
-    
+
     AI_PROVIDERS.forEach(provider => {
       const option = tag("option", {
         value: provider,
@@ -2987,19 +3069,294 @@ Respond with clean JSON only (no markdown, no explanations):
       });
       select.appendChild(option);
     });
-    
+
     // Set current provider
     const currentProvider = window.localStorage.getItem("ai-assistant-provider");
     if (currentProvider) {
       select.value = currentProvider;
     }
-    
+
     select.addEventListener('change', async (e) => {
       await this.switchProvider(e.target.value);
     });
-    
+
     dropdown.appendChild(select);
     return dropdown;
+  }
+
+  createTokenDisplay() {
+    const tokenDisplay = tag("div", {
+      className: "token-display",
+      id: "token-usage-display"
+    });
+
+    const tokenIcon = tag("span", {
+      className: "token-icon",
+      textContent: "🪙"
+    });
+
+    this.$tokenText = tag("span", {
+      className: "token-text",
+      textContent: "0"
+    });
+
+    tokenDisplay.appendChild(tokenIcon);
+    tokenDisplay.appendChild(this.$tokenText);
+    
+    tokenDisplay.onclick = () => this.showTokenUsageDetails();
+    
+    this.updateTokenDisplay();
+    return tokenDisplay;
+  }
+
+  loadTokenUsage() {
+    try {
+      const stored = localStorage.getItem('ai-assistant-token-usage');
+      if (stored) {
+        const data = JSON.parse(stored);
+        const today = new Date().toDateString();
+        
+        if (data.lastReset !== today) {
+          // Reset daily counter
+          data.today = 0;
+          data.lastReset = today;
+        }
+        
+        this.tokenUsage = { ...this.tokenUsage, ...data };
+      }
+    } catch (error) {
+      console.error('Error loading token usage:', error);
+    }
+  }
+
+  saveTokenUsage() {
+    try {
+      localStorage.setItem('ai-assistant-token-usage', JSON.stringify(this.tokenUsage));
+    } catch (error) {
+      console.error('Error saving token usage:', error);
+    }
+  }
+
+  updateTokenUsage(tokens) {
+    this.tokenUsage.total += tokens;
+    this.tokenUsage.today += tokens;
+    this.tokenUsage.session += tokens;
+    this.saveTokenUsage();
+    this.updateTokenDisplay();
+  }
+
+  updateTokenDisplay() {
+    if (this.$tokenText) {
+      const { session, today } = this.tokenUsage;
+      this.$tokenText.textContent = `${session}`;
+      this.$tokenText.title = `Session: ${session} | Today: ${today}`;
+    }
+  }
+
+  async showTokenUsageDetails() {
+    const { total, today, session } = this.tokenUsage;
+    const currentProvider = localStorage.getItem('ai-assistant-provider') || 'None';
+    
+    const details = `📊 Token Usage Statistics
+    
+🔹 Current Session: ${session.toLocaleString()} tokens
+🔹 Today: ${today.toLocaleString()} tokens  
+🔹 Total: ${total.toLocaleString()} tokens
+🔹 Provider: ${currentProvider}
+
+💡 Tip: Use shorter prompts and enable caching to reduce token usage.`;
+
+    await acode.alert('Token Usage', details);
+  }
+
+  async searchInChat() {
+    try {
+      const searchTerm = await prompt("Search in chat:", "", "text");
+      if (!searchTerm) return;
+      
+      const chatMessages = this.$chatBox.querySelectorAll('.message, .ai_message');
+      let foundCount = 0;
+      
+      chatMessages.forEach(msg => {
+        const text = msg.textContent.toLowerCase();
+        msg.style.backgroundColor = '';
+        msg.style.border = '';
+        
+        if (text.includes(searchTerm.toLowerCase())) {
+          msg.style.backgroundColor = 'rgba(0, 212, 255, 0.2)';
+          msg.style.border = '2px solid var(--galaxy-star-blue)';
+          foundCount++;
+        }
+      });
+      
+      if (foundCount > 0) {
+        window.toast(`Found ${foundCount} messages containing "${searchTerm}"`, 4000);
+        // Scroll to first match
+        const firstMatch = this.$chatBox.querySelector('[style*="border: 2px solid"]');
+        if (firstMatch) {
+          firstMatch.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      } else {
+        window.toast(`No messages found containing "${searchTerm}"`, 3000);
+      }
+    } catch (error) {
+      console.error('Error searching chat:', error);
+      window.toast('Error searching chat', 3000);
+    }
+  }
+
+  async clearChatHistory() {
+    try {
+      const confirm = await select("Clear all chat history?", ["Yes", "No"]);
+      if (confirm === "Yes") {
+        this.$chatBox.innerHTML = "";
+        this.messageHistories = {};
+        this.messageSessionConfig = {
+          configurable: {
+            sessionId: uuidv4(),
+          },
+        };
+        CURRENT_SESSION_FILEPATH = null;
+        window.toast("✅ Chat history cleared", 3000);
+      }
+    } catch (error) {
+      console.error('Error clearing chat history:', error);
+      window.toast('❌ Error clearing chat', 3000);
+    }
+  }
+
+  async exportConversation() {
+    try {
+      const chatMessages = this.$chatBox.querySelectorAll('.wrapper, .ai_wrapper');
+      if (chatMessages.length === 0) {
+        window.toast("No conversation to export", 3000);
+        return;
+      }
+      
+      let exportText = `# AI Chat Conversation\nExported: ${new Date().toLocaleString()}\nProvider: ${localStorage.getItem('ai-assistant-provider') || 'Unknown'}\n\n`;
+      
+      chatMessages.forEach((wrapper, index) => {
+        const isUser = wrapper.classList.contains('wrapper');
+        const message = wrapper.querySelector('.message, .ai_message');
+        const text = message ? message.textContent.trim() : '';
+        
+        if (text) {
+          exportText += `## ${isUser ? 'User' : 'AI Assistant'} (${index + 1})\n${text}\n\n`;
+        }
+      });
+      
+      const blob = new Blob([exportText], { type: 'text/markdown' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `ai-chat-${new Date().toISOString().slice(0, 10)}.md`;
+      a.click();
+      URL.revokeObjectURL(url);
+      
+      window.toast("📁 Conversation exported successfully", 3000);
+    } catch (error) {
+      console.error('Error exporting conversation:', error);
+      window.toast('❌ Export failed', 3000);
+    }
+  }
+
+  async copyAllMessages() {
+    try {
+      const chatMessages = this.$chatBox.querySelectorAll('.wrapper, .ai_wrapper');
+      if (chatMessages.length === 0) {
+        window.toast("No messages to copy", 3000);
+        return;
+      }
+      
+      let allText = '';
+      chatMessages.forEach((wrapper, index) => {
+        const isUser = wrapper.classList.contains('wrapper');
+        const message = wrapper.querySelector('.message, .ai_message');
+        const text = message ? message.textContent.trim() : '';
+        
+        if (text) {
+          allText += `${isUser ? 'User' : 'AI'}: ${text}\n\n`;
+        }
+      });
+      
+      if (copy(allText)) {
+        window.toast("📋 All messages copied to clipboard", 3000);
+      } else {
+        window.toast("❌ Failed to copy messages", 3000);
+      }
+    } catch (error) {
+      console.error('Error copying messages:', error);
+      window.toast('❌ Copy failed', 3000);
+    }
+  }
+
+  async showSettings() {
+    try {
+      const currentProvider = localStorage.getItem('ai-assistant-provider') || 'None';
+      const currentModel = localStorage.getItem('ai-assistant-model-name') || 'None';
+      const { total, today, session } = this.tokenUsage;
+      
+      const settings = await select("Settings", [
+        "Change Provider",
+        "Change Model", 
+        "Toggle Real-time Analysis",
+        "Clear Token Usage",
+        "Reset All Settings",
+        "Back"
+      ]);
+      
+      switch (settings) {
+        case "Change Provider":
+          const newProvider = await select("Select Provider", AI_PROVIDERS);
+          if (newProvider) {
+            await this.switchProvider(newProvider);
+          }
+          break;
+          
+        case "Change Model":
+          const provider = localStorage.getItem('ai-assistant-provider');
+          if (provider) {
+            const apiKey = await this.apiKeyManager.getAPIKey(provider);
+            const models = await getModelsFromProvider(provider, apiKey);
+            const newModel = await select("Select Model", models);
+            if (newModel) {
+              localStorage.setItem('ai-assistant-model-name', newModel);
+              this.initiateModel(provider, apiKey, newModel);
+              window.toast(`Switched to ${newModel}`, 3000);
+            }
+          }
+          break;
+          
+        case "Toggle Real-time Analysis":
+          this.toggleRealTimeAI();
+          break;
+          
+        case "Clear Token Usage":
+          const confirmClear = await select("Clear token usage statistics?", ["Yes", "No"]);
+          if (confirmClear === "Yes") {
+            this.tokenUsage = { total: 0, today: 0, session: 0, lastReset: new Date().toDateString() };
+            this.saveTokenUsage();
+            this.updateTokenDisplay();
+            window.toast("Token usage cleared", 3000);
+          }
+          break;
+          
+        case "Reset All Settings":
+          const confirmReset = await select("Reset all plugin settings?", ["Yes", "No"]);
+          if (confirmReset === "Yes") {
+            localStorage.removeItem('ai-assistant-provider');
+            localStorage.removeItem('ai-assistant-model-name');
+            localStorage.removeItem('ai-assistant-token-usage');
+            this.tokenUsage = { total: 0, today: 0, session: 0, lastReset: new Date().toDateString() };
+            this.updateTokenDisplay();
+            window.toast("All settings reset", 3000);
+          }
+          break;
+      }
+    } catch (error) {
+      console.error('Error in settings:', error);
+      window.toast('❌ Settings error', 3000);
+    }
   }
 
   async switchProvider(newProvider) {
@@ -3008,24 +3365,24 @@ Respond with clean JSON only (no markdown, no explanations):
     if (!AI_PROVIDERS.includes(newProvider) && newProvider !== OPENAI_LIKE) {
       throw new Error('Invalid provider selected');
     }
-    
+
     const previousProvider = window.localStorage.getItem("ai-assistant-provider");
     if (previousProvider === newProvider) {
       return; // No change needed
     }
-    
+
     // Handle different provider types
     if (newProvider === "Ollama") {
       // No API key needed for Ollama
       window.localStorage.setItem("ai-assistant-provider", newProvider);
-      
+
       // Get available models for Ollama
       try {
         loader.showTitleLoader();
         window.toast("Fetching available models...", 2000);
         const modelList = await getModelsFromProvider(newProvider, "No Need Of API Key");
         loader.removeTitleLoader();
-        
+
         const modelName = await select("Select AI Model", modelList);
         if (modelName) {
           window.localStorage.setItem("ai-assistant-model-name", modelName);
@@ -3069,26 +3426,26 @@ Respond with clean JSON only (no markdown, no explanations):
       const apiKey = await prompt(`Enter API key for ${newProvider}:`, "", "password", {
         required: true
       });
-      
+
       if (!apiKey) {
         return;
       }
-      
+
       try {
         loader.showTitleLoader();
         window.toast("Fetching available models...", 2000);
         const modelList = await getModelsFromProvider(newProvider, apiKey);
         loader.removeTitleLoader();
-        
+
         const modelName = await select("Select AI Model", modelList);
         if (modelName) {
           window.localStorage.setItem("ai-assistant-provider", newProvider);
           window.localStorage.setItem("ai-assistant-model-name", modelName);
-          
+
           if (this.apiKeyManager) {
             await this.apiKeyManager.saveAPIKey(newProvider, apiKey);
           }
-          
+
           this.initiateModel(newProvider, apiKey, modelName);
           window.toast(`Switched to ${newProvider}`, 3000);
         }
@@ -3111,55 +3468,55 @@ Respond with clean JSON only (no markdown, no explanations):
     const backdrop = tag("div", {
       className: "ai-edit-backdrop"
     });
-    
+
     const popup = tag("div", {
       className: "ai-edit-popup"
     });
-    
+
     const header = tag("div", {
       className: "ai-edit-popup-header"
     });
-    
+
     const title = tag("div", {
       className: "ai-edit-popup-title",
       textContent: "Edit with AI"
     });
-    
+
     const closeBtn = tag("button", {
       className: "ai-edit-popup-close",
       innerHTML: "&times;"
     });
-    
+
     header.append(title, closeBtn);
-    
+
     const body = tag("div", {
       className: "ai-edit-popup-body"
     });
-    
+
     const promptArea = tag("textarea", {
       className: "ai-edit-prompt",
       placeholder: "Describe what you want to do with the code...\nExample: 'Add error handling to this function' or 'Optimize this loop for better performance'",
       value: initialText
     });
-    
+
     const actions = tag("div", {
       className: "ai-edit-actions"
     });
-    
+
     const cancelBtn = tag("button", {
       className: "ai-edit-btn secondary",
       textContent: "Cancel"
     });
-    
+
     const editBtn = tag("button", {
       className: "ai-edit-btn primary",
       textContent: "Edit Code"
     });
-    
+
     actions.append(cancelBtn, editBtn);
     body.append(promptArea, actions);
     popup.append(header, body);
-    
+
     // Enhanced close functionality
     const closePopup = () => {
       if (document.body.contains(backdrop)) {
@@ -3169,17 +3526,17 @@ Respond with clean JSON only (no markdown, no explanations):
         document.body.removeChild(popup);
       }
     };
-    
+
     // Event listeners
     closeBtn.onclick = cancelBtn.onclick = closePopup;
-    
+
     // Close when clicking backdrop
     backdrop.onclick = (e) => {
       if (e.target === backdrop) {
         closePopup();
       }
     };
-    
+
     editBtn.onclick = async () => {
       const prompt = promptArea.value.trim();
       if (prompt) {
@@ -3190,7 +3547,7 @@ Respond with clean JSON only (no markdown, no explanations):
         promptArea.focus();
       }
     };
-    
+
     // Handle keyboard shortcuts
     const handleKeyDown = (e) => {
       if (e.key === 'Escape') {
@@ -3201,12 +3558,12 @@ Respond with clean JSON only (no markdown, no explanations):
         editBtn.click();
       }
     };
-    
+
     document.addEventListener('keydown', handleKeyDown);
-    
+
     // Append elements and focus
     document.body.append(backdrop, popup);
-    
+
     // Auto-focus with slight delay for better UX
     setTimeout(() => {
       promptArea.focus();
@@ -3222,24 +3579,24 @@ Respond with clean JSON only (no markdown, no explanations):
     window.toast("Please provide editing instructions", 3000);
     return;
   }
-  
+
   const loadingToast = window.toast("AI is processing your request...", 0);
-  
+
   try {
     const activeFile = editorManager.activeFile;
     if (!activeFile) {
       throw new Error("No active file to edit");
     }
-    
+
     const currentContent = editor.getValue();
     const selection = editor.getSelectedText();
     const fileExtension = activeFile.name.split('.').pop();
-    
+
     // Get file context information
     const filePath = activeFile.uri || activeFile.filename || activeFile.name;
     const fileDirectory = activeFile.location || (filePath ? filePath.split('/').slice(0, -1).join('/') : '');
     const cursorPos = editor.getCursorPosition();
-    
+
     let aiPrompt;
     if (selection) {
       aiPrompt = `EDIT SELECTED CODE REQUEST
@@ -3297,13 +3654,13 @@ ${currentContent}
 
 **OUTPUT:** Provide the complete edited file ready to replace current content:`;
     }
-    
+
     const response = await this.getAiResponse(aiPrompt);
-    
+
     if (response) {
       // Enhanced code extraction with better pattern matching
       let newCode = response.trim();
-      
+
       // Try multiple patterns to extract code
       const codeBlockPatterns = [
         /```[\w]*\s*([\s\S]*?)\s*```/g,  // Standard code blocks
@@ -3311,7 +3668,7 @@ ${currentContent}
         /<code>([\s\S]*?)<\/code>/g,     // HTML code tags
         /`([^`\n]+)`/g                   // Inline code (single line)
       ];
-      
+
       let codeMatch = null;
       for (const pattern of codeBlockPatterns) {
         const matches = [...response.matchAll(pattern)];
@@ -3323,7 +3680,7 @@ ${currentContent}
           break;
         }
       }
-      
+
       if (codeMatch && codeMatch[1]) {
         newCode = codeMatch[1].trim();
         console.log('Code extracted from block');
@@ -3345,7 +3702,7 @@ ${currentContent}
             !trimmed.match(/^I['']?ve?\s+/i)       // Not personal explanation
           );
         });
-        
+
         if (codeLines.length > 0) {
           newCode = codeLines.join('\n').trim();
           console.log('Code extracted by filtering');
@@ -3353,30 +3710,30 @@ ${currentContent}
           console.warn('No code patterns matched, using full response');
         }
       }
-      
+
       // Show diff before applying
       const shouldApply = await this.showEditDiff(selection || currentContent, newCode, activeFile.name);
-      
+
       if (shouldApply) {
         if (selection) {
           // Replace just the selected text
           const currentPos = editor.getCursorPosition();
           editor.session.replace(editor.selection.getRange(), newCode);
-          
+
           // Try to maintain cursor position
           editor.moveCursorToPosition(currentPos);
         } else {
           // Replace entire file content
           const currentPos = editor.getCursorPosition();
           const scrollTop = editor.session.getScrollTop();
-          
+
           editor.setValue(newCode, -1); // -1 to keep undo history
-          
+
           // Restore cursor and scroll position
           editor.moveCursorToPosition(currentPos);
           editor.session.setScrollTop(scrollTop);
         }
-        
+
         // Enhanced file saving with better error handling
         if (activeFile && activeFile.uri) {
           try {
@@ -3384,7 +3741,7 @@ ${currentContent}
             if (activeFile.markModified) {
               activeFile.markModified();
             }
-            
+
             // Use Acode's built-in save method if available
             if (activeFile.save && typeof activeFile.save === 'function') {
               await activeFile.save();
@@ -3394,16 +3751,16 @@ ${currentContent}
               await fs(activeFile.uri).writeFile(editor.getValue());
               window.toast("✅ File updated and saved successfully!", 3000);
             }
-            
+
             // Trigger file change events for other plugins
             if (window.editorManager && window.editorManager.onUpdate) {
               window.editorManager.onUpdate();
             }
-            
+
           } catch (saveError) {
             console.error("Error saving file:", saveError);
             window.toast(`⚠️ Code updated but couldn't save: ${saveError.message}`, 4000);
-            
+
             // Suggest manual save
             setTimeout(() => {
               window.toast("💡 Try Ctrl+S to save manually", 3000);
@@ -3433,7 +3790,7 @@ ${currentContent}
   async showEditDiff(originalCode, newCode, filename) {
     // Generate diff HTML
     const diffHtml = await this.showFileDiff(originalCode, newCode, filename);
-    
+
     // Create a modal dialog for the diff viewer
     const dialog = tag("div", {
       className: "ai-edit-popup",
@@ -3455,7 +3812,7 @@ ${currentContent}
         overflow: hidden;
       `
     });
-    
+
     // Create a semi-transparent backdrop
     const backdrop = tag("div", {
       style: `
@@ -3468,7 +3825,7 @@ ${currentContent}
         z-index: 999;
       `
     });
-    
+
     const header = tag("div", {
       className: "ai-edit-popup-header",
       style: `
@@ -3479,7 +3836,7 @@ ${currentContent}
         align-items: center;
       `
     });
-    
+
     const title = tag("div", {
       className: "ai-edit-popup-title",
       textContent: `Review Changes: ${filename}`,
@@ -3488,7 +3845,7 @@ ${currentContent}
         font-weight: bold;
       `
     });
-    
+
     const closeBtn = tag("button", {
       innerHTML: "X",
       style: `
@@ -3499,9 +3856,9 @@ ${currentContent}
         color: var(--primary-text-color);
       `
     });
-    
+
     header.append(title, closeBtn);
-    
+
     const body = tag("div", {
       className: "ai-edit-popup-body",
       innerHTML: diffHtml,
@@ -3511,7 +3868,7 @@ ${currentContent}
         flex: 1;
       `
     });
-    
+
     // Add custom styles for diff display
     const diffStyles = tag("style", {
       textContent: `
@@ -3556,9 +3913,9 @@ ${currentContent}
         }
       `
     });
-    
+
     document.head.appendChild(diffStyles);
-    
+
     const actions = tag("div", {
       className: "ai-edit-actions",
       style: `
@@ -3569,7 +3926,7 @@ ${currentContent}
         gap: 10px;
       `
     });
-    
+
     const cancelBtn = tag("button", {
       className: "ai-edit-btn secondary",
       textContent: "Cancel",
@@ -3582,7 +3939,7 @@ ${currentContent}
         color: var(--secondary-text-color);
       `
     });
-    
+
     const applyBtn = tag("button", {
       className: "ai-edit-btn primary",
       textContent: "Apply Changes",
@@ -3596,11 +3953,11 @@ ${currentContent}
         font-weight: bold;
       `
     });
-    
+
     actions.append(cancelBtn, applyBtn);
     dialog.append(header, body, actions);
     document.body.append(backdrop, dialog);
-    
+
     // Add event listeners for keyboard navigation
     const handleKeyDown = (e) => {
       if (e.key === "Escape") {
@@ -3615,9 +3972,9 @@ ${currentContent}
         resolve(true);
       }
     };
-    
+
     document.addEventListener("keydown", handleKeyDown);
-    
+
     return new Promise((resolve) => {
       closeBtn.onclick = cancelBtn.onclick = () => {
         document.body.removeChild(dialog);
@@ -3625,14 +3982,14 @@ ${currentContent}
         document.removeEventListener("keydown", handleKeyDown);
         resolve(false);
       };
-      
+
       applyBtn.onclick = () => {
         document.body.removeChild(dialog);
         document.body.removeChild(backdrop);
         document.removeEventListener("keydown", handleKeyDown);
         resolve(true);
       };
-      
+
       // Close when clicking on backdrop
       backdrop.onclick = () => {
         document.body.removeChild(dialog);
@@ -3677,24 +4034,24 @@ ${currentContent}
     if (!this.$page || !this.$page.isVisible) {
       await this.run();
     }
-    
+
     // Additional null safety checks
     if (!editorManager) {
       window.toast('⚠️ Editor not available', 3000);
       return;
     }
-    
+
     // Enhanced null safety for file context
     const fileName = activeFile && activeFile.name ? activeFile.name : 'Unknown';
     const fileExtension = fileName !== 'Unknown' ? fileName.split('.').pop() || 'txt' : 'txt';
-    
+
     const systemPrompt = `You are a professional code explainer. Focus on the selected code provided and explain it clearly and comprehensively.`;
-    
+
     // Get comprehensive file context
     const filePath = activeFile && activeFile.uri ? activeFile.uri : fileName;
     const fileDirectory = activeFile && activeFile.location ? activeFile.location : (filePath ? filePath.split('/').slice(0, -1).join('/') : 'Unknown');
     const projectContext = fileDirectory !== 'Unknown' ? fileDirectory.split('/').pop() : 'Current Project';
-    
+
     // Enhanced prompt with better structure and context
     const userPrompt = `CODE EXPLANATION REQUEST
 
@@ -3739,57 +4096,57 @@ Focus specifically on the selected code while considering its context within the
   const popup = tag("div", {
     className: "ai-edit-popup"
   });
-  
+
   const header = tag("div", {
     className: "ai-edit-popup-header"
   });
-  
+
   const title = tag("div", {
     className: "ai-edit-popup-title",
     textContent: "Generate Code"
   });
-  
+
   const closeBtn = tag("button", {
     className: "ai-edit-popup-close",
-    innerHTML: "Ã—"
+    innerHTML: "X"
   });
-  
+
   header.append(title, closeBtn);
-  
+
   const body = tag("div", {
     className: "ai-edit-popup-body"
   });
-  
+
   const promptArea = tag("textarea", {
     className: "ai-edit-prompt",
     placeholder: "Describe what code you want to generate...\nExample: 'Create a function to validate email addresses'"
   });
-  
+
   const actions = tag("div", {
     className: "ai-edit-actions"
   });
-  
+
   const cancelBtn = tag("button", {
     className: "ai-edit-btn secondary",
     textContent: "Cancel"
   });
-  
+
   const generateBtn = tag("button", {
     className: "ai-edit-btn primary",
     textContent: "Generate Code"
   });
-  
+
   actions.append(cancelBtn, generateBtn);
   body.append(promptArea, actions);
   popup.append(header, body);
-  
+
   // Event listeners
   closeBtn.onclick = cancelBtn.onclick = () => {
     if (document.body.contains(popup)) {
       document.body.removeChild(popup);
     }
   };
-  
+
   generateBtn.onclick = async () => {
     const userPrompt = promptArea.value.trim();
     if (userPrompt) {
@@ -3801,14 +4158,14 @@ Focus specifically on the selected code while considering its context within the
       window.toast("Please enter a description", 3000);
     }
   };
-  
+
   // Handle Enter key
   promptArea.addEventListener('keydown', (e) => {
     if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
       generateBtn.click();
     }
   });
-  
+
   document.body.appendChild(popup);
   promptArea.focus();
 }
@@ -3819,29 +4176,29 @@ Focus specifically on the selected code while considering its context within the
       window.toast("Please provide a description for code generation", 3000);
       return;
     }
-    
+
     if (userPrompt.length > 1000) {
       window.toast("Description too long. Please keep it under 1000 characters", 3000);
       return;
     }
-    
+
     const activeFile = editorManager.activeFile;
     let fileContent = "";
     let fileExtension = "js"; // default extension
-    
+
     if (activeFile) {
       fileContent = editor.getValue();
       fileExtension = activeFile.name.split('.').pop() || "js";
     }
-    
+
     // Show loading
     loader.showTitleLoader();
     window.toast("Generating code...", 3000);
-    
+
     try {
       // Improved prompt for better code generation
       const systemPrompt = `You are a professional code generator. Generate clean, efficient, and well-documented code based on user requirements.
-      
+
 **Instructions:**
 1. Generate ONLY the requested code - no explanations
 2. Use proper syntax for ${fileExtension} files
@@ -3866,15 +4223,15 @@ Generate the ${fileExtension} code:`;
           response = await this.sendAiQuery(aiPrompt);
         }
       }
-      
+
       if (!response) {
         throw new Error("AI service unavailable. Please check your API key and connection.");
       }
-      
+
       // Extract code from response
       const codeMatch = response.match(/```[\w]*\n([\s\S]*?)\n```/);
       let generatedCode = codeMatch ? codeMatch[1].trim() : response.trim();
-      
+
       // Clean up common AI response artifacts
       generatedCode = generatedCode
         .replace(/^Here'?s the code:?\s*/i, '')
@@ -3882,15 +4239,15 @@ Generate the ${fileExtension} code:`;
         .replace(/^```[\w]*\n?/g, '')
         .replace(/\n?```$/g, '')
         .trim();
-      
+
       if (!generatedCode) {
         throw new Error("No valid code generated");
       }
-      
+
       // Insert at cursor position
       const cursor = editor.getCursorPosition();
       editor.session.insert(cursor, generatedCode + '\n');
-      
+
       // Auto-save if file exists
       if (activeFile && activeFile.uri) {
         try {
@@ -3902,7 +4259,7 @@ Generate the ${fileExtension} code:`;
       } else {
         window.toast("Code generated successfully!", 3000);
       }
-      
+
       // Ask if user wants to run the code
       setTimeout(async () => {
         const shouldRun = await select("Run the generated code?", ["Yes", "No", "Cancel"]);
@@ -3910,11 +4267,11 @@ Generate the ${fileExtension} code:`;
           await this.runCurrentFile();
         }
       }, 1000);
-      
+
     } catch (error) {
       console.error('Error generating code:', error);
       window.toast(`Error: ${error.message}`, 4000);
-      
+
       // Show fallback options
       setTimeout(async () => {
         const fallback = await select("Code generation failed. Try:", ["Retry", "Chat Mode", "Cancel"]);
@@ -3943,16 +4300,16 @@ Generate the ${fileExtension} code:`;
         window.toast("No file to run", 3000);
         return;
       }
-      
+
       const fileName = activeFile.name;
       const fileExtension = fileName.split('.').pop().toLowerCase();
       const filePath = activeFile.uri;
-      
+
       // Save file first if needed
       if (activeFile.isUnsaved) {
         await activeFile.save();
       }
-      
+
       // Handle different file types
       switch (fileExtension) {
         case 'html':
@@ -3960,45 +4317,45 @@ Generate the ${fileExtension} code:`;
           // Use Acode's built-in F5 runner for HTML files
           await this.runHtmlFile(activeFile);
           break;
-          
+
         case 'py':
           await this.runPythonFile(filePath, fileName);
           break;
-          
+
         case 'js':
           await this.runJavaScriptFile(filePath, fileName);
           break;
-          
+
         case 'cpp':
         case 'c':
           await this.runCppFile(filePath, fileName, fileExtension);
           break;
-          
+
         case 'java':
           await this.runJavaFile(filePath, fileName);
           break;
-          
+
         case 'go':
           await this.runGoFile(filePath, fileName);
           break;
-          
+
         case 'rs':
           await this.runRustFile(filePath, fileName);
           break;
-          
+
         case 'php':
           await this.runPhpFile(filePath, fileName);
           break;
-          
+
         case 'rb':
           await this.runRubyFile(filePath, fileName);
           break;
-          
+
         default:
           window.toast(`Running ${fileExtension} files is not supported yet`, 3000);
           break;
       }
-      
+
     } catch (error) {
       console.error('Error running file:', error);
       window.toast(`Error running file: ${error.message}`, 3000);
@@ -4043,19 +4400,19 @@ Generate the ${fileExtension} code:`;
         name: `Python - ${fileName}`,
         theme: 'dark',
       });
-      
+
       // Navigate to file directory and run
       const fileDir = filePath.substring(0, filePath.lastIndexOf('/'));
       const commands = [
         `cd "${fileDir}"`,
         `python3 "${fileName}" || python "${fileName}"`
       ];
-      
+
       for (const cmd of commands) {
         terminal.write(term.id, cmd + '\r\n');
         await new Promise(resolve => setTimeout(resolve, 500));
       }
-      
+
       window.toast(`Running ${fileName} in terminal...`, 3000);
     } catch (error) {
       console.error('Error running Python file:', error);
@@ -4072,18 +4429,18 @@ Generate the ${fileExtension} code:`;
         name: `Node - ${fileName}`,
         theme: 'dark',
       });
-      
+
       const fileDir = filePath.substring(0, filePath.lastIndexOf('/'));
       const commands = [
         `cd "${fileDir}"`,
         `node "${fileName}"`
       ];
-      
+
       for (const cmd of commands) {
         terminal.write(term.id, cmd + '\r\n');
         await new Promise(resolve => setTimeout(resolve, 500));
       }
-      
+
       window.toast(`Running ${fileName} with Node.js...`, 3000);
     } catch (error) {
       console.error('Error running JavaScript file:', error);
@@ -4100,21 +4457,21 @@ Generate the ${fileExtension} code:`;
         name: `C++ - ${fileName}`,
         theme: 'dark',
       });
-      
+
       const fileDir = filePath.substring(0, filePath.lastIndexOf('/'));
       const baseName = fileName.replace(`.${extension}`, '');
       const compiler = extension === 'cpp' ? 'g++' : 'gcc';
-      
+
       const commands = [
         `cd "${fileDir}"`,
         `${compiler} "${fileName}" -o "${baseName}" && ./"${baseName}"`
       ];
-      
+
       for (const cmd of commands) {
         terminal.write(term.id, cmd + '\r\n');
         await new Promise(resolve => setTimeout(resolve, 800));
       }
-      
+
       window.toast(`Compiling and running ${fileName}...`, 3000);
     } catch (error) {
       console.error('Error running C++ file:', error);
@@ -4131,20 +4488,20 @@ Generate the ${fileExtension} code:`;
         name: `Java - ${fileName}`,
         theme: 'dark',
       });
-      
+
       const fileDir = filePath.substring(0, filePath.lastIndexOf('/'));
       const baseName = fileName.replace('.java', '');
-      
+
       const commands = [
         `cd "${fileDir}"`,
         `javac "${fileName}" && java "${baseName}"`
       ];
-      
+
       for (const cmd of commands) {
         terminal.write(term.id, cmd + '\r\n');
         await new Promise(resolve => setTimeout(resolve, 800));
       }
-      
+
       window.toast(`Compiling and running ${fileName}...`, 3000);
     } catch (error) {
       console.error('Error running Java file:', error);
@@ -4161,18 +4518,18 @@ Generate the ${fileExtension} code:`;
         name: `Go - ${fileName}`,
         theme: 'dark',
       });
-      
+
       const fileDir = filePath.substring(0, filePath.lastIndexOf('/'));
       const commands = [
         `cd "${fileDir}"`,
         `go run "${fileName}"`
       ];
-      
+
       for (const cmd of commands) {
         terminal.write(term.id, cmd + '\r\n');
         await new Promise(resolve => setTimeout(resolve, 500));
       }
-      
+
       window.toast(`Running ${fileName} with Go...`, 3000);
     } catch (error) {
       console.error('Error running Go file:', error);
@@ -4189,20 +4546,20 @@ Generate the ${fileExtension} code:`;
         name: `Rust - ${fileName}`,
         theme: 'dark',
       });
-      
+
       const fileDir = filePath.substring(0, filePath.lastIndexOf('/'));
       const baseName = fileName.replace('.rs', '');
-      
+
       const commands = [
         `cd "${fileDir}"`,
         `rustc "${fileName}" -o "${baseName}" && ./"${baseName}"`
       ];
-      
+
       for (const cmd of commands) {
         terminal.write(term.id, cmd + '\r\n');
         await new Promise(resolve => setTimeout(resolve, 800));
       }
-      
+
       window.toast(`Compiling and running ${fileName}...`, 3000);
     } catch (error) {
       console.error('Error running Rust file:', error);
@@ -4219,18 +4576,18 @@ Generate the ${fileExtension} code:`;
         name: `PHP - ${fileName}`,
         theme: 'dark',
       });
-      
+
       const fileDir = filePath.substring(0, filePath.lastIndexOf('/'));
       const commands = [
         `cd "${fileDir}"`,
         `php "${fileName}"`
       ];
-      
+
       for (const cmd of commands) {
         terminal.write(term.id, cmd + '\r\n');
         await new Promise(resolve => setTimeout(resolve, 500));
       }
-      
+
       window.toast(`Running ${fileName} with PHP...`, 3000);
     } catch (error) {
       console.error('Error running PHP file:', error);
@@ -4247,18 +4604,18 @@ Generate the ${fileExtension} code:`;
         name: `Ruby - ${fileName}`,
         theme: 'dark',
       });
-      
+
       const fileDir = filePath.substring(0, filePath.lastIndexOf('/'));
       const commands = [
         `cd "${fileDir}"`,
         `ruby "${fileName}"`
       ];
-      
+
       for (const cmd of commands) {
         terminal.write(term.id, cmd + '\r\n');
         await new Promise(resolve => setTimeout(resolve, 500));
       }
-      
+
       window.toast(`Running ${fileName} with Ruby...`, 3000);
     } catch (error) {
       console.error('Error running Ruby file:', error);
@@ -4276,12 +4633,12 @@ Generate the ${fileExtension} code:`;
     if (!this.$page || !this.$page.isVisible) {
       await this.run();
     }
-  
+
   const activeFile = editorManager.activeFile;
   const fileExtension = activeFile ? activeFile.name.split('.').pop() : 'code';
-  
+
   const systemPrompt = `You are a code optimization expert. Focus on the selected code and provide optimizations for better performance, readability, and maintainability.`;
-  
+
   const userPrompt = `Please optimize this ${fileExtension} code:
 
 **Selected Code:**
@@ -4314,12 +4671,12 @@ Provide the optimized code with detailed explanations:`;
     if (!this.$page || !this.$page.isVisible) {
       await this.run();
     }
-  
+
   const activeFile = editorManager.activeFile;
   const fileExtension = activeFile ? activeFile.name.split('.').pop() : 'code';
-  
+
   const systemPrompt = `You are a documentation expert. Add comprehensive, professional comments to the selected code only.`;
-  
+
   const userPrompt = `Please add detailed comments to this ${fileExtension} code:
 
 **Selected Code:**
@@ -4352,15 +4709,15 @@ Return the code with appropriate comments added:`;
   if (!this.$page.isVisible) {
     await this.run();
   }
-  
+
   const activeFile = editorManager.activeFile;
   const fileName = activeFile ? activeFile.name : 'Unknown';
   const fileExtension = fileName.split('.').pop();
-  
+
   if (selectedText) {
     // Generate docs for selection only - avoid full file content
     const systemPrompt = `You are a technical documentation expert. Generate comprehensive documentation focused only on the selected code.`;
-    
+
     const userPrompt = `Generate professional documentation for this ${fileExtension} code:
 
 **File: ${fileName}**
@@ -4393,7 +4750,7 @@ Focus only on the selected code provided.`;
     if (!this.$page.isVisible) {
       await this.run();
     }
-    
+
     // Add the query to chat
     this.appendUserQuery(prompt);
     this.appendGptResponse("");
@@ -4406,15 +4763,21 @@ Focus only on the selected code provided.`;
       if (!this.modelInstance) {
         throw new Error("AI model not initialized");
       }
-      
+
       const response = await this.modelInstance.invoke(prompt);
-      return response.content || response;
+      
+      // Track token usage - estimate tokens if not provided
+      const responseText = response.content || response;
+      const estimatedTokens = Math.ceil((prompt.length + responseText.length) / 4);
+      this.updateTokenUsage(estimatedTokens);
+      
+      return responseText;
     } catch (error) {
       console.error("Error getting AI response:", error);
       return null;
     }
   }
-  
+
   initializeMarkdown() {
   if (!this.$mdIt && window.markdownit) {
     this.$mdIt = window.markdownit({
@@ -4442,12 +4805,12 @@ Focus only on the selected code provided.`;
   if (!this.$page.isVisible) {
     await this.run();
   }
-  
+
   const activeFile = editorManager.activeFile;
   const fileExtension = activeFile ? activeFile.name.split('.').pop() : 'code';
-  
+
   const systemPrompt = `You are a code refactoring expert. Rewrite only the provided selected code to be cleaner, more efficient, and follow best practices while maintaining the same functionality.`;
-  
+
   const userPrompt = `Please rewrite this ${fileExtension} code to be cleaner and more efficient:
 
 **Selected Code:**
@@ -4496,17 +4859,17 @@ Provide the improved version:`;
     const provider = window.localStorage.getItem("ai-assistant-provider");
     const model = window.localStorage.getItem("ai-assistant-model-name");
     const key = this.getCacheKey(prompt, provider, model);
-    
+
     const cached = this.responseCache.get(key);
     if (cached && (Date.now() - cached.timestamp) < this.cacheTimeout) {
       return cached.response;
     }
-    
+
     // Remove expired cache
     if (cached) {
       this.responseCache.delete(key);
     }
-    
+
     return null;
   }
 
@@ -4514,12 +4877,12 @@ Provide the improved version:`;
     const provider = window.localStorage.getItem("ai-assistant-provider");
     const model = window.localStorage.getItem("ai-assistant-model-name");
     const key = this.getCacheKey(prompt, provider, model);
-    
+
     this.responseCache.set(key, {
       response,
       timestamp: Date.now()
     });
-    
+
     // Limit cache size
     if (this.responseCache.size > 100) {
       const firstKey = this.responseCache.keys().next().value;
@@ -4534,7 +4897,27 @@ Provide the improved version:`;
     this.lastStructureScan = null;
     window.toast("Cache cleared", 2000);
   }
-  
+
+  // Helper functions for real-time AI optimization
+  getContentDifference(newContent, oldContent) {
+    if (!oldContent) return Infinity;
+    if (newContent === oldContent) return 0;
+
+    // Simple character difference count
+    let diff = 0;
+    const maxLength = Math.max(newContent.length, oldContent.length);
+    for (let i = 0; i < maxLength; i++) {
+      if (newContent[i] !== oldContent[i]) diff++;
+    }
+    return diff;
+  }
+
+  getRealTimeCacheKey(content, cursorPos) {
+    // Create a simplified cache key based on content hash and cursor position
+    const contentHash = this.safeBase64Encode(content.substring(0, 500)).substring(0, 20);
+    return `realtime_${contentHash}_${cursorPos.row}_${Math.floor(cursorPos.column / 10)}`;
+  }
+
   setupRealTimeAI() {
   // Toggle real-time AI command
   editor.commands.addCommand({
@@ -4561,10 +4944,10 @@ Provide the improved version:`;
   // Create suggestion widget
   this.createSuggestionWidget();
 }
-  
+
   toggleRealTimeAI() {
   this.realTimeEnabled = !this.realTimeEnabled;
-  
+
   if (this.realTimeEnabled) {
     window.toast("Real-time Renz Ai enabled âœ¨", 3000);
     this.showRealTimeStatus(true);
@@ -4581,21 +4964,22 @@ showRealTimeStatus(enabled) {
   // Update UI to show real-time status
   const statusElement = document.querySelector('.realtime-ai-status') || 
     tag("div", { className: "realtime-ai-status" });
-  
-  statusElement.textContent = enabled ? "ðŸ¤– AI Active" : "";
+
+  statusElement.textContent = enabled ? "😍AI Active" : "";
   statusElement.style.cssText = `
-    position: fixed;
-    top: 10px;
-    right: 10px;
-    background: ${enabled ? '#4CAF50' : 'transparent'};
-    color: white;
-    padding: 5px 10px;
-    border-radius: 15px;
-    font-size: 12px;
-    z-index: 1000;
-    transition: all 0.3s ease;
-  `;
-  
+  position: fixed;
+  top: 10px;
+  right: 110px;
+  background: ${enabled ? 'rgba(76, 175, 80, 0.7)' : 'rgba(0,0,0,0.3)'};
+  color: white;
+  padding: 3px 6px; /* lebih kecil */
+  border-radius: 10px;
+  font-size: 10px; /* lebih kecil */
+  opacity: 0.7; /* transparan */
+  z-index: 1000;
+  transition: all 0.3s ease;
+`;
+
   if (enabled && !document.body.contains(statusElement)) {
     document.body.appendChild(statusElement);
   } else if (!enabled && document.body.contains(statusElement)) {
@@ -4608,7 +4992,7 @@ handleEditorChange(e) {
   if (this.realTimeDebounceTimer) {
     clearTimeout(this.realTimeDebounceTimer);
   }
-  
+
   this.realTimeDebounceTimer = setTimeout(() => {
     this.analyzeCurrentCode();
   }, this.realTimeDelay);
@@ -4624,34 +5008,35 @@ async analyzeCurrentCode() {
   try {
     const activeFile = editorManager.activeFile;
     if (!activeFile) return;
-    
+
     const content = editor.getValue();
     const cursorPos = editor.getCursorPosition();
     const currentLine = editor.session.getLine(cursorPos.row);
-    
-    // Skip jika konten sama dengan analisis terakhir
-    if (content === this.lastAnalyzedContent) return;
+
+    // Skip jika konten sama dengan analisis terakhir atau perubahan terlalu kecil
+    const contentDiff = this.getContentDifference(content, this.lastAnalyzedContent);
+    if (content === this.lastAnalyzedContent || contentDiff < 10) return;
     this.lastAnalyzedContent = content;
-    
+
     // Check cache first
     const cacheKey = this.getRealTimeCacheKey(content, cursorPos);
     const cached = this.realTimeAnalysisCache.get(cacheKey);
-    if (cached && (Date.now() - cached.timestamp) < 30000) { // 30 detik cache
+    if (cached && (Date.now() - cached.timestamp) < 300000) { // 5 menit cache for better efficiency
       this.applySuggestions(cached.suggestions);
       return;
     }
-    
+
     // Analyze dengan AI
     const analysis = await this.performRealTimeAnalysis(content, currentLine, cursorPos, activeFile);
-    
+
     // Cache hasil
     this.realTimeAnalysisCache.set(cacheKey, {
       suggestions: analysis,
       timestamp: Date.now()
     });
-    
+
     this.applySuggestions(analysis);
-    
+
   } catch (error) {
     console.error('Real-time analysis error:', error);
   }
@@ -4661,69 +5046,32 @@ async performRealTimeAnalysis(content, currentLine, cursorPos, activeFile) {
   const fileExtension = activeFile.name.split('.').pop();
   const filePath = activeFile.uri || activeFile.name;
   const currentDir = activeFile.location || (activeFile.uri ? activeFile.uri.split('/').slice(0, -1).join('/') : '');
-  
-  // Clean and format the prompt with better structure
-  const prompt = `REAL-TIME CODE ANALYSIS
 
-**FILE CONTEXT:**
-• File: ${activeFile.name}
-• Path: ${filePath}
-• Directory: ${currentDir}
-• Language: ${fileExtension}
-• Current Line: ${cursorPos.row + 1}
-• Current Column: ${cursorPos.column + 1}
+  // Optimized prompt for token efficiency - focus only on essential analysis
+  const contextLines = content.split('\n');
+  const startLine = Math.max(0, cursorPos.row - 5);
+  const endLine = Math.min(contextLines.length, cursorPos.row + 5);
+  const contextContent = contextLines.slice(startLine, endLine).join('\n');
 
-**FOCUS LINE (${cursorPos.row + 1}):**
-\`\`\`${fileExtension}
-${currentLine}
+  const prompt = `CODE ANALYSIS ${fileExtension} L${cursorPos.row + 1}
+
+CONTEXT:
+\`\`\`
+${contextContent}
 \`\`\`
 
-**FULL CODE CONTEXT:**
-\`\`\`${fileExtension}
-${content}
-\`\`\`
-
-**ANALYSIS REQUEST:**
-Provide real-time analysis as clean JSON (no markdown, no explanation text):
-
+RESPONSE JSON:
 {
-  "syntax_errors": [
-    {
-      "line": <line_number>,
-      "message": "<clear_error_description>",
-      "severity": "error" | "warning",
-      "column": <column_number>
-    }
-  ],
-  "missing_imports": [
-    "<complete_import_statement>"
-  ],
-  "code_suggestions": [
-    {
-      "line": <line_number>,
-      "suggestion": "<actionable_improvement>",
-      "type": "optimization" | "style" | "bug" | "performance",
-      "priority": "high" | "medium" | "low"
-    }
-  ],
-  "auto_complete": [
-    "<relevant_completion_option>"
-  ],
-  "quick_fixes": [
-    {
-      "line": <line_number>,
-      "issue": "<specific_problem>",
-      "fix": "<exact_solution>",
-      "type": "automatic" | "suggestion"
-    }
-  ]
+  "errors": [{"line": <num>, "msg": "<short>", "severity": "error|warning"}],
+  "suggestions": [{"line": <num>, "text": "<short>", "type": "optimization|bug|style"}],
+  "completions": ["<option1>", "<option2>"]
 }
 
-Focus only on the cursor area and immediate context.`;
+Focus cursor area only.`;
 
   try {
     const response = await this.getAiResponse(prompt);
-    
+
     // Clean the response - remove markdown wrappers if present
     let cleanResponse = response.trim();
     const jsonMatch = cleanResponse.match(/```(?:json)?\s*(\{[\s\S]*?\})\s*```/);
@@ -4732,7 +5080,7 @@ Focus only on the cursor area and immediate context.`;
     } else if (cleanResponse.startsWith('```')) {
       cleanResponse = cleanResponse.replace(/^```[\w]*\n?/, '').replace(/\n?```$/, '');
     }
-    
+
     return JSON.parse(cleanResponse);
   } catch (error) {
     // Handle AI analysis error silently and return empty result
@@ -4750,27 +5098,27 @@ applySuggestions(analysis) {
   // Clear previous suggestions
   this.clearSuggestions();
   this.clearErrorMarkers();
-  
+
   // Apply syntax error markers
   if (analysis.syntax_errors && analysis.syntax_errors.length > 0) {
     this.showSyntaxErrors(analysis.syntax_errors);
   }
-  
+
   // Show missing imports
   if (analysis.missing_imports && analysis.missing_imports.length > 0) {
     this.showMissingImports(analysis.missing_imports);
   }
-  
+
   // Show code suggestions
   if (analysis.code_suggestions && analysis.code_suggestions.length > 0) {
     this.showCodeSuggestions(analysis.code_suggestions);
   }
-  
+
   // Show auto-complete
   if (analysis.auto_complete && analysis.auto_complete.length > 0) {
     this.showAutoComplete(analysis.auto_complete);
   }
-  
+
   // Show quick fixes
   if (analysis.quick_fixes && analysis.quick_fixes.length > 0) {
     this.showQuickFixes(analysis.quick_fixes);
@@ -4784,9 +5132,9 @@ showSyntaxErrors(errors) {
       error.severity === 'error' ? 'ace_error-marker' : 'ace_warning-marker',
       'fullLine'
     );
-    
+
     this.errorMarkers.push(marker);
-    
+
     // Add gutter decoration
     editor.session.setAnnotations([{
       row: error.line - 1,
@@ -4799,7 +5147,7 @@ showSyntaxErrors(errors) {
 
 showMissingImports(imports) {
   if (imports.length === 0) return;
-  
+
   const notification = tag("div", {
     className: "ai-import-suggestion",
     style: `
@@ -4815,29 +5163,29 @@ showMissingImports(imports) {
       box-shadow: 0 2px 10px rgba(0,0,0,0.2);
     `
   });
-  
+
   const title = tag("div", {
     textContent: "Missing Imports:",
     style: "font-weight: bold; margin-bottom: 5px;"
   });
-  
+
   const importList = tag("div");
   imports.forEach(imp => {
     const importItem = tag("div", {
       textContent: imp,
       style: "cursor: pointer; padding: 2px 0; border-bottom: 1px solid rgba(255,255,255,0.3);"
     });
-    
+
     importItem.onclick = () => {
       this.addImportToFile(imp);
       document.body.removeChild(notification);
     };
-    
+
     importList.appendChild(importItem);
   });
-  
+
   const closeBtn = tag("button", {
-    textContent: "Ã—",
+    textContent: "X",
     style: `
       position: absolute;
       top: 5px;
@@ -4849,16 +5197,16 @@ showMissingImports(imports) {
       font-size: 16px;
     `
   });
-  
+
   closeBtn.onclick = () => {
     if (document.body.contains(notification)) {
       document.body.removeChild(notification);
     }
   };
-  
+
   notification.append(title, importList, closeBtn);
   document.body.appendChild(notification);
-  
+
   // Auto remove after 10 seconds
   setTimeout(() => {
     if (document.body.contains(notification)) {
@@ -4870,7 +5218,7 @@ showMissingImports(imports) {
 addImportToFile(importStatement) {
   const content = editor.getValue();
   const lines = content.split('\n');
-  
+
   // Find the best position to insert import
   let insertLine = 0;
   for (let i = 0; i < lines.length; i++) {
@@ -4882,7 +5230,7 @@ addImportToFile(importStatement) {
       break;
     }
   }
-  
+
   // Insert import
   editor.session.insert({row: insertLine, column: 0}, importStatement + '\n');
   window.toast(`Added import: ${importStatement}`, 2000);
@@ -4891,10 +5239,10 @@ addImportToFile(importStatement) {
 showContextualSuggestions() {
   const cursorPos = editor.getCursorPosition();
   const screenPos = editor.renderer.textToScreenCoordinates(cursorPos.row, cursorPos.column);
-  
+
   if (this.currentSuggestions.length > 0) {
     this.suggestionWidget.innerHTML = '';
-    
+
     this.currentSuggestions.forEach(suggestion => {
       const suggestionItem = tag("div", {
         textContent: suggestion.text || suggestion,
@@ -4906,28 +5254,28 @@ showContextualSuggestions() {
         `,
         className: "suggestion-item"
       });
-      
+
       suggestionItem.onmouseenter = () => {
         suggestionItem.style.background = '#333';
       };
-      
+
       suggestionItem.onmouseleave = () => {
         suggestionItem.style.background = 'transparent';
       };
-      
+
       suggestionItem.onclick = () => {
         this.applySuggestion(suggestion);
         this.hideSuggestionWidget();
       };
-      
+
       this.suggestionWidget.appendChild(suggestionItem);
     });
-    
+
     // Position widget
     this.suggestionWidget.style.left = screenPos.pageX + 'px';
     this.suggestionWidget.style.top = (screenPos.pageY + 20) + 'px';
     this.suggestionWidget.style.display = 'block';
-    
+
     // Auto hide after 5 seconds
     setTimeout(() => {
       this.hideSuggestionWidget();
@@ -4954,20 +5302,15 @@ clearErrorMarkers() {
   editor.session.clearAnnotations();
 }
 
-getRealTimeCacheKey(content, cursorPos) {
-  const contentHash = this.safeBase64Encode(content.substring(0, 200)).substring(0, 20);
-  return `realtime_${contentHash}_${cursorPos.row}_${cursorPos.column}`;
-}
-
 createSuggestionWidget() {
   if (this.suggestionWidget) {
     this.suggestionWidget.remove();
   }
-  
+
   this.suggestionWidget = tag("div", {
     className: "ai-suggestion-widget"
   });
-  
+
   document.body.appendChild(this.suggestionWidget);
   return this.suggestionWidget;
 }
@@ -4980,53 +5323,53 @@ showCodeSuggestions(suggestions) {
       }
       return;
     }
-    
+
     if (!this.suggestionWidget) {
       this.createSuggestionWidget();
     }
-    
+
     // Clear previous suggestions
     this.suggestionWidget.innerHTML = '';
-    
+
     // Create header
     const header = tag("div", {
       className: "suggestion-header",
       textContent: "💡 AI Suggestions"
     });
-    
+
     this.suggestionWidget.appendChild(header);
-    
+
     // Create suggestion items
     suggestions.forEach((suggestion, index) => {
       const item = tag("div", {
         className: "suggestion-item"
       });
-      
+
       const title = tag("div", {
         className: "suggestion-title",
         textContent: suggestion.title || `Suggestion ${index + 1}`
       });
-      
+
       const description = tag("div", {
         className: "suggestion-description",
         textContent: suggestion.description || suggestion.text
       });
-      
+
       item.append(title, description);
-      
+
       // Add click handler
       item.addEventListener('click', () => {
         this.applySuggestion(suggestion);
         this.suggestionWidget.style.display = 'none';
       });
-      
+
       this.suggestionWidget.appendChild(item);
     });
-    
+
     // Position and show widget
     this.positionSuggestionWidget();
     this.suggestionWidget.style.display = 'block';
-    
+
   } catch (error) {
     console.error('Error showing code suggestions:', error);
   }
@@ -5040,64 +5383,64 @@ showAutoComplete(completions) {
       }
       return;
     }
-    
+
     if (!this.suggestionWidget) {
       this.createSuggestionWidget();
     }
-    
+
     // Clear previous content
     this.suggestionWidget.innerHTML = '';
-    
+
     // Create header
     const header = tag("div", {
       className: "autocomplete-header",
       textContent: "🔍 Auto Complete"
     });
-    
+
     this.suggestionWidget.appendChild(header);
-    
+
     // Create completion items
     completions.forEach((completion, index) => {
       const item = tag("div", {
         className: "completion-item"
       });
-      
+
       // Add icon based on completion type
       const icon = tag("span", {
         className: "completion-icon",
         textContent: this.getCompletionIcon(completion.type || 'text')
       });
-      
+
       const content = tag("div", {
         className: "completion-content"
       });
-      
+
       const label = tag("div", {
         className: "completion-label",
         textContent: completion.label || completion.text
       });
-      
+
       const detail = tag("div", {
         className: "completion-detail",
         textContent: completion.detail || completion.description || ''
       });
-      
+
       content.append(label, detail);
       item.append(icon, content);
-      
+
       // Add click handler
       item.addEventListener('click', () => {
         this.applyCompletion(completion);
         this.suggestionWidget.style.display = 'none';
       });
-      
+
       this.suggestionWidget.appendChild(item);
     });
-    
+
     // Position and show widget
     this.positionSuggestionWidget();
     this.suggestionWidget.style.display = 'block';
-    
+
   } catch (error) {
     console.error('Error showing auto complete:', error);
   }
@@ -5111,69 +5454,69 @@ showQuickFixes(fixes) {
       }
       return;
     }
-    
+
     if (!this.suggestionWidget) {
       this.createSuggestionWidget();
     }
-    
+
     // Clear previous content
     this.suggestionWidget.innerHTML = '';
-    
+
     // Create header
     const header = tag("div", {
       className: "quickfix-header",
       textContent: "🔧 Quick Fixes"
     });
-    
+
     this.suggestionWidget.appendChild(header);
-    
+
     // Create fix items
     fixes.forEach((fix, index) => {
       const item = tag("div", {
         className: "quickfix-item"
       });
-      
+
       const fixHeader = tag("div", {
         className: "quickfix-item-header"
       });
-      
+
       const severity = tag("span", {
         className: "fix-severity",
         textContent: this.getSeverityIcon(fix.severity || 'error')
       });
-      
+
       const title = tag("span", {
         className: "fix-title",
         textContent: fix.title || `Fix ${index + 1}`
       });
-      
+
       fixHeader.append(severity, title);
-      
+
       const description = tag("div", {
         className: "fix-description",
         textContent: fix.description || fix.message
       });
-      
+
       const action = tag("div", {
         className: "fix-action",
         textContent: fix.action || 'Apply Fix'
       });
-      
+
       item.append(fixHeader, description, action);
-      
+
       // Add click handler
       item.addEventListener('click', () => {
         this.applyQuickFix(fix);
         this.suggestionWidget.style.display = 'none';
       });
-      
+
       this.suggestionWidget.appendChild(item);
     });
-    
+
     // Position and show widget
     this.positionSuggestionWidget();
     this.suggestionWidget.style.display = 'block';
-    
+
   } catch (error) {
     console.error('Error showing quick fixes:', error);
   }
@@ -5181,42 +5524,42 @@ showQuickFixes(fixes) {
 
 positionSuggestionWidget() {
   if (!this.suggestionWidget || !editor) return;
-  
+
   try {
     const cursorPosition = editor.getCursorPosition();
     const renderer = editor.renderer;
     const coords = renderer.textToScreenCoordinates(cursorPosition.row, cursorPosition.column);
-    
+
     // Get editor container position
     const editorContainer = editor.container;
     const editorRect = editorContainer.getBoundingClientRect();
-    
+
     // Calculate position relative to viewport
     const left = coords.pageX;
     const top = coords.pageY + 20; // Offset below cursor
-    
+
     // Ensure widget stays within viewport
     const viewportWidth = window.innerWidth;
     const viewportHeight = window.innerHeight;
     const widgetWidth = 400;
     const widgetHeight = 300;
-    
+
     let finalLeft = left;
     let finalTop = top;
-    
+
     // Adjust horizontal position
     if (left + widgetWidth > viewportWidth) {
       finalLeft = viewportWidth - widgetWidth - 10;
     }
-    
+
     // Adjust vertical position
     if (top + widgetHeight > viewportHeight) {
       finalTop = coords.pageY - widgetHeight - 10; // Show above cursor
     }
-    
+
     this.suggestionWidget.style.left = `${Math.max(10, finalLeft)}px`;
     this.suggestionWidget.style.top = `${Math.max(10, finalTop)}px`;
-    
+
   } catch (error) {
     console.error('Error positioning suggestion widget:', error);
     // Fallback positioning
@@ -5254,9 +5597,9 @@ getSeverityIcon(severity) {
 applySuggestion(suggestion) {
   try {
     if (!editor || !suggestion) return;
-    
+
     const cursor = editor.getCursorPosition();
-    
+
     if (suggestion.insertText) {
       editor.session.insert(cursor, suggestion.insertText);
     } else if (suggestion.replaceRange && suggestion.newText) {
@@ -5268,14 +5611,14 @@ applySuggestion(suggestion) {
       );
       editor.session.replace(range, suggestion.newText);
     }
-    
+
     // Execute any additional actions
     if (suggestion.command) {
       editor.execCommand(suggestion.command);
     }
-    
+
     window.toast('Suggestion applied', 2000);
-    
+
   } catch (error) {
     console.error('Error applying suggestion:', error);
     window.toast('Error applying suggestion', 3000);
@@ -5285,14 +5628,14 @@ applySuggestion(suggestion) {
 applyCompletion(completion) {
   try {
     if (!editor || !completion) return;
-    
+
     const cursor = editor.getCursorPosition();
     const session = editor.session;
-    
+
     // Get current line and determine insertion point
     const line = session.getLine(cursor.row);
     const insertText = completion.insertText || completion.label || completion.text;
-    
+
     if (completion.range) {
       // Replace specific range
       const range = new editor.Range(
@@ -5306,7 +5649,7 @@ applyCompletion(completion) {
       // Insert at cursor position
       session.insert(cursor, insertText);
     }
-    
+
     // Handle cursor positioning after insertion
     if (completion.cursorOffset) {
       const newPos = {
@@ -5315,9 +5658,9 @@ applyCompletion(completion) {
       };
       editor.moveCursorToPosition(newPos);
     }
-    
+
     window.toast('Completion applied', 2000);
-    
+
   } catch (error) {
     console.error('Error applying completion:', error);
     window.toast('Error applying completion', 3000);
@@ -5327,7 +5670,7 @@ applyCompletion(completion) {
 applyQuickFix(fix) {
   try {
     if (!editor || !fix) return;
-    
+
     // Apply text edits if provided
     if (fix.edits && Array.isArray(fix.edits)) {
       // Apply edits in reverse order to maintain positions
@@ -5337,7 +5680,7 @@ applyQuickFix(fix) {
         }
         return b.range.start.column - a.range.start.column;
       });
-      
+
       sortedEdits.forEach(edit => {
         const range = new editor.Range(
           edit.range.start.row,
@@ -5348,7 +5691,7 @@ applyQuickFix(fix) {
         editor.session.replace(range, edit.newText || '');
       });
     }
-    
+
     // Execute command if provided
     if (fix.command) {
       if (typeof fix.command === 'string') {
@@ -5358,10 +5701,10 @@ applyQuickFix(fix) {
         editor.execCommand(fix.command.id, fix.command.arguments);
       }
     }
-    
+
     // Show success message
     window.toast(fix.successMessage || 'Quick fix applied', 2000);
-    
+
     // Remove error markers if this fix resolves them
     if (fix.resolvesMarkers && this.errorMarkers) {
       fix.resolvesMarkers.forEach(markerId => {
@@ -5372,7 +5715,7 @@ applyQuickFix(fix) {
         }
       });
     }
-    
+
   } catch (error) {
     console.error('Error applying quick fix:', error);
     window.toast('Error applying quick fix', 3000);
@@ -5381,13 +5724,13 @@ applyQuickFix(fix) {
 
 async analyzeCurrentFile() {
   if (!this.realTimeEnabled) return;
-  
+
   const activeFile = editorManager.activeFile;
   if (!activeFile) return;
-  
+
   const content = editor.getValue();
   if (content.trim().length === 0) return;
-  
+
   try {
     const analysis = await this.performRealTimeAnalysis(
       content, 
@@ -5395,7 +5738,7 @@ async analyzeCurrentFile() {
       editor.getCursorPosition(),
       activeFile
     );
-    
+
     this.applySuggestions(analysis);
   } catch (error) {
     console.error('File analysis error:', error);
@@ -5409,18 +5752,18 @@ async analyzeCurrentFile() {
       clearInterval(this.$loadInterval);
       this.$loadInterval = null;
     }
-    
+
     // Clear real-time intervals
     if (this.realTimeInterval) {
       clearInterval(this.realTimeInterval);
       this.realTimeInterval = null;
     }
-    
+
     if (this.contextUpdateInterval) {
       clearInterval(this.contextUpdateInterval);
       this.contextUpdateInterval = null;
     }
-    
+
     // Safely abort ongoing requests
     try {
       if (this.abortController) {
@@ -5430,13 +5773,13 @@ async analyzeCurrentFile() {
     } catch (abortError) {
       console.warn("Error aborting request:", abortError);
     }
-    
+
     // Abort real-time requests
     if (this.realTimeAbortController) {
       this.realTimeAbortController.abort();
       this.realTimeAbortController = null;
     }
-    
+
     // Close WebSocket connections
     if (this.websocket) {
       try {
@@ -5446,7 +5789,7 @@ async analyzeCurrentFile() {
         console.warn("Error closing WebSocket:", error);
       }
     }
-    
+
     // Clear EventSource connections
     if (this.eventSource) {
       try {
@@ -5456,24 +5799,24 @@ async analyzeCurrentFile() {
         console.warn("Error closing EventSource:", error);
       }
     }
-    
+
     // Clear message histories and real-time data
     this.messageHistories = {};
     this.messageSessionConfig = null;
     this.realTimeContext = {};
     this.contextHistory = [];
     this.realTimeEnabled = false;
-    
+
     // Clear cache
     if (this.cache) {
       this.cache.clear();
     }
-    
+
     // Clear real-time cache
     if (this.realTimeCache) {
       this.realTimeCache.clear();
     }
-    
+
     // Safely remove event listeners
     try {
       if (this.editorChangeListener && typeof editor !== 'undefined' && editor && editor.off) {
@@ -5488,7 +5831,7 @@ async analyzeCurrentFile() {
     } catch (error) {
       console.warn("Could not remove editor change listener:", error);
     }
-    
+
     if (this.cursorChangeListener) {
       try {
         editor.off('changeSelection', this.cursorChangeListener);
@@ -5497,7 +5840,7 @@ async analyzeCurrentFile() {
         console.warn("Could not remove cursor change listener:", error);
       }
     }
-    
+
     // Safely remove all commands
     if (typeof editor !== 'undefined' && editor && editor.commands && editor.commands.removeCommand) {
       const commands = [
@@ -5513,7 +5856,7 @@ async analyzeCurrentFile() {
         "ai_realtime_suggest",
         "ai_clear_realtime_context"
       ];
-      
+
       commands.forEach(cmd => {
         try {
           editor.commands.removeCommand(cmd);
@@ -5522,7 +5865,7 @@ async analyzeCurrentFile() {
         }
       });
     }
-    
+
     // Remove localStorage items including real-time settings
     const storageKeys = [
       "ai-assistant-provider",
@@ -5534,11 +5877,11 @@ async analyzeCurrentFile() {
       "ai-context-update-interval",
       "ai-realtime-cache-size"
     ];
-    
+
     storageKeys.forEach(key => {
       window.localStorage.removeItem(key);
     });
-    
+
     // Safely remove secret key file
     try {
       if (window.DATA_STORAGE && typeof fs !== 'undefined') {
@@ -5550,7 +5893,7 @@ async analyzeCurrentFile() {
     } catch (error) {
       console.warn("Could not remove secret key file:", error);
     }
-    
+
     // Remove real-time context file
     try {
       const contextPath = window.DATA_STORAGE + "realtime-context.json";
@@ -5560,7 +5903,7 @@ async analyzeCurrentFile() {
     } catch (error) {
       console.warn("Could not remove real-time context file:", error);
     }
-    
+
     // Remove DOM elements
     const elementsToRemove = [
       this.$githubDarkFile,
@@ -5570,7 +5913,7 @@ async analyzeCurrentFile() {
       this.$realTimeIndicator,
       this.$contextPanel
     ];
-    
+
     elementsToRemove.forEach(element => {
       try {
         if (element && element.parentNode) {
@@ -5580,25 +5923,25 @@ async analyzeCurrentFile() {
         console.warn("Could not remove DOM element:", error);
       }
     });
-    
+
     // Clear all references
     this.modelInstance = null;
     this.apiKeyManager = null;
     this.$page = null;
     this.realTimeManager = null;
     this.contextManager = null;
-    
+
     // Clear timeouts
     if (this.debounceTimeout) {
       clearTimeout(this.debounceTimeout);
       this.debounceTimeout = null;
     }
-    
+
     if (this.contextSaveTimeout) {
       clearTimeout(this.contextSaveTimeout);
       this.contextSaveTimeout = null;
     }
-    
+
     console.log("Renz Ai plugin with real-time features destroyed successfully");
   } catch (error) {
     console.error("Error during plugin destruction:", error);
