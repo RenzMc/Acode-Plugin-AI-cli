@@ -1,43 +1,55 @@
-// Galaxy Theme Modern Complex for Acode Android
-// Variables
+// ========================================
+// GALAXY THEME ULTRA MODERN - ACODE AI ASSISTANT
+// Enhanced with Advanced Animations & Effects
+// ========================================
+
+// Variables with Acode Theme Support
 :root {
-  // Galaxy Color Palette
-  --galaxy-deep-space: #0a0a0f;
-  --galaxy-nebula: #1a1a2e;
-  --galaxy-cosmic: #16213e;
-  --galaxy-star-blue: #00d4ff;
-  --galaxy-star-purple: #8b5cf6;
-  --galaxy-star-green: #00ff88;
-  --galaxy-star-pink: #ff0080;
-  --galaxy-void: #0f172a;
-  --galaxy-glass: rgba(255, 255, 255, 0.08);
-  --galaxy-glass-border: rgba(255, 255, 255, 0.12);
-  
-  // Text Colors
-  --galaxy-text-primary: #ffffff;
-  --galaxy-text-secondary: #94a3b8;
-  --galaxy-text-muted: #64748b;
-  
-  // Galaxy Gradients
+  // Galaxy Color Palette with Acode Theme Integration
+  --galaxy-deep-space: var(--app-background, #0a0a0f);
+  --galaxy-nebula: var(--popup-background, #1a1a2e);
+  --galaxy-cosmic: var(--secondary-background, #16213e);
+  --galaxy-star-blue: var(--accent-color, #00d4ff);
+  --galaxy-star-purple: var(--primary-color, #8b5cf6);
+  --galaxy-star-green: var(--success-color, #00ff88);
+  --galaxy-star-pink: var(--warning-color, #ff0080);
+  --galaxy-void: var(--tertiary-background, #0f172a);
+  --galaxy-glass: var(--glass-background, rgba(255, 255, 255, 0.08));
+  --galaxy-glass-border: var(--border-color, rgba(255, 255, 255, 0.12));
+
+  // Text Colors with Acode Theme Support
+  --galaxy-text-primary: var(--primary-text-color, #ffffff);
+  --galaxy-text-secondary: var(--secondary-text-color, #94a3b8);
+  --galaxy-text-muted: var(--tertiary-text-color, #64748b);
+
+  // Galaxy Gradients - Enhanced
   --galaxy-gradient-primary: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   --galaxy-gradient-cosmic: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
   --galaxy-gradient-nebula: linear-gradient(45deg, #00d4ff, #8b5cf6, #00ff88, #ff0080);
   --galaxy-gradient-void: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%);
-  
-  // Shadows & Effects
+  --galaxy-gradient-aurora: linear-gradient(90deg, #ff0080, #00d4ff, #8b5cf6, #00ff88);
+  --galaxy-gradient-plasma: radial-gradient(circle, #ff0080 0%, #8b5cf6 50%, #00d4ff 100%);
+
+  // Shadows & Effects - Enhanced
   --galaxy-shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.4);
   --galaxy-shadow-md: 0 4px 16px rgba(0, 0, 0, 0.5);
   --galaxy-shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.6);
+  --galaxy-shadow-xl: 0 16px 64px rgba(0, 0, 0, 0.7);
   --galaxy-shadow-cosmic: 0 0 25px rgba(0, 212, 255, 0.4);
   --galaxy-shadow-nebula: 0 0 35px rgba(139, 92, 246, 0.5);
-  
-  // Transitions
+  --galaxy-shadow-aurora: 0 0 45px rgba(255, 0, 128, 0.4);
+
+  // Transitions - Smooth & Natural
   --galaxy-transition-fast: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   --galaxy-transition-normal: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   --galaxy-transition-slow: 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  --galaxy-transition-bounce: 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
 }
 
-// Galaxy Animations
+// ========================================
+// ENHANCED GALAXY ANIMATIONS
+// ========================================
+
 @keyframes galaxy-pulse {
   0%, 100% { 
     opacity: 1; 
@@ -52,33 +64,52 @@
 @keyframes galaxy-glow {
   0%, 100% { 
     box-shadow: 0 0 20px rgba(0, 212, 255, 0.3);
-    filter: brightness(1);
+    filter: brightness(1) hue-rotate(0deg);
+  }
+  25% {
+    box-shadow: 0 0 30px rgba(139, 92, 246, 0.4);
+    filter: brightness(1.1) hue-rotate(90deg);
   }
   50% { 
-    box-shadow: 0 0 40px rgba(0, 212, 255, 0.6);
-    filter: brightness(1.1);
+    box-shadow: 0 0 40px rgba(0, 255, 136, 0.5);
+    filter: brightness(1.2) hue-rotate(180deg);
+  }
+  75% {
+    box-shadow: 0 0 30px rgba(255, 0, 128, 0.4);
+    filter: brightness(1.1) hue-rotate(270deg);
   }
 }
 
 @keyframes galaxy-float {
-  0%, 100% { transform: translateY(0px); }
-  50% { transform: translateY(-5px); }
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  33% { transform: translateY(-8px) rotate(1deg); }
+  66% { transform: translateY(-4px) rotate(-1deg); }
 }
 
 @keyframes galaxy-slide-up {
   from {
     opacity: 0;
-    transform: translateY(30px);
+    transform: translateY(30px) scale(0.95);
+    filter: blur(10px);
   }
   to {
     opacity: 1;
-    transform: translateY(0);
+    transform: translateY(0) scale(1);
+    filter: blur(0);
   }
 }
 
 @keyframes galaxy-fade-in {
-  from { opacity: 0; filter: blur(10px); }
-  to { opacity: 1; filter: blur(0); }
+  from { 
+    opacity: 0; 
+    filter: blur(10px) brightness(0.5);
+    transform: scale(0.9);
+  }
+  to { 
+    opacity: 1; 
+    filter: blur(0) brightness(1);
+    transform: scale(1);
+  }
 }
 
 @keyframes galaxy-typing {
@@ -87,17 +118,81 @@
 }
 
 @keyframes galaxy-nebula-flow {
-  0% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
-  100% { background-position: 0% 50%; }
+  0% { 
+    background-position: 0% 50%; 
+    filter: hue-rotate(0deg);
+  }
+  25% {
+    background-position: 50% 0%;
+    filter: hue-rotate(90deg);
+  }
+  50% { 
+    background-position: 100% 50%; 
+    filter: hue-rotate(180deg);
+  }
+  75% {
+    background-position: 50% 100%;
+    filter: hue-rotate(270deg);
+  }
+  100% { 
+    background-position: 0% 50%; 
+    filter: hue-rotate(360deg);
+  }
 }
 
 @keyframes galaxy-stars-twinkle {
-  0%, 100% { opacity: 0.8; transform: scale(1); }
-  50% { opacity: 1; transform: scale(1.1); }
+  0%, 100% { 
+    opacity: 0.6; 
+    transform: scale(1) rotate(0deg);
+  }
+  25% {
+    opacity: 0.9;
+    transform: scale(1.1) rotate(90deg);
+  }
+  50% { 
+    opacity: 1; 
+    transform: scale(1.2) rotate(180deg);
+  }
+  75% {
+    opacity: 0.8;
+    transform: scale(1.05) rotate(270deg);
+  }
 }
 
-// Main App Container with Galaxy Background
+@keyframes galaxy-aurora {
+  0% {
+    background-position: 0% 0%;
+    opacity: 0.3;
+  }
+  50% {
+    background-position: 100% 100%;
+    opacity: 0.7;
+  }
+  100% {
+    background-position: 0% 0%;
+    opacity: 0.3;
+  }
+}
+
+@keyframes galaxy-plasma {
+  0% {
+    transform: rotate(0deg) scale(1);
+    opacity: 0.4;
+  }
+  50% {
+    transform: rotate(180deg) scale(1.1);
+    opacity: 0.8;
+  }
+  100% {
+    transform: rotate(360deg) scale(1);
+    opacity: 0.4;
+  }
+}
+
+// ========================================
+// MAIN APP CONTAINER - ULTRA ENHANCED
+// ========================================
+
 #acode-ai-assistant {
   background: var(--galaxy-deep-space);
   color: var(--galaxy-text-primary);
@@ -107,8 +202,8 @@
   position: relative;
   display: flex;
   flex-direction: column;
-  
-  // Galaxy Background Layer - Load from plugin directory
+
+  // Galaxy Background Layer - Multi-layered
   &::before {
     content: '';
     position: fixed;
@@ -116,15 +211,18 @@
     left: 0;
     right: 0;
     bottom: 0;
-    background-image: url('./assets/galaxy.png');
-    background-size: cover;
-    background-position: center;
-    background-repeat: no-repeat;
-    opacity: 0.3;
+    background: 
+      url('../assets/galaxy.png') center center / cover no-repeat,
+      radial-gradient(ellipse at 20% 30%, rgba(0, 212, 255, 0.15) 0%, transparent 60%),
+      radial-gradient(ellipse at 80% 70%, rgba(139, 92, 246, 0.15) 0%, transparent 60%),
+      radial-gradient(ellipse at 50% 10%, rgba(0, 255, 136, 0.1) 0%, transparent 50%),
+      radial-gradient(ellipse at 10% 80%, rgba(255, 0, 128, 0.1) 0%, transparent 50%),
+      linear-gradient(135deg, #0a0a0f 0%, #1a1a2e 30%, #16213e 70%, #0f172a 100%);
+    opacity: 1;
     z-index: 0;
   }
-  
-  // Cosmic Overlay Effects
+
+  // Enhanced Cosmic Overlay Effects
   &::after {
     content: '';
     position: fixed;
@@ -133,69 +231,95 @@
     right: 0;
     bottom: 0;
     background: 
-      radial-gradient(circle at 20% 80%, rgba(0, 212, 255, 0.15) 0%, transparent 50%),
-      radial-gradient(circle at 80% 20%, rgba(139, 92, 246, 0.15) 0%, transparent 50%),
-      radial-gradient(circle at 40% 40%, rgba(0, 255, 136, 0.1) 0%, transparent 50%);
+      var(--galaxy-gradient-aurora),
+      radial-gradient(circle at 25% 25%, rgba(0, 212, 255, 0.1) 0%, transparent 50%),
+      radial-gradient(circle at 75% 75%, rgba(139, 92, 246, 0.1) 0%, transparent 50%),
+      radial-gradient(circle at 50% 50%, rgba(255, 0, 128, 0.05) 0%, transparent 70%);
     pointer-events: none;
     z-index: 1;
-    animation: galaxy-nebula-flow 20s ease-in-out infinite;
-    background-size: 200% 200%;
+    animation: galaxy-aurora 25s ease-in-out infinite;
+    background-size: 400% 400%, 100% 100%, 100% 100%, 100% 100%;
+    opacity: 0.6;
   }
-  
+
   .mainApp {
     position: relative;
     z-index: 2;
     height: 100%;
     display: flex;
     flex-direction: column;
-    backdrop-filter: blur(5px);
+    backdrop-filter: blur(2px);
   }
 }
 
-// Enhanced Header with Galaxy Theme
+// ========================================
+// ENHANCED HEADER - ULTRA MODERN
+// ========================================
+
 .page-header {
   background: var(--galaxy-glass);
-  backdrop-filter: blur(25px);
+  backdrop-filter: blur(30px);
   border-bottom: 1px solid var(--galaxy-glass-border);
-  padding: 16px 20px;
+  padding: 18px 24px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   position: relative;
-  box-shadow: var(--galaxy-shadow-sm);
-  
+  box-shadow: var(--galaxy-shadow-md);
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: var(--galaxy-gradient-plasma);
+    opacity: 0.03;
+    pointer-events: none;
+    animation: galaxy-plasma 20s linear infinite;
+  }
+
   &::after {
     content: '';
     position: absolute;
     bottom: 0;
     left: 0;
     right: 0;
-    height: 2px;
+    height: 3px;
     background: var(--galaxy-gradient-nebula);
-    opacity: 0.4;
+    opacity: 0.6;
+    animation: galaxy-nebula-flow 12s linear infinite;
+    background-size: 300% 300%;
+  }
+
+  .page-title {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--galaxy-text-primary);
+    text-shadow: 
+      0 0 10px rgba(0, 212, 255, 0.4),
+      0 0 20px rgba(139, 92, 246, 0.2);
+    background: var(--galaxy-gradient-nebula);
+    background-clip: text;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
     animation: galaxy-nebula-flow 15s linear infinite;
     background-size: 200% 200%;
   }
-  
-  .page-title {
-    font-size: 18px;
-    font-weight: 600;
-    color: var(--galaxy-text-primary);
-    text-shadow: 0 0 10px rgba(0, 212, 255, 0.3);
-  }
-  
+
   .icon {
     color: var(--galaxy-star-blue);
-    font-size: 22px;
-    padding: 10px;
-    border-radius: 12px;
+    font-size: 24px;
+    padding: 12px;
+    border-radius: 16px;
     background: var(--galaxy-glass);
     border: 1px solid var(--galaxy-glass-border);
     cursor: pointer;
-    transition: all var(--galaxy-transition-fast);
+    transition: all var(--galaxy-transition-bounce);
     position: relative;
     overflow: hidden;
-    
+
     &::before {
       content: '';
       position: absolute;
@@ -203,88 +327,140 @@
       left: -100%;
       width: 100%;
       height: 100%;
-      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
-      transition: left 0.5s;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+      transition: left 0.6s ease;
     }
-    
+
+    &::after {
+      content: '';
+      position: absolute;
+      top: -2px;
+      left: -2px;
+      right: -2px;
+      bottom: -2px;
+      background: var(--galaxy-gradient-nebula);
+      border-radius: 18px;
+      opacity: 0;
+      transition: opacity var(--galaxy-transition-fast);
+      z-index: -1;
+      animation: galaxy-nebula-flow 8s linear infinite;
+      background-size: 200% 200%;
+    }
+
     &:hover {
       background: var(--galaxy-star-blue);
       color: var(--galaxy-deep-space);
       box-shadow: var(--galaxy-shadow-cosmic);
-      transform: translateY(-3px) scale(1.05);
-      
+      transform: translateY(-4px) scale(1.1) rotate(5deg);
+
       &::before {
         left: 100%;
       }
+
+      &::after {
+        opacity: 0.8;
+      }
     }
-    
+
     &:active {
-      transform: translateY(-1px) scale(0.98);
+      transform: translateY(-2px) scale(1.05) rotate(-2deg);
     }
   }
 }
 
-// Provider Dropdown with Galaxy Styling
+// ========================================
+// PROVIDER DROPDOWN - ENHANCED
+// ========================================
+
 .provider-dropdown {
   .provider-select {
     background: var(--galaxy-glass);
-    border: 1px solid var(--galaxy-glass-border);
-    border-radius: 12px;
+    border: 2px solid var(--galaxy-glass-border);
+    border-radius: 16px;
     color: var(--galaxy-text-primary);
-    padding: 12px 16px;
-    font-size: 14px;
+    padding: 14px 20px;
+    font-size: 15px;
+    font-weight: 500;
     cursor: pointer;
-    transition: all var(--galaxy-transition-fast);
-    backdrop-filter: blur(10px);
-    
+    transition: all var(--galaxy-transition-bounce);
+    backdrop-filter: blur(15px);
+    position: relative;
+    overflow: hidden;
+
+    &::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: var(--galaxy-gradient-cosmic);
+      opacity: 0;
+      transition: opacity var(--galaxy-transition-fast);
+      z-index: -1;
+    }
+
     &:hover {
       border-color: var(--galaxy-star-blue);
       box-shadow: var(--galaxy-shadow-cosmic);
       background: var(--galaxy-nebula);
+      transform: translateY(-2px) scale(1.02);
+
+      &::before {
+        opacity: 0.1;
+      }
     }
-    
+
     &:focus {
       outline: none;
       border-color: var(--galaxy-star-purple);
-      box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.3);
+      box-shadow: 0 0 0 4px rgba(139, 92, 246, 0.3);
+      transform: translateY(-3px) scale(1.03);
     }
-    
+
     option {
       background: var(--galaxy-nebula);
       color: var(--galaxy-text-primary);
-      padding: 8px;
+      padding: 12px;
+      font-weight: 500;
     }
   }
 }
 
-// Chat Container with Improved Layout
+// ========================================
+// CHAT CONTAINER - ULTRA ENHANCED
+// ========================================
+
 .chatBox {
   flex: 1;
   overflow-y: auto;
-  padding: 24px 20px;
+  padding: 32px 24px 140px 24px;
   scroll-behavior: smooth;
   position: relative;
-  
-  // Custom Scrollbar
+
+  // Enhanced Custom Scrollbar
   &::-webkit-scrollbar {
-    width: 8px;
+    width: 10px;
   }
-  
+
   &::-webkit-scrollbar-track {
     background: var(--galaxy-glass);
-    border-radius: 4px;
+    border-radius: 6px;
+    margin: 4px;
   }
-  
+
   &::-webkit-scrollbar-thumb {
     background: var(--galaxy-gradient-cosmic);
-    border-radius: 4px;
-    
+    border-radius: 6px;
+    border: 1px solid var(--galaxy-glass-border);
+
     &:hover {
-      background: var(--galaxy-star-purple);
+      background: var(--galaxy-gradient-nebula);
+      box-shadow: var(--galaxy-shadow-cosmic);
     }
   }
-  
-  // Floating particles effect
+
+  // Enhanced floating particles effect
   &::before {
     content: '';
     position: absolute;
@@ -293,47 +469,69 @@
     right: 0;
     bottom: 0;
     background-image: 
-      radial-gradient(2px 2px at 20px 30px, rgba(255, 255, 255, 0.3), transparent),
-      radial-gradient(2px 2px at 40px 70px, rgba(0, 212, 255, 0.4), transparent),
-      radial-gradient(1px 1px at 90px 40px, rgba(139, 92, 246, 0.3), transparent);
+      radial-gradient(3px 3px at 25px 35px, rgba(0, 212, 255, 0.4), transparent),
+      radial-gradient(2px 2px at 45px 75px, rgba(139, 92, 246, 0.5), transparent),
+      radial-gradient(1px 1px at 95px 45px, rgba(0, 255, 136, 0.4), transparent),
+      radial-gradient(2px 2px at 15px 85px, rgba(255, 0, 128, 0.3), transparent),
+      radial-gradient(1px 1px at 75px 15px, rgba(255, 255, 255, 0.6), transparent);
     background-repeat: repeat;
-    background-size: 100px 100px;
-    animation: galaxy-stars-twinkle 4s ease-in-out infinite;
+    background-size: 120px 120px;
+    animation: galaxy-stars-twinkle 6s ease-in-out infinite;
     pointer-events: none;
-    opacity: 0.6;
+    opacity: 0.8;
+  }
+
+  // Additional cosmic dust layer
+  &::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: var(--galaxy-gradient-aurora);
+    opacity: 0.02;
+    animation: galaxy-aurora 30s ease-in-out infinite;
+    background-size: 500% 500%;
+    pointer-events: none;
   }
 }
 
-// Enhanced Chat Messages
+// ========================================
+// ENHANCED CHAT MESSAGES - ULTRA MODERN
+// ========================================
+
 .wrapper, .ai_wrapper {
-  margin-bottom: 28px;
-  animation: galaxy-slide-up 0.5s ease-out;
+  margin-bottom: 32px;
+  animation: galaxy-slide-up 0.6s ease-out;
   position: relative;
 }
 
 .chat, .ai_chat {
   display: flex;
-  gap: 16px;
+  gap: 18px;
   align-items: flex-start;
-  max-width: 80%;
+  max-width: 85%;
   position: relative;
 }
 
-// User Messages (Right Side)
+// User Messages (Right Side) - Enhanced
 .wrapper .chat {
   margin-left: auto;
   flex-direction: row-reverse;
-  
+
   .message {
     background: var(--galaxy-gradient-cosmic);
     color: white;
-    padding: 18px 24px;
-    border-radius: 24px 24px 8px 24px;
-    box-shadow: var(--galaxy-shadow-md);
+    padding: 20px 28px;
+    border-radius: 28px 28px 8px 28px;
+    box-shadow: var(--galaxy-shadow-lg);
     position: relative;
-    backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    
+    backdrop-filter: blur(15px);
+    border: 2px solid rgba(255, 255, 255, 0.1);
+    font-weight: 500;
+    line-height: 1.6;
+
     &::before {
       content: '';
       position: absolute;
@@ -346,32 +544,55 @@
       opacity: 0;
       transition: opacity var(--galaxy-transition-fast);
       z-index: -1;
+      animation: galaxy-nebula-flow 20s linear infinite;
+      background-size: 300% 300%;
     }
-    
+
+    &::after {
+      content: '';
+      position: absolute;
+      top: -2px;
+      left: -2px;
+      right: -2px;
+      bottom: -2px;
+      background: var(--galaxy-gradient-aurora);
+      border-radius: 30px 30px 10px 30px;
+      opacity: 0;
+      transition: opacity var(--galaxy-transition-fast);
+      z-index: -2;
+      animation: galaxy-aurora 15s ease-in-out infinite;
+      background-size: 200% 200%;
+    }
+
     &:hover {
-      transform: translateY(-2px);
-      box-shadow: var(--galaxy-shadow-lg);
-      
+      transform: translateY(-4px) scale(1.02);
+      box-shadow: var(--galaxy-shadow-xl);
+
       &::before {
-        opacity: 0.2;
+        opacity: 0.3;
+      }
+
+      &::after {
+        opacity: 0.5;
       }
     }
   }
 }
 
-// AI Messages (Left Side)
+// AI Messages (Left Side) - Enhanced
 .ai_wrapper .ai_chat {
   .ai_message {
     background: var(--galaxy-glass);
-    backdrop-filter: blur(25px);
-    border: 1px solid var(--galaxy-glass-border);
+    backdrop-filter: blur(30px);
+    border: 2px solid var(--galaxy-glass-border);
     color: var(--galaxy-text-primary);
-    padding: 18px 24px;
-    border-radius: 24px 24px 24px 8px;
-    box-shadow: var(--galaxy-shadow-md);
+    padding: 20px 28px;
+    border-radius: 28px 28px 28px 8px;
+    box-shadow: var(--galaxy-shadow-lg);
     position: relative;
     line-height: 1.7;
-    
+    font-weight: 500;
+
     &::before {
       content: '';
       position: absolute;
@@ -379,134 +600,216 @@
       left: 0;
       right: 0;
       bottom: 0;
-      background: var(--galaxy-gradient-nebula);
+      background: var(--galaxy-gradient-plasma);
       border-radius: inherit;
       opacity: 0;
       transition: opacity var(--galaxy-transition-fast);
       z-index: -1;
+      animation: galaxy-plasma 25s linear infinite;
     }
-    
+
+    &::after {
+      content: '';
+      position: absolute;
+      top: -2px;
+      left: -2px;
+      right: -2px;
+      bottom: -2px;
+      background: var(--galaxy-gradient-nebula);
+      border-radius: 30px 30px 30px 10px;
+      opacity: 0;
+      transition: opacity var(--galaxy-transition-fast);
+      z-index: -2;
+      animation: galaxy-nebula-flow 18s linear infinite;
+      background-size: 250% 250%;
+    }
+
     &:hover {
-      transform: translateY(-2px);
-      box-shadow: var(--galaxy-shadow-lg);
-      
+      transform: translateY(-4px) scale(1.02);
+      box-shadow: var(--galaxy-shadow-xl);
+
       &::before {
-        opacity: 0.1;
+        opacity: 0.15;
+      }
+
+      &::after {
+        opacity: 0.4;
       }
     }
   }
 }
 
-// Enhanced Profile Images - Fixed aspect ratio and positioning
+// ========================================
+// ENHANCED PROFILE IMAGES - ULTRA MODERN
+// ========================================
+
 .profile, .ai_profile {
-  width: 44px;
-  height: 44px;
+  width: 48px;
+  height: 48px;
   border-radius: 50%;
   overflow: hidden;
-  border: 2px solid var(--galaxy-star-blue);
+  border: 3px solid var(--galaxy-star-blue);
   box-shadow: var(--galaxy-shadow-cosmic);
   position: relative;
   flex-shrink: 0;
   display: inline-block;
-  
+
   img {
     width: 100%;
     height: 100%;
     object-fit: cover;
     object-position: center;
     display: block;
+    transition: transform var(--galaxy-transition-fast);
   }
-  
-  &::after {
+
+  &::before {
     content: '';
     position: absolute;
-    top: -2px;
-    left: -2px;
-    right: -2px;
-    bottom: -2px;
+    top: -3px;
+    left: -3px;
+    right: -3px;
+    bottom: -3px;
     border-radius: 50%;
     background: var(--galaxy-gradient-nebula);
     z-index: -1;
-    animation: galaxy-nebula-flow 10s linear infinite;
-    background-size: 200% 200%;
+    animation: galaxy-nebula-flow 12s linear infinite;
+    background-size: 300% 300%;
+  }
+
+  &::after {
+    content: '';
+    position: absolute;
+    top: -6px;
+    left: -6px;
+    right: -6px;
+    bottom: -6px;
+    border-radius: 50%;
+    background: var(--galaxy-gradient-aurora);
+    z-index: -2;
+    opacity: 0.3;
+    animation: galaxy-aurora 20s ease-in-out infinite;
+    background-size: 400% 400%;
+  }
+
+  &:hover {
+    transform: scale(1.1) rotate(5deg);
+
+    img {
+      transform: scale(1.1);
+    }
   }
 }
 
 .ai_profile {
   border-color: var(--galaxy-star-purple);
   box-shadow: var(--galaxy-shadow-nebula);
-  animation: galaxy-glow 3s ease-in-out infinite;
+  animation: galaxy-glow 4s ease-in-out infinite;
+
+  &:hover {
+    transform: scale(1.1) rotate(-5deg);
+  }
 }
 
-// Redesigned Input Container (Bottom) - Fixed positioning
+// ========================================
+// REDESIGNED INPUT CONTAINER - ULTRA ENHANCED
+// ========================================
+
 .inputBox {
-  padding: 20px;
+  padding: 20px 24px;
   background: var(--galaxy-glass);
-  backdrop-filter: blur(30px);
-  border-top: 1px solid var(--galaxy-glass-border);
+  backdrop-filter: blur(40px);
+  border-top: 2px solid var(--galaxy-glass-border);
   display: flex;
   gap: 16px;
   align-items: flex-end;
-  position: fixed;
+  position: relative;
   bottom: 0;
   left: 0;
   right: 0;
   z-index: 100;
-  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.3);
-  
+  box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.4);
+  margin-bottom: 0;
+
   &::before {
     content: '';
     position: absolute;
     top: 0;
     left: 0;
     right: 0;
-    height: 2px;
+    height: 4px;
     background: var(--galaxy-gradient-nebula);
-    opacity: 0.5;
-    animation: galaxy-nebula-flow 12s linear infinite;
-    background-size: 200% 200%;
+    opacity: 0.7;
+    animation: galaxy-nebula-flow 10s linear infinite;
+    background-size: 300% 300%;
+  }
+
+  &::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: var(--galaxy-gradient-plasma);
+    opacity: 0.03;
+    pointer-events: none;
+    animation: galaxy-plasma 30s linear infinite;
   }
 }
 
-// Enhanced Chat Textarea
+// ========================================
+// ENHANCED CHAT TEXTAREA - ULTRA MODERN
+// ========================================
+
 .chatTextarea {
   flex: 1;
   background: var(--galaxy-nebula);
-  border: 1px solid var(--galaxy-glass-border);
+  border: 2px solid var(--galaxy-glass-border);
   border-radius: 20px;
   color: var(--galaxy-text-primary);
-  padding: 18px 24px;
+  padding: 16px 24px;
   font-size: 16px;
   line-height: 1.6;
   resize: none;
-  min-height: 28px;
+  min-height: 48px;
   max-height: 140px;
-  transition: all var(--galaxy-transition-fast);
+  transition: all var(--galaxy-transition-bounce);
   font-family: inherit;
-  backdrop-filter: blur(10px);
-  
+  font-weight: 500;
+  backdrop-filter: blur(15px);
+  box-sizing: border-box;
+  position: relative;
+
   &::placeholder {
     color: var(--galaxy-text-muted);
+    font-weight: 400;
   }
-  
+
   &:focus {
     outline: none;
     border-color: var(--galaxy-star-blue);
-    box-shadow: 0 0 0 3px rgba(0, 212, 255, 0.3);
+    box-shadow: 
+      0 0 0 4px rgba(0, 212, 255, 0.3),
+      0 8px 32px rgba(0, 212, 255, 0.2);
     background: var(--galaxy-cosmic);
-    transform: translateY(-2px);
+    transform: translateY(-4px) scale(1.02);
   }
-  
+
   &:hover {
     border-color: var(--galaxy-star-purple);
-    box-shadow: var(--galaxy-shadow-sm);
+    box-shadow: var(--galaxy-shadow-md);
+    transform: translateY(-2px);
   }
 }
 
-// Enhanced Action Buttons
+// ========================================
+// ENHANCED ACTION BUTTONS - ULTRA MODERN
+// ========================================
+
 .sendBtn, .stopGenerationBtn {
-  width: 52px;
-  height: 52px;
+  width: 56px;
+  height: 56px;
   border: none;
   border-radius: 50%;
   background: var(--galaxy-gradient-cosmic);
@@ -515,11 +818,11 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all var(--galaxy-transition-fast);
-  box-shadow: var(--galaxy-shadow-md);
+  transition: all var(--galaxy-transition-bounce);
+  box-shadow: var(--galaxy-shadow-lg);
   position: relative;
   overflow: hidden;
-  
+
   &::before {
     content: '';
     position: absolute;
@@ -531,221 +834,186 @@
     opacity: 0;
     transition: opacity var(--galaxy-transition-fast);
     border-radius: inherit;
+    animation: galaxy-nebula-flow 15s linear infinite;
+    background-size: 200% 200%;
   }
-  
+
+  &::after {
+    content: '';
+    position: absolute;
+    top: -3px;
+    left: -3px;
+    right: -3px;
+    bottom: -3px;
+    background: var(--galaxy-gradient-aurora);
+    border-radius: 50%;
+    opacity: 0;
+    transition: opacity var(--galaxy-transition-fast);
+    z-index: -1;
+    animation: galaxy-aurora 12s ease-in-out infinite;
+    background-size: 300% 300%;
+  }
+
   svg {
-    width: 22px;
-    height: 22px;
+    width: 24px;
+    height: 24px;
     z-index: 1;
+    transition: transform var(--galaxy-transition-fast);
   }
-  
+
   &:hover {
-    transform: translateY(-4px) scale(1.1);
-    box-shadow: var(--galaxy-shadow-lg);
-    animation: galaxy-glow 1s ease-in-out;
-    
+    transform: translateY(-6px) scale(1.15) rotate(10deg);
+    box-shadow: var(--galaxy-shadow-xl);
+    animation: galaxy-glow 1.5s ease-in-out;
+
     &::before {
-      opacity: 0.3;
+      opacity: 0.4;
+    }
+
+    &::after {
+      opacity: 0.8;
+    }
+
+    svg {
+      transform: scale(1.2) rotate(-10deg);
     }
   }
-  
+
   &:active {
-    transform: translateY(-2px) scale(1.05);
+    transform: translateY(-3px) scale(1.1) rotate(5deg);
   }
-  
+
   &.hide {
     opacity: 0;
     pointer-events: none;
-    transform: scale(0.7);
+    transform: scale(0.5) rotate(180deg);
   }
 }
 
 .stopGenerationBtn {
   background: linear-gradient(135deg, #ff4757, #ff3838, #ff6b7a);
-  
+
   &:hover {
     background: linear-gradient(135deg, #ff3838, #ff2f2f, #ff5757);
+    box-shadow: 0 0 40px rgba(255, 71, 87, 0.6);
+  }
+
+  &::before {
+    background: linear-gradient(45deg, #ff0080, #ff4757, #ff6b7a);
   }
 }
 
-// Enhanced Code Blocks
+// ========================================
+// ENHANCED CODE BLOCKS - ULTRA MODERN
+// ========================================
+
 .codeBlock {
   position: relative;
-  margin: 20px 0;
-  border-radius: 16px;
+  margin: 24px 0;
+  border-radius: 20px;
   overflow: hidden;
   background: var(--galaxy-void);
-  border: 1px solid var(--galaxy-glass-border);
-  box-shadow: var(--galaxy-shadow-md);
-  
+  border: 2px solid var(--galaxy-glass-border);
+  box-shadow: var(--galaxy-shadow-lg);
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: var(--galaxy-gradient-plasma);
+    opacity: 0.05;
+    pointer-events: none;
+    animation: galaxy-plasma 25s linear infinite;
+  }
+
   .copy-button {
     position: absolute;
-    top: 16px;
-    right: 16px;
+    top: 20px;
+    right: 20px;
     background: var(--galaxy-glass);
-    border: 1px solid var(--galaxy-glass-border);
-    border-radius: 8px;
+    border: 2px solid var(--galaxy-glass-border);
+    border-radius: 12px;
     color: var(--galaxy-text-secondary);
-    padding: 8px 12px;
-    font-size: 12px;
+    padding: 10px 16px;
+    font-size: 13px;
+    font-weight: 600;
     cursor: pointer;
-    transition: all var(--galaxy-transition-fast);
+    transition: all var(--galaxy-transition-bounce);
     z-index: 2;
-    backdrop-filter: blur(10px);
-    
+    backdrop-filter: blur(15px);
+    position: relative;
+    overflow: hidden;
+
+    &::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+      transition: left 0.6s ease;
+    }
+
     &:hover {
       background: var(--galaxy-star-blue);
       color: var(--galaxy-deep-space);
-      transform: translateY(-2px);
+      transform: translateY(-3px) scale(1.05);
       box-shadow: var(--galaxy-shadow-cosmic);
+
+      &::before {
+        left: 100%;
+      }
     }
-    
+
     svg {
-      width: 16px;
-      height: 16px;
+      width: 18px;
+      height: 18px;
     }
   }
-  
+
   .codesArea {
     margin: 0;
-    padding: 24px;
+    padding: 28px;
     background: transparent;
     overflow-x: auto;
-    
+    position: relative;
+
+    &::-webkit-scrollbar {
+      height: 8px;
+    }
+
+    &::-webkit-scrollbar-track {
+      background: var(--galaxy-glass);
+      border-radius: 4px;
+    }
+
+    &::-webkit-scrollbar-thumb {
+      background: var(--galaxy-gradient-cosmic);
+      border-radius: 4px;
+
+      &:hover {
+        background: var(--galaxy-star-purple);
+      }
+    }
+
     code {
-      font-family: 'JetBrains Mono', 'Fira Code', Consolas, monospace;
-      font-size: 14px;
-      line-height: 1.6;
+      font-family: 'JetBrains Mono', 'Fira Code', 'SF Mono', Consolas, monospace;
+      font-size: 15px;
+      line-height: 1.7;
       color: var(--galaxy-text-primary);
+      font-weight: 500;
+      text-shadow: 0 0 10px rgba(0, 212, 255, 0.1);
     }
   }
 }
 
-// Mobile Responsive Design
-@media (max-width: 768px) {
-  .page-header {
-    padding: 12px 16px;
-    
-    .page-title {
-      font-size: 16px;
-    }
-    
-    .icon {
-      font-size: 20px;
-      padding: 8px;
-    }
-  }
-  
-  .chatBox {
-    padding: 16px 12px;
-  }
-  
-  .inputBox {
-    padding: 16px;
-    gap: 12px;
-  }
-  
-  .chat, .ai_chat {
-    max-width: 90%;
-    gap: 12px;
-  }
-  
-  .message, .ai_message {
-    padding: 14px 18px;
-    font-size: 14px;
-    border-radius: 20px 20px 6px 20px;
-  }
-  
-  .ai_message {
-    border-radius: 20px 20px 20px 6px;
-  }
-  
-  .profile, .ai_profile {
-    width: 36px;
-    height: 36px;
-  }
-  
-  .chatTextarea {
-    font-size: 16px; // Prevent zoom on iOS
-    padding: 14px 18px;
-    border-radius: 16px;
-  }
-  
-  .sendBtn, .stopGenerationBtn {
-    width: 46px;
-    height: 46px;
-    
-    svg {
-      width: 20px;
-      height: 20px;
-    }
-  }
-}
-
-// Performance optimizations for Android
-@media (max-width: 480px) {
-  #acode-ai-assistant {
-    &::after {
-      animation: none; // Disable heavy animations on small screens
-    }
-  }
-  
-  .chatBox::before {
-    display: none; // Remove particle effects on very small screens
-  }
-  
-  .profile, .ai_profile {
-    &::after {
-      animation: none;
-    }
-  }
-}
-
-// Dark mode enhancements
-@media (prefers-color-scheme: dark) {
-  :root {
-    --galaxy-glass: rgba(255, 255, 255, 0.05);
-    --galaxy-glass-border: rgba(255, 255, 255, 0.1);
-  }
-}
-
-// Reduced motion support
-@media (prefers-reduced-motion: reduce) {
-  * {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-  }
-}
-
-// Selection styles
-::selection {
-  background: var(--galaxy-star-blue);
-  color: var(--galaxy-deep-space);
-}
-
-// Focus styles for accessibility
-*:focus-visible {
-  outline: 2px solid var(--galaxy-star-blue);
-  outline-offset: 2px;
-}
-
-// Utility classes
-.hide {
-  display: none !important;
-}
-
-.galaxy-glow {
-  animation: galaxy-glow 2s ease-in-out infinite;
-}
-
-.galaxy-float {
-  animation: galaxy-float 3s ease-in-out infinite;
-}
-
-// ===================================
-// AI EDIT POPUP FLOATING WINDOW STYLES
-// ===================================
+// ========================================
+// AI EDIT POPUP - ULTRA ENHANCED FLOATING WINDOW
+// ========================================
 
 // Main popup container (floating window)
 .ai-edit-popup {
@@ -753,19 +1021,19 @@
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  width: 90%;
-  max-width: 500px;
+  width: 92%;
+  max-width: 520px;
   background: var(--galaxy-nebula);
   color: var(--galaxy-text-primary);
-  border-radius: 16px;
-  box-shadow: var(--galaxy-shadow-lg);
+  border-radius: 24px;
+  box-shadow: var(--galaxy-shadow-xl);
   z-index: 9999;
-  border: 1px solid var(--galaxy-glass-border);
-  backdrop-filter: blur(25px);
-  animation: galaxy-slide-up 0.3s ease-out;
+  border: 2px solid var(--galaxy-glass-border);
+  backdrop-filter: blur(40px);
+  animation: galaxy-slide-up 0.4s ease-out;
   overflow: hidden;
-  
-  // Galaxy-themed overlay
+
+  // Enhanced Galaxy-themed overlay
   &::before {
     content: '';
     position: absolute;
@@ -774,12 +1042,257 @@
     right: 0;
     bottom: 0;
     background: var(--galaxy-gradient-cosmic);
-    opacity: 0.05;
+    opacity: 0.08;
     pointer-events: none;
     z-index: 0;
+    animation: galaxy-nebula-flow 20s linear infinite;
+    background-size: 300% 300%;
   }
-  
-  // Floating glow effect
+
+  // Enhanced floating glow effect
+  &::after {
+    content: '';
+    position: absolute;
+    top: -4px;
+    left: -4px;
+    right: -4px;
+    bottom: -4px;
+    background: var(--galaxy-gradient-nebula);
+    border-radius: 28px;
+    z-index: -1;
+    opacity: 0.5;
+    animation: galaxy-nebula-flow 12s linear infinite;
+    background-size: 400% 400%;
+  }
+}
+
+// Enhanced popup header
+.ai-edit-popup-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 24px 28px;
+  border-bottom: 2px solid var(--galaxy-glass-border);
+  background: var(--galaxy-glass);
+  backdrop-filter: blur(20px);
+  position: relative;
+  z-index: 1;
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: var(--galaxy-gradient-aurora);
+    opacity: 0.05;
+    pointer-events: none;
+    animation: galaxy-aurora 25s ease-in-out infinite;
+    background-size: 300% 300%;
+  }
+
+  &::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: var(--galaxy-gradient-nebula);
+    opacity: 0.6;
+    animation: galaxy-nebula-flow 15s linear infinite;
+    background-size: 200% 200%;
+  }
+}
+
+// Enhanced popup title
+.ai-edit-popup-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--galaxy-text-primary);
+  text-shadow: 
+    0 0 15px rgba(0, 212, 255, 0.4),
+    0 0 30px rgba(139, 92, 246, 0.2);
+  margin: 0;
+  background: var(--galaxy-gradient-nebula);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: galaxy-nebula-flow 18s linear infinite;
+  background-size: 250% 250%;
+}
+
+// Enhanced close button
+.ai-edit-popup-close {
+  background: var(--galaxy-glass);
+  border: 2px solid var(--galaxy-glass-border);
+  color: var(--galaxy-text-secondary);
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 22px;
+  font-weight: bold;
+  transition: all var(--galaxy-transition-bounce);
+  backdrop-filter: blur(15px);
+  position: relative;
+  overflow: hidden;
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: var(--galaxy-gradient-cosmic);
+    opacity: 0;
+    transition: opacity var(--galaxy-transition-fast);
+    border-radius: inherit;
+  }
+
+  &::after {
+    content: '';
+    position: absolute;
+    top: -2px;
+    left: -2px;
+    right: -2px;
+    bottom: -2px;
+    background: var(--galaxy-gradient-aurora);
+    border-radius: 50%;
+    opacity: 0;
+    transition: opacity var(--galaxy-transition-fast);
+    z-index: -1;
+    animation: galaxy-aurora 10s ease-in-out infinite;
+    background-size: 200% 200%;
+  }
+
+  &:hover {
+    background: var(--galaxy-star-blue);
+    color: var(--galaxy-deep-space);
+    transform: scale(1.15) rotate(90deg);
+    box-shadow: var(--galaxy-shadow-cosmic);
+
+    &::before {
+      opacity: 0.3;
+    }
+
+    &::after {
+      opacity: 0.8;
+    }
+  }
+
+  &:active {
+    transform: scale(1.05) rotate(45deg);
+  }
+}
+
+// Enhanced popup body
+.ai-edit-popup-body {
+  padding: 28px;
+  position: relative;
+  z-index: 1;
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: var(--galaxy-gradient-plasma);
+    opacity: 0.02;
+    pointer-events: none;
+    animation: galaxy-plasma 30s linear infinite;
+  }
+}
+
+// Enhanced textarea for AI prompt input
+.ai-edit-prompt {
+  width: 100%;
+  min-height: 140px;
+  max-height: 240px;
+  background: var(--galaxy-cosmic);
+  border: 2px solid var(--galaxy-glass-border);
+  border-radius: 16px;
+  color: var(--galaxy-text-primary);
+  padding: 20px 24px;
+  font-size: 15px;
+  line-height: 1.7;
+  resize: vertical;
+  transition: all var(--galaxy-transition-bounce);
+  font-family: inherit;
+  font-weight: 500;
+  backdrop-filter: blur(15px);
+  box-sizing: border-box;
+  position: relative;
+
+  &::placeholder {
+    color: var(--galaxy-text-muted);
+    opacity: 0.8;
+    font-weight: 400;
+  }
+
+  &:focus {
+    outline: none;
+    border-color: var(--galaxy-star-blue);
+    box-shadow: 
+      0 0 0 4px rgba(0, 212, 255, 0.3),
+      0 8px 32px rgba(0, 212, 255, 0.2);
+    background: var(--galaxy-nebula);
+    transform: translateY(-3px) scale(1.02);
+  }
+
+  &:hover {
+    border-color: var(--galaxy-star-purple);
+    box-shadow: var(--galaxy-shadow-md);
+    transform: translateY(-2px);
+  }
+
+  // Auto-expand behavior
+  &:focus {
+    min-height: 160px;
+  }
+}
+
+// Enhanced actions container
+.ai-edit-actions {
+  display: flex;
+  gap: 16px;
+  justify-content: flex-end;
+  margin-top: 24px;
+  align-items: center;
+}
+
+// Enhanced base button styles
+.ai-edit-btn {
+  padding: 14px 28px;
+  border: none;
+  border-radius: 14px;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all var(--galaxy-transition-bounce);
+  position: relative;
+  overflow: hidden;
+  backdrop-filter: blur(15px);
+
+  // Enhanced hover effect overlay
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+    transition: left 0.6s ease;
+  }
+
   &::after {
     content: '';
     position: absolute;
@@ -788,148 +1301,132 @@
     right: -2px;
     bottom: -2px;
     background: var(--galaxy-gradient-nebula);
-    border-radius: 18px;
+    border-radius: 16px;
+    opacity: 0;
+    transition: opacity var(--galaxy-transition-fast);
     z-index: -1;
-    opacity: 0.3;
-    animation: galaxy-nebula-flow 8s linear infinite;
+    animation: galaxy-nebula-flow 12s linear infinite;
     background-size: 200% 200%;
   }
-}
 
-// Popup header with title and close button
-.ai-edit-popup-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 20px 24px;
-  border-bottom: 1px solid var(--galaxy-glass-border);
-  background: var(--galaxy-glass);
-  backdrop-filter: blur(10px);
-  position: relative;
-  z-index: 1;
-  
-  &::after {
-    content: '';
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    height: 1px;
-    background: var(--galaxy-gradient-nebula);
-    opacity: 0.3;
+  &:hover {
+    &::before {
+      left: 100%;
+    }
+
+    &::after {
+      opacity: 0.3;
+    }
+  }
+
+  &:active {
+    transform: translateY(2px) scale(0.98);
   }
 }
 
-// Popup title
-.ai-edit-popup-title {
-  font-size: 18px;
-  font-weight: 600;
-  color: var(--galaxy-text-primary);
-  text-shadow: 0 0 10px rgba(0, 212, 255, 0.3);
-  margin: 0;
-}
+// Enhanced primary button
+.ai-edit-btn.primary {
+  background: var(--galaxy-gradient-cosmic);
+  color: white;
+  border: 2px solid var(--galaxy-star-blue);
+  box-shadow: var(--galaxy-shadow-lg);
 
-// Close button (X)
-.ai-edit-popup-close {
-  background: var(--galaxy-glass);
-  border: 1px solid var(--galaxy-glass-border);
-  color: var(--galaxy-text-secondary);
-  border-radius: 50%;
-  width: 36px;
-  height: 36px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  font-size: 20px;
-  font-weight: bold;
-  transition: all var(--galaxy-transition-fast);
-  backdrop-filter: blur(10px);
-  
   &:hover {
     background: var(--galaxy-star-blue);
     color: var(--galaxy-deep-space);
-    transform: scale(1.1);
+    transform: translateY(-4px) scale(1.08);
     box-shadow: var(--galaxy-shadow-cosmic);
   }
-  
-  &:active {
-    transform: scale(0.95);
-  }
-}
 
-// Popup body containing content
-.ai-edit-popup-body {
-  padding: 24px;
-  position: relative;
-  z-index: 1;
-}
-
-// Textarea for AI prompt input
-.ai-edit-prompt {
-  width: 100%;
-  min-height: 120px;
-  max-height: 200px;
-  background: var(--galaxy-cosmic);
-  border: 1px solid var(--galaxy-glass-border);
-  border-radius: 12px;
-  color: var(--galaxy-text-primary);
-  padding: 16px 20px;
-  font-size: 14px;
-  line-height: 1.6;
-  resize: vertical;
-  transition: all var(--galaxy-transition-fast);
-  font-family: inherit;
-  backdrop-filter: blur(10px);
-  box-sizing: border-box;
-  
-  &::placeholder {
-    color: var(--galaxy-text-muted);
-    opacity: 0.8;
-  }
-  
   &:focus {
     outline: none;
-    border-color: var(--galaxy-star-blue);
-    box-shadow: 0 0 0 3px rgba(0, 212, 255, 0.3);
-    background: var(--galaxy-nebula);
-    transform: translateY(-2px);
+    box-shadow: 0 0 0 4px rgba(0, 212, 255, 0.4);
   }
-  
+}
+
+// Enhanced secondary button
+.ai-edit-btn.secondary {
+  background: var(--galaxy-glass);
+  color: var(--galaxy-text-secondary);
+  border: 2px solid var(--galaxy-glass-border);
+
   &:hover {
-    border-color: var(--galaxy-star-purple);
-    box-shadow: var(--galaxy-shadow-sm);
+    background: var(--galaxy-text-muted);
+    color: var(--galaxy-deep-space);
+    transform: translateY(-3px) scale(1.05);
+    box-shadow: var(--galaxy-shadow-md);
   }
-  
-  // Auto-expand behavior
+
   &:focus {
-    min-height: 140px;
+    outline: none;
+    box-shadow: 0 0 0 4px rgba(148, 163, 184, 0.3);
   }
 }
 
-// Actions container for buttons
-.ai-edit-actions {
-  display: flex;
-  gap: 12px;
-  justify-content: flex-end;
-  margin-top: 20px;
-  align-items: center;
+// Enhanced dark backdrop
+.ai-edit-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(8px);
+  z-index: 9998;
+  animation: galaxy-fade-in 0.4s ease-out;
 }
 
-// Base button styles for AI edit popup
-.ai-edit-btn {
-  padding: 12px 24px;
-  border: none;
-  border-radius: 10px;
-  font-size: 14px;
-  font-weight: 600;
+// ========================================
+// UTILITY CLASSES & ENHANCEMENTS
+// ========================================
+
+.hide {
+  display: none !important;
+}
+
+.galaxy-glow {
+  animation: galaxy-glow 3s ease-in-out infinite;
+}
+
+.galaxy-float {
+  animation: galaxy-float 4s ease-in-out infinite;
+}
+
+.galaxy-pulse {
+  animation: galaxy-pulse 2s ease-in-out infinite;
+}
+
+// Theme-aware color classes
+.theme-adaptive-bg {
+  background: var(--galaxy-nebula);
+  color: var(--galaxy-text-primary);
+}
+
+.theme-adaptive-border {
+  border-color: var(--galaxy-glass-border);
+}
+
+.theme-adaptive-text {
+  color: var(--galaxy-text-primary);
+}
+
+// Token Usage Display
+.token-display {
+  background: var(--galaxy-glass);
+  border: 2px solid var(--galaxy-glass-border);
+  border-radius: 16px;
+  padding: 10px 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
   cursor: pointer;
-  transition: all var(--galaxy-transition-fast);
+  transition: all var(--galaxy-transition-bounce);
+  backdrop-filter: blur(15px);
+  font-size: 14px;
+  font-weight: 500;
   position: relative;
   overflow: hidden;
-  backdrop-filter: blur(10px);
   
-  // Hover effect overlay
   &::before {
     content: '';
     position: absolute;
@@ -937,130 +1434,222 @@
     left: -100%;
     width: 100%;
     height: 100%;
-    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
-    transition: left 0.5s;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.15), transparent);
+    transition: left 0.6s;
   }
   
-  &:hover::before {
-    left: 100%;
+  .token-icon {
+    font-size: 16px;
+    animation: galaxy-float 3s ease-in-out infinite;
+    filter: drop-shadow(0 0 5px rgba(0, 212, 255, 0.5));
   }
   
-  &:active {
-    transform: translateY(1px) scale(0.98);
+  .token-text {
+    color: var(--galaxy-text-primary);
+    font-weight: 600;
+    min-width: 24px;
+    text-align: center;
+    text-shadow: 0 0 8px rgba(0, 212, 255, 0.3);
   }
-}
-
-// Primary button (Edit Code)
-.ai-edit-btn.primary {
-  background: var(--galaxy-gradient-cosmic);
-  color: white;
-  border: 1px solid var(--galaxy-star-blue);
-  box-shadow: var(--galaxy-shadow-md);
   
   &:hover {
     background: var(--galaxy-star-blue);
     color: var(--galaxy-deep-space);
-    transform: translateY(-3px) scale(1.05);
+    transform: translateY(-3px) scale(1.02);
     box-shadow: var(--galaxy-shadow-cosmic);
+    border-color: var(--galaxy-star-purple);
+    
+    .token-text {
+      color: var(--galaxy-deep-space);
+      text-shadow: none;
+    }
+    
+    &::before {
+      left: 100%;
+    }
   }
   
-  &:focus {
-    outline: none;
-    box-shadow: 0 0 0 3px rgba(0, 212, 255, 0.4);
+  &:active {
+    transform: translateY(-1px) scale(0.98);
   }
 }
 
-// Secondary button (Cancel)
-.ai-edit-btn.secondary {
-  background: var(--galaxy-glass);
-  color: var(--galaxy-text-secondary);
-  border: 1px solid var(--galaxy-glass-border);
-  
-  &:hover {
-    background: var(--galaxy-text-muted);
-    color: var(--galaxy-deep-space);
-    transform: translateY(-2px);
-    box-shadow: var(--galaxy-shadow-sm);
-  }
-  
-  &:focus {
-    outline: none;
-    box-shadow: 0 0 0 3px rgba(148, 163, 184, 0.3);
+// ========================================
+// ENHANCED SELECTION & FOCUS STYLES
+// ========================================
+
+::selection {
+  background: var(--galaxy-star-blue);
+  color: var(--galaxy-deep-space);
+  text-shadow: none;
+}
+
+::-moz-selection {
+  background: var(--galaxy-star-blue);
+  color: var(--galaxy-deep-space);
+  text-shadow: none;
+}
+
+// Enhanced focus styles for accessibility
+*:focus-visible {
+  outline: 3px solid var(--galaxy-star-blue);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
+// ========================================
+// PERFORMANCE OPTIMIZATIONS
+// ========================================
+
+// Reduce motion for users who prefer it
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }
 
-// Dark backdrop when popup is open
-.ai-edit-backdrop {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.6);
-  backdrop-filter: blur(5px);
-  z-index: 9998;
-  animation: galaxy-fade-in 0.3s ease-out;
-}
+// ========================================
+// ENHANCED THEME INTEGRATION
+// ========================================
 
-// Mobile responsive styles for popup
-@media (max-width: 768px) {
-  .ai-edit-popup {
-    width: 95%;
-    margin: 0 auto;
-    max-height: 80vh;
-    overflow-y: auto;
+// Light theme adaptations
+#acode-ai-assistant {
+  &[data-theme="light"] {
+    --galaxy-deep-space: var(--app-background, #f8f9fa);
+    --galaxy-nebula: var(--popup-background, #ffffff);
+    --galaxy-cosmic: var(--secondary-background, #f1f3f4);
+    --galaxy-text-primary: var(--primary-text-color, #202124);
+    --galaxy-text-secondary: var(--secondary-text-color, #5f6368);
+    --galaxy-glass: var(--glass-background, rgba(0, 0, 0, 0.05));
+    --galaxy-glass-border: var(--border-color, rgba(0, 0, 0, 0.1));
+
+    &::before {
+      background: 
+        url('../assets/galaxy.png') center center / cover no-repeat,
+        radial-gradient(ellipse at 20% 30%, rgba(0, 123, 255, 0.1) 0%, transparent 60%),
+        radial-gradient(ellipse at 80% 70%, rgba(108, 99, 255, 0.1) 0%, transparent 60%),
+        linear-gradient(135deg, #f8f9fa 0%, #e9ecef 30%, #dee2e6 70%, #ced4da 100%);
+      opacity: 0.9;
+    }
+
+    &::after {
+      background: 
+        radial-gradient(circle at 25% 25%, rgba(0, 123, 255, 0.05) 0%, transparent 50%),
+        radial-gradient(circle at 75% 75%, rgba(108, 99, 255, 0.05) 0%, transparent 50%);
+      opacity: 0.4;
+    }
   }
-  
-  .ai-edit-popup-header {
-    padding: 16px 20px;
-  }
-  
-  .ai-edit-popup-title {
-    font-size: 16px;
-  }
-  
-  .ai-edit-popup-body {
-    padding: 20px;
-  }
-  
-  .ai-edit-prompt {
-    min-height: 100px;
-    font-size: 16px; // Prevent zoom on iOS
-  }
-  
-  .ai-edit-actions {
-    flex-direction: column-reverse;
-    gap: 10px;
-  }
-  
-  .ai-edit-btn {
-    width: 100%;
-    padding: 14px 20px;
+
+  // Auto theme respects system preference
+  &[data-theme="auto"] {
+    @media (prefers-color-scheme: light) {
+      --galaxy-deep-space: var(--app-background, #f8f9fa);
+      --galaxy-nebula: var(--popup-background, #ffffff);
+      --galaxy-cosmic: var(--secondary-background, #f1f3f4);
+      --galaxy-text-primary: var(--primary-text-color, #202124);
+      --galaxy-text-secondary: var(--secondary-text-color, #5f6368);
+    }
   }
 }
 
-// Small screen optimizations
-@media (max-width: 480px) {
-  .ai-edit-popup {
-    width: 98%;
-    top: 20px;
-    bottom: 20px;
+// Dynamic font integration
+#acode-ai-assistant {
+  font-family: var(--font-family, 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif);
+  font-size: var(--font-size, 16px);
+}
+
+// ========================================
+// LOADING STATES & MICRO-INTERACTIONS
+// ========================================
+
+.loading {
+  position: relative;
+
+  &::after {
+    content: '';
+    position: absolute;
+    top: 50%;
     left: 50%;
-    transform: translateX(-50%);
-    height: auto;
-    max-height: calc(100vh - 40px);
+    width: 20px;
+    height: 20px;
+    margin: -10px 0 0 -10px;
+    border: 2px solid var(--galaxy-glass-border);
+    border-top: 2px solid var(--galaxy-star-blue);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
   }
-  
-  .ai-edit-popup-header {
-    padding: 12px 16px;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+// Typing indicator
+.typing-indicator {
+  display: flex;
+  gap: 4px;
+  padding: 16px 20px;
+
+  .dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--galaxy-star-blue);
+    animation: typing-dot 1.4s ease-in-out infinite;
+
+    &:nth-child(2) {
+      animation-delay: 0.2s;
+    }
+
+    &:nth-child(3) {
+      animation-delay: 0.4s;
+    }
   }
-  
-  .ai-edit-popup-body {
-    padding: 16px;
+}
+
+@keyframes typing-dot {
+  0%, 60%, 100% {
+    transform: translateY(0);
+    opacity: 0.4;
   }
-  
-  .ai-edit-prompt {
-    min-height: 80px;
-    padding: 12px 16px;
+  30% {
+    transform: translateY(-10px);
+    opacity: 1;
+  }
+}
+
+// Success/Error states
+.success {
+  border-color: var(--galaxy-star-green) !important;
+  box-shadow: 0 0 0 3px rgba(0, 255, 136, 0.3) !important;
+}
+
+.error {
+  border-color: var(--galaxy-star-pink) !important;
+  box-shadow: 0 0 0 3px rgba(255, 0, 128, 0.3) !important;
+}
+
+// Smooth transitions for all interactive elements
+button, input, textarea, select {
+  transition: all var(--galaxy-transition-fast);
+}
+
+// Enhanced hover states for better UX
+.interactive {
+  cursor: pointer;
+  transition: all var(--galaxy-transition-fast);
+
+  &:hover {
+    transform: translateY(-2px);
+  }
+
+  &:active {
+    transform: translateY(0);
   }
 }
