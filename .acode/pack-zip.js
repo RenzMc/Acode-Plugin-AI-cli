@@ -1,47 +1,62 @@
 const path = require('path');
 const fs = require('fs');
-const jszip = require('jszip');
+const JSZip = require('jszip');
 
-const iconFile = path.join(__dirname, '../icon.png');
-const pluginJSON = path.join(__dirname, '../plugin.json');
-const distFolder = path.join(__dirname, '../dist');
-let readmeDotMd = path.join(__dirname, '../readme.md');
+const rootDir = path.join(__dirname, '..');
+const distFolder = path.join(rootDir, 'dist');
+const zip = new JSZip();
 
-if (!fs.existsSync(readmeDotMd)) {
-  readmeDotMd = path.join(__dirname, '../README.md');
+function safeAddFile(zipObj, name, filePath) {
+  if (fs.existsSync(filePath)) {
+    zipObj.file(name, fs.readFileSync(filePath));
+    console.log(`Added: ${name}`);
+  } else {
+    console.warn(`Missing: ${filePath}`);
+  }
 }
 
-// create zip file of dist folder
+// tambahin file wajib di root zip
+safeAddFile(zip, 'icon.png', path.join(rootDir, 'icon.png'));
+safeAddFile(zip, 'plugin.json', path.join(rootDir, 'plugin.json'));
 
-const zip = new jszip();
+// readme case-insensitive
+let readmePath = path.join(rootDir, 'readme.md');
+if (!fs.existsSync(readmePath)) {
+  readmePath = path.join(rootDir, 'README.md');
+}
+safeAddFile(zip, 'readme.md', readmePath);
 
-zip.file('icon.png', fs.readFileSync(iconFile));
-zip.file('plugin.json', fs.readFileSync(pluginJSON));
-zip.file('readme.md', fs.readFileSync(readmeDotMd));
+// ambil main.js dari dist langsung di root zip
+safeAddFile(zip, 'main.js', path.join(distFolder, 'main.js'));
 
-loadFile('', distFolder);
+// copy folder assets (kalau ada)
+const assetsFolder = path.join(distFolder, 'assets');
+if (fs.existsSync(assetsFolder)) {
+  function addFolder(zipObj, folderPath, relativePath = '') {
+    const entries = fs.readdirSync(folderPath);
+    entries.forEach((file) => {
+      const fullPath = path.join(folderPath, file);
+      const stat = fs.statSync(fullPath);
+      if (stat.isDirectory()) {
+        const subFolder = zipObj.folder(path.join(relativePath, file));
+        addFolder(subFolder, fullPath, path.join(relativePath, file));
+      } else {
+        zipObj.file(path.join(relativePath, file), fs.readFileSync(fullPath));
+      }
+    });
+  }
+  addFolder(zip.folder('assets'), assetsFolder, '');
+}
+
+// generate fresh zip
+const outPath = path.join(rootDir, 'AI.zip');
+if (fs.existsSync(outPath)) {
+  fs.unlinkSync(outPath);
+}
 
 zip
   .generateNodeStream({ type: 'nodebuffer', streamFiles: true })
-  .pipe(fs.createWriteStream(path.join(__dirname, '../AI.zip')))
+  .pipe(fs.createWriteStream(outPath))
   .on('finish', () => {
-    console.log('dist.zip written.');
+    console.log('✅ AI.zip created cleanly');
   });
-
-function loadFile(root, folder) {
-  const distFiles = fs.readdirSync(folder);
-  distFiles.forEach((file) => {
-
-    const stat = fs.statSync(path.join(folder, file));
-
-    if (stat.isDirectory()) {
-      zip.folder(file);
-      loadFile(path.join(root, file), path.join(folder, file));
-      return;
-    }
-
-    if (!/LICENSE.txt/.test(file)) {
-      zip.file(path.join(root, file), fs.readFileSync(path.join(folder, file)));
-    }
-  });
-}
