@@ -37,38 +37,38 @@ let CURRENT_SESSION_FILEPATH = null;
 
 class AIAssistant {
   constructor() {
-  // Initialize baseUrl for assets (critical for UI to work)
-  this.baseUrl = window.DATA_STORAGE + plugin.id + "/";
+    // Initialize baseUrl for assets (critical for UI to work)
+    this.baseUrl = window.DATA_STORAGE + plugin.id + "/";
 
-  // Cache untuk responses
-  this.responseCache = new Map();
-  this.cacheTimeout = 30 * 60 * 1000; // 30 menit
+    // Cache untuk responses
+    this.responseCache = new Map();
+    this.cacheTimeout = 30 * 60 * 1000; // 30 menit
 
-  // File operations cache
-  this.fileCache = new Map();
-  this.projectStructure = null;
-  this.lastStructureScan = null;
+    // File operations cache
+    this.fileCache = new Map();
+    this.projectStructure = null;
+    this.lastStructureScan = null;
 
-  // Real-time AI properties
-  this.realTimeEnabled = false;
-  this.realTimeDebounceTimer = null;
-  this.realTimeDelay = 5000; // 5 detik delay for better token efficiency
-  this.lastAnalyzedContent = "";
-  this.currentSuggestions = [];
-  this.suggestionWidget = null;
-  this.errorMarkers = [];
-  this.realTimeAnalysisCache = new Map();
+    // Real-time AI properties
+    this.realTimeEnabled = false;
+    this.realTimeDebounceTimer = null;
+    this.realTimeDelay = 5000; // 5 detik delay for better token efficiency
+    this.lastAnalyzedContent = "";
+    this.currentSuggestions = [];
+    this.suggestionWidget = null;
+    this.errorMarkers = [];
+    this.realTimeAnalysisCache = new Map();
 
-  // Token usage tracking
-  this.tokenUsage = {
-    total: 0,
-    today: 0,
-    session: 0,
-    lastReset: new Date().toDateString()
-  };
-  this.loadTokenUsage();
-  this.updateTokenDisplay = this.updateTokenDisplay.bind(this);
-}
+    // Token usage tracking
+    this.tokenUsage = {
+      total: 0,
+      today: 0,
+      session: 0,
+      lastReset: new Date().toDateString()
+    };
+    this.loadTokenUsage();
+    this.updateTokenDisplay = this.updateTokenDisplay.bind(this);
+  }
 
   async init($page) {
     /**
@@ -110,8 +110,8 @@ class AIAssistant {
 
     selectionMenu.add(async () => {
       let opt = await select("AI Actions", [
-        "Explain Code", 
-        "Rewrite", 
+        "Explain Code",
+        "Rewrite",
         "Generate Code",
         "Run Current File",
         "Optimize Function",
@@ -167,21 +167,21 @@ class AIAssistant {
       },
     });
     insertContextBtn.onclick = async () => {
-  const activeFile = editorManager.activeFile;
-  if (activeFile) {
-    const content = editor.getValue();
-    const contextPrompt = `Current file: ${activeFile && activeFile.name ? activeFile.name : 'Unknown'}\n\nContent:\n\`\`\`\n${content || ''}\n\`\`\`\n\nHow can I help you with this code?`;
+      const activeFile = editorManager.activeFile;
+      if (activeFile) {
+        const content = editor.getValue();
+        const contextPrompt = `Current file: ${activeFile && activeFile.name ? activeFile.name : 'Unknown'}\n\nContent:\n\`\`\`\n${content || ''}\n\`\`\`\n\nHow can I help you with this code?`;
 
-    if (!this.$page.isVisible) {
-      await this.run();
-    }
+        if (!this.$page.isVisible) {
+          await this.run();
+        }
 
-    this.$chatTextarea.value = contextPrompt;
-    this.$chatTextarea.focus();
-  } else {
-    window.toast("No active file to insert context", 3000);
-  }
-};
+        this.$chatTextarea.value = contextPrompt;
+        this.$chatTextarea.focus();
+      } else {
+        window.toast("No active file to insert context", 3000);
+      }
+    };
 
     // Add token usage display (removed provider dropdown as requested)
     const tokenDisplay = this.createTokenDisplay();
@@ -199,116 +199,116 @@ class AIAssistant {
     historyBtn.onclick = this.myHistory.bind(this);
     newChatBtn.onclick = this.newChat.bind(this);
 
-// AI Edit Current File
-editor.commands.addCommand({
-  name: "ai_edit_current_file",
-  description: "Edit Current File with AI",
-  bindKey: { win: "Ctrl-Shift-E", mac: "Cmd-Shift-E" },
-  exec: () => this.showAiEditPopup()
-});
+    // AI Edit Current File
+    editor.commands.addCommand({
+      name: "ai_edit_current_file",
+      description: "Edit Current File with AI",
+      bindKey: { win: "Ctrl-Shift-E", mac: "Cmd-Shift-E" },
+      exec: () => this.showAiEditPopup()
+    });
 
-// Explain Selected Code
-editor.commands.addCommand({
-  name: "ai_explain_code",
-  description: "Explain Selected Code",
-  bindKey: { win: "Ctrl-E", mac: "Cmd-E" },
-  exec: () => {
-    const selectedText = editor.getSelectedText();
-    if (selectedText) {
-      this.explainCodeWithChat(selectedText, editorManager.activeFile);
-    } else {
-      // Jika tidak ada selection, explain seluruh file
-      const activeFile = editorManager.activeFile;
-      if (activeFile) {
-        const fullContent = editor.getValue();
-        this.explainCodeWithChat(fullContent, activeFile);
-      } else {
-        window.toast("No code to explain", 3000);
+    // Explain Selected Code
+    editor.commands.addCommand({
+      name: "ai_explain_code",
+      description: "Explain Selected Code",
+      bindKey: { win: "Ctrl-E", mac: "Cmd-E" },
+      exec: () => {
+        const selectedText = editor.getSelectedText();
+        if (selectedText) {
+          this.explainCodeWithChat(selectedText, editorManager.activeFile);
+        } else {
+          // Jika tidak ada selection, explain seluruh file
+          const activeFile = editorManager.activeFile;
+          if (activeFile) {
+            const fullContent = editor.getValue();
+            this.explainCodeWithChat(fullContent, activeFile);
+          } else {
+            window.toast("No code to explain", 3000);
+          }
+        }
       }
-    }
-  }
-});
+    });
 
-// Generate Code with AI
-editor.commands.addCommand({
-  name: "ai_generate_code",
-  description: "Generate Code with AI",
-  bindKey: { win: "Ctrl-Shift-G", mac: "Cmd-Shift-G" },
-  exec: () => this.showGenerateCodePopup()
-});
+    // Generate Code with AI
+    editor.commands.addCommand({
+      name: "ai_generate_code",
+      description: "Generate Code with AI",
+      bindKey: { win: "Ctrl-Shift-G", mac: "Cmd-Shift-G" },
+      exec: () => this.showGenerateCodePopup()
+    });
 
-// Run Current File
-editor.commands.addCommand({
-  name: "ai_run_file",
-  description: "Run Current File",
-  bindKey: { win: "Ctrl-Shift-R", mac: "Cmd-Shift-R" },
-  exec: () => this.runCurrentFile()
-});
+    // Run Current File
+    editor.commands.addCommand({
+      name: "ai_run_file",
+      description: "Run Current File",
+      bindKey: { win: "Ctrl-Shift-R", mac: "Cmd-Shift-R" },
+      exec: () => this.runCurrentFile()
+    });
 
-// Optimize Selected Function
-editor.commands.addCommand({
-  name: "ai_optimize_function",
-  description: "Optimize Selected Function",
-  bindKey: { win: "Ctrl-Shift-O", mac: "Cmd-Shift-O" },
-  exec: () => {
-    const selectedText = editor.getSelectedText();
-    if (selectedText) {
-      this.optimizeFunctionWithChat(selectedText);
-    } else {
-      window.toast("Please select function to optimize", 3000);
-    }
-  }
-});
+    // Optimize Selected Function
+    editor.commands.addCommand({
+      name: "ai_optimize_function",
+      description: "Optimize Selected Function",
+      bindKey: { win: "Ctrl-Shift-O", mac: "Cmd-Shift-O" },
+      exec: () => {
+        const selectedText = editor.getSelectedText();
+        if (selectedText) {
+          this.optimizeFunctionWithChat(selectedText);
+        } else {
+          window.toast("Please select function to optimize", 3000);
+        }
+      }
+    });
 
-// Add Comments to Code
-editor.commands.addCommand({
-  name: "ai_add_comments",
-  description: "Add Comments to Code",
-  bindKey: { win: "Ctrl-Shift-C", mac: "Cmd-Shift-C" },
-  exec: () => {
-    const selectedText = editor.getSelectedText();
-    if (selectedText) {
-      this.addCommentsWithChat(selectedText);
-    } else {
-      window.toast("Please select code to add comments", 3000);
-    }
-  }
-});
+    // Add Comments to Code
+    editor.commands.addCommand({
+      name: "ai_add_comments",
+      description: "Add Comments to Code",
+      bindKey: { win: "Ctrl-Shift-C", mac: "Cmd-Shift-C" },
+      exec: () => {
+        const selectedText = editor.getSelectedText();
+        if (selectedText) {
+          this.addCommentsWithChat(selectedText);
+        } else {
+          window.toast("Please select code to add comments", 3000);
+        }
+      }
+    });
 
-// Generate Documentation
-editor.commands.addCommand({
-  name: "ai_generate_docs",
-  description: "Generate Documentation",
-  bindKey: { win: "Ctrl-Shift-D", mac: "Cmd-Shift-D" },
-  exec: () => {
-    const selectedText = editor.getSelectedText();
-    const activeFile = editorManager.activeFile;
+    // Generate Documentation
+    editor.commands.addCommand({
+      name: "ai_generate_docs",
+      description: "Generate Documentation",
+      bindKey: { win: "Ctrl-Shift-D", mac: "Cmd-Shift-D" },
+      exec: () => {
+        const selectedText = editor.getSelectedText();
+        const activeFile = editorManager.activeFile;
 
-    if (selectedText) {
-      this.generateDocsWithChat(selectedText);
-    } else if (activeFile) {
-      // Generate docs untuk seluruh file
-      this.generateDocsWithChat(null);
-    } else {
-      window.toast("No code to document", 3000);
-    }
-  }
-});
+        if (selectedText) {
+          this.generateDocsWithChat(selectedText);
+        } else if (activeFile) {
+          // Generate docs untuk seluruh file
+          this.generateDocsWithChat(null);
+        } else {
+          window.toast("No code to document", 3000);
+        }
+      }
+    });
 
-// Rewrite Code
-editor.commands.addCommand({
-  name: "ai_rewrite_code",
-  description: "Rewrite Selected Code",
-  bindKey: { win: "Ctrl-Shift-R", mac: "Cmd-Shift-R" },
-  exec: () => {
-    const selectedText = editor.getSelectedText();
-    if (selectedText) {
-      this.rewriteCodeWithChat(selectedText);
-    } else {
-      window.toast("Please select code to rewrite", 3000);
-    }
-  }
-});
+    // Rewrite Code
+    editor.commands.addCommand({
+      name: "ai_rewrite_code",
+      description: "Rewrite Selected Code",
+      bindKey: { win: "Ctrl-Shift-R", mac: "Cmd-Shift-R" },
+      exec: () => {
+        const selectedText = editor.getSelectedText();
+        if (selectedText) {
+          this.rewriteCodeWithChat(selectedText);
+        } else {
+          window.toast("Please select code to rewrite", 3000);
+        }
+      }
+    });
 
     const contextMenuOption = {
       top: '35px',
@@ -317,8 +317,8 @@ editor.commands.addCommand({
       transformOrigin: 'top right',
     };
     const $menu = contextMenu({
-    innerHTML: () => {
-      return `
+      innerHTML: () => {
+        return `
       <li action="model-provider" provider="">Provider: ${window.localStorage.getItem("ai-assistant-provider")}</li>
       <li action="model" modelNme="">Model: ${window.localStorage.getItem("ai-assistant-model-name")}</li>
       <li action="clear-cache">Clear Cache</li>
@@ -330,9 +330,9 @@ editor.commands.addCommand({
       <li action="bulk-operations">Bulk Operations</li>
       <li action="settings">Settings</li>
       `;
-    },
-    ...contextMenuOption
-  })
+      },
+      ...contextMenuOption
+    })
 
     $menu.onclick = async (e) => {
       $menu.hide();
@@ -396,33 +396,33 @@ editor.commands.addCommand({
           }
           break;
 
-      case 'clear-cache':
-        this.clearCache();
-        break;
-      case 'create-file-ai':
-        await this.createFileWithAI();
-        break;
-      case 'organize-project':
-        await this.organizeProjectStructure();
-        break;
-      case 'bulk-operations':
-        await this.bulkFileOperations();
-        break;
-      case 'clear-chat':
-        await this.clearChatHistory();
-        break;
-      case 'export-chat':
-        await this.exportConversation();
-        break;
-      case 'copy-all':
-        await this.copyAllMessages();
-        break;
-      case 'settings':
-        await this.showSettings();
-        break;
-case 'toggle-realtime':
-  this.toggleRealTimeAI();
-  break;
+        case 'clear-cache':
+          this.clearCache();
+          break;
+        case 'create-file-ai':
+          await this.createFileWithAI();
+          break;
+        case 'organize-project':
+          await this.organizeProjectStructure();
+          break;
+        case 'bulk-operations':
+          await this.bulkFileOperations();
+          break;
+        case 'clear-chat':
+          await this.clearChatHistory();
+          break;
+        case 'export-chat':
+          await this.exportConversation();
+          break;
+        case 'copy-all':
+          await this.copyAllMessages();
+          break;
+        case 'settings':
+          await this.showSettings();
+          break;
+        case 'toggle-realtime':
+          this.toggleRealTimeAI();
+          break;
 
 
         case 'model':
@@ -437,7 +437,7 @@ case 'toggle-realtime':
               window.localStorage.setItem("ai-assistant-model-name", modelName);
               this.initiateModel(OPENAI_LIKE, apiKey, modelName);
             }
-          } 
+          }
           // Handle other providers normally
           else {
             loader.showTitleLoader();
@@ -513,7 +513,7 @@ case 'toggle-realtime':
     // Add AI command to palette (tanpa override Ctrl+Shift+P)
     editor.commands.addCommand({
       name: "ai_command_palette",
-      description: "AI Command Palette Control", 
+      description: "AI Command Palette Control",
       exec: () => this.showAiCommandPalette()
     });
 
@@ -531,9 +531,9 @@ case 'toggle-realtime':
       const availableCommands = this.getAvailableCommands();
 
       const userRequest = await prompt(
-        "Ask AI to run a command (e.g., 'format code', 'toggle sidebar', 'open file')", 
-        "", 
-        "text", 
+        "Ask AI to run a command (e.g., 'format code', 'toggle sidebar', 'open file')",
+        "",
+        "text",
         { required: true }
       );
 
@@ -588,29 +588,36 @@ Return exact name or "UNKNOWN":`;
   async showAiTerminal() {
     try {
       const userCommand = await prompt(
-        "Enter terminal command or describe what you want to do:", 
-        "", 
-        "text", 
+        "Enter terminal command or describe what you want to do:",
+        "",
+        "text",
         { required: true }
       );
 
       if (!userCommand) return;
 
       // Check if it's a direct command or needs AI interpretation
-      if (userCommand.includes(' ') && !userCommand.startsWith('/') && !userCommand.includes('&&')) {
+      if (userCommand.includes(' ') && !userCommand.startsWith('/') && !userCommand.includes('&&') &&
+        !userCommand.startsWith('ls') && !userCommand.startsWith('cd') && !userCommand.startsWith('pwd')) {
         // Looks like natural language, let AI convert it
-        const aiPrompt = `Convert "${userCommand}" to safe terminal command.
+        try {
+          const aiPrompt = `Convert "${userCommand}" to safe terminal command.
 Rules: No rm/delete. Dev tasks only.
 Examples: "list files"→"ls -la", "show dir"→"pwd"
-Command:`;
+Reply with only the command, no explanation:`;
 
-        const response = await this.appendGptResponse(aiPrompt);
-        const safeCommand = response.trim().replace(/[;&|`$()]/g, ''); // Basic safety filtering
+          // Use the actual AI API call method
+          const safeCommand = await this.getAIResponse(aiPrompt);
+          const cleanCommand = safeCommand.trim().replace(/[;&|`$()]/g, '').split('\n')[0];
 
-        if (safeCommand && !safeCommand.includes('rm ') && !safeCommand.includes('delete')) {
-          this.executeTerminalCommand(safeCommand);
-        } else {
-          window.toast("❌ Command not safe or unclear", 3000);
+          if (cleanCommand && !cleanCommand.includes('rm ') && !cleanCommand.includes('delete')) {
+            this.executeTerminalCommand(cleanCommand);
+          } else {
+            window.toast("❌ Command not safe or unclear", 3000);
+          }
+        } catch (error) {
+          window.toast("❌ AI conversion failed, executing directly", 3000);
+          this.executeTerminalCommand(userCommand);
         }
       } else {
         // Direct command execution
@@ -625,9 +632,9 @@ Command:`;
   async executeTerminalCommand(command) {
     try {
       const confirmation = await prompt(
-        `Execute: ${command}?`, 
-        "", 
-        "text", 
+        `Execute: ${command}?`,
+        "",
+        "text",
         { required: false }
       );
 
@@ -635,7 +642,7 @@ Command:`;
         // Use Acode terminal API properly
         const activeFile = editorManager.activeFile;
         const workingDir = activeFile?.uri ? activeFile.uri.split('/').slice(0, -1).join('/') : '/';
-        
+
         const term = await terminal.create({
           name: 'AI Terminal',
           serverMode: true
@@ -789,7 +796,7 @@ Exact name:`;
           await fs(window.DATA_STORAGE).createFile("secret.key", passPhrase);
           await this.apiKeyManager.saveAPIKey(OPENAI_LIKE, token);
           window.toast("Configuration saved 👄", 3000);
-        } 
+        }
         // Handle other providers
         else {
           // No prompt for API key in case of Ollama
@@ -824,15 +831,24 @@ Exact name:`;
       this.initiateModel(providerNme, token, model)
       this.initializeMarkdown();
 
-      this.$sendBtn.addEventListener("click", this.sendQuery.bind(this));
+      // Prevent duplicate event listeners
+      if (!this.sendHandlerAttached) {
+        this.sendHandler = this.sendQuery.bind(this);
+        this.$sendBtn.addEventListener("click", this.sendHandler);
+        this.sendHandlerAttached = true;
+      }
 
-      // Add keyboard shortcut for sending messages
-      this.$chatTextarea.addEventListener("keydown", (e) => {
-        if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
-          e.preventDefault();
-          this.sendQuery();
-        }
-      });
+      // Add keyboard shortcut for sending messages (prevent duplicates)
+      if (!this.keydownHandlerAttached) {
+        this.keydownHandler = (e) => {
+          if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
+            e.preventDefault();
+            this.sendQuery();
+          }
+        };
+        this.$chatTextarea.addEventListener("keydown", this.keydownHandler);
+        this.keydownHandlerAttached = true;
+      }
 
       // Show the page
       this.$page.show();
@@ -1051,7 +1067,7 @@ Exact name:`;
             .substring(
               0,
               25,
-            )}...</p><div><button class="delete-history-btn" style="height:25px;width:25px;border:none;padding:5px;outline:none;border-radius:50%;background:var(--error-text-color);text-align:center;">âœ—</button></div>
+            )}...</p><div><button class="delete-history-btn" style="height:25px;width:25px;border:none;padding:5px;outline:none;border-radius:50%;background:var(--error-text-color);text-align:center;">✗</button></div>
                 </li>`;
       }
       return elems;
@@ -1256,129 +1272,129 @@ Exact name:`;
     }
   }
 
-  async appendGptResponse(message) {  
-  try {  
-    // Track token usage for response - estimate tokens if not provided    
-    const estimatedTokens = Math.ceil(message.length / 4);    
-    this.updateTokenUsage(estimatedTokens);
-    
-    // Initialize markdown-it if not already initialized  
-    if (!this.$mdIt && window.markdownit) {  
-      this.$mdIt = window.markdownit({  
-        html: false,  
-        xhtmlOut: false,  
-        breaks: true, // Enable line breaks  
-        linkify: true, // Enable auto-linking  
-        typographer: true,  
-        quotes: '""\'\'',  
-        highlight: function (str, lang) {  
-          const copyBtn = document.createElement("button");  
-          copyBtn.classList.add("copy-button");  
-          copyBtn.innerHTML = copyIconSvg;  
-          copyBtn.setAttribute("data-str", str);  
-          const codesArea = `<pre class="hljs codesArea"><code>${window.hljs ? window.hljs.highlightAuto(str).value : str}</code></pre>`;  
-          const codeBlock = `<div class="codeBlock">${copyBtn.outerHTML}${codesArea}</div>`;  
-          return codeBlock;  
-        },  
-      });  
-    }  
-  
-    const ai_avatar = this.baseUrl + "assets/ai_assistant.svg";  
-    const gptChatBox = tag("div", { className: "ai_wrapper" });  
-    const chat = tag("div", { className: "ai_chat" });  
-    const profileImg = tag("div", {  
-      className: "ai_profile",  
-      child: tag("img", {  
-        src: ai_avatar,  
-        alt: "ai",  
-      }),  
-    });  
-    const msg = tag("div", {  
-      className: "ai_message",  
-    });  
-  
-    // Enhanced markdown rendering with better formatting  
-    if (this.$mdIt && typeof this.$mdIt.render === 'function') {  
-      try {  
-        // Enhanced pre-processing with no sanitization for full markdown support  
-        let processedMessage = message; // Use raw message for full markdown rendering  
-  
-        // Full markdown rendering without pre-processing interference  
-        const renderedHtml = this.$mdIt.render(processedMessage);  
-        msg.innerHTML = renderedHtml;  
-  
-        // Apply syntax highlighting to all code blocks  
-        msg.querySelectorAll('pre code').forEach((block) => {  
-          if (window.hljs && window.hljs.highlightElement) {  
-            window.hljs.highlightElement(block);  
-          }  
-        });  
-  
-        // Enhanced styling for better readability  
-        msg.style.cssText = `  
+  async appendGptResponse(message) {
+    try {
+      // Track token usage for response - estimate tokens if not provided    
+      const estimatedTokens = Math.ceil(message.length / 4);
+      this.updateTokenUsage(estimatedTokens);
+
+      // Initialize markdown-it if not already initialized  
+      if (!this.$mdIt && window.markdownit) {
+        this.$mdIt = window.markdownit({
+          html: false,
+          xhtmlOut: false,
+          breaks: true, // Enable line breaks  
+          linkify: true, // Enable auto-linking  
+          typographer: true,
+          quotes: '""\'\'',
+          highlight: function (str, lang) {
+            const copyBtn = document.createElement("button");
+            copyBtn.classList.add("copy-button");
+            copyBtn.innerHTML = copyIconSvg;
+            copyBtn.setAttribute("data-str", str);
+            const codesArea = `<pre class="hljs codesArea"><code>${window.hljs ? window.hljs.highlightAuto(str).value : str}</code></pre>`;
+            const codeBlock = `<div class="codeBlock">${copyBtn.outerHTML}${codesArea}</div>`;
+            return codeBlock;
+          },
+        });
+      }
+
+      const ai_avatar = this.baseUrl + "assets/ai_assistant.svg";
+      const gptChatBox = tag("div", { className: "ai_wrapper" });
+      const chat = tag("div", { className: "ai_chat" });
+      const profileImg = tag("div", {
+        className: "ai_profile",
+        child: tag("img", {
+          src: ai_avatar,
+          alt: "ai",
+        }),
+      });
+      const msg = tag("div", {
+        className: "ai_message",
+      });
+
+      // Enhanced markdown rendering with better formatting  
+      if (this.$mdIt && typeof this.$mdIt.render === 'function') {
+        try {
+          // Enhanced pre-processing with no sanitization for full markdown support  
+          let processedMessage = message; // Use raw message for full markdown rendering  
+
+          // Full markdown rendering without pre-processing interference  
+          const renderedHtml = this.$mdIt.render(processedMessage);
+          msg.innerHTML = renderedHtml;
+
+          // Apply syntax highlighting to all code blocks  
+          msg.querySelectorAll('pre code').forEach((block) => {
+            if (window.hljs && window.hljs.highlightElement) {
+              window.hljs.highlightElement(block);
+            }
+          });
+
+          // Enhanced styling for better readability  
+          msg.style.cssText = `  
           line-height: 1.6;  
           font-size: 14px;  
           color: var(--primary-text-color);  
           padding: 8px 12px;  
           word-wrap: break-word;  
           white-space: pre-wrap;  
-        `;  
-  
-        // Add event listeners to copy buttons with improved feedback  
-        setTimeout(() => {  
-          const copyBtns = msg.querySelectorAll(".copy-button");  
-          if (copyBtns && copyBtns.length > 0) {  
-            for (const copyBtn of copyBtns) {  
-              copyBtn.addEventListener("click", function () {  
-                try {  
-                  copy(this.dataset.str);  
-                  this.innerHTML = '✓';  
-                  window.toast("Code copied to clipboard!", 2000);  
-                  setTimeout(() => {  
-                    this.innerHTML = copyIconSvg;  
-                  }, 1500);  
-                } catch (err) {  
-                  window.toast("Failed to copy", 2000);  
-                }  
-              });  
-            }  
-          }  
-        }, 100);  
-  
-      } catch (renderError) {  
-        window.toast("Markdown render error", 3000);  
-        // Fallback with styled plain text  
-        msg.textContent = message;  
-        msg.style.cssText = `  
+        `;
+
+          // Add event listeners to copy buttons with improved feedback  
+          setTimeout(() => {
+            const copyBtns = msg.querySelectorAll(".copy-button");
+            if (copyBtns && copyBtns.length > 0) {
+              for (const copyBtn of copyBtns) {
+                copyBtn.addEventListener("click", function () {
+                  try {
+                    copy(this.dataset.str);
+                    this.innerHTML = '✓';
+                    window.toast("Code copied to clipboard!", 2000);
+                    setTimeout(() => {
+                      this.innerHTML = copyIconSvg;
+                    }, 1500);
+                  } catch (err) {
+                    window.toast("Failed to copy", 2000);
+                  }
+                });
+              }
+            }
+          }, 100);
+
+        } catch (renderError) {
+          window.toast("Markdown render error", 3000);
+          // Fallback with styled plain text  
+          msg.textContent = message;
+          msg.style.cssText = `  
           line-height: 1.6;  
           font-size: 14px;  
           color: var(--primary-text-color);  
           padding: 8px 12px;  
           word-wrap: break-word;  
           white-space: pre-wrap;  
-        `;  
-      }  
-    } else {  
-      // Enhanced fallback with better styling  
-      msg.textContent = message;  
-      msg.style.cssText = `  
+        `;
+        }
+      } else {
+        // Enhanced fallback with better styling  
+        msg.textContent = message;
+        msg.style.cssText = `  
         line-height: 1.6;  
         font-size: 14px;  
         color: var(--primary-text-color);  
         padding: 8px 12px;  
         word-wrap: break-word;  
         white-space: pre-wrap;  
-      `;  
-      window.toast("Markdown renderer not available", 2000);  
-    }  
-  
-    chat.append(...[profileImg, msg]);  
-    gptChatBox.append(chat);  
-    this.$chatBox.appendChild(gptChatBox);  
-  } catch (err) {  
-    window.toast("Error displaying AI response", 3000);  
-  }  
-}
+      `;
+        window.toast("Markdown renderer not available", 2000);
+      }
+
+      chat.append(...[profileImg, msg]);
+      gptChatBox.append(chat);
+      this.$chatBox.appendChild(gptChatBox);
+    } catch (err) {
+      window.toast("Error displaying AI response", 3000);
+    }
+  }
 
 
   showError(error) {
@@ -1436,148 +1452,148 @@ Exact name:`;
   }
 
   async getCliResponse(question) {
-  try {
-    // Make sure we have response boxes
-    const responseBoxes = Array.from(document.querySelectorAll(".ai_message"));
-    if (responseBoxes.length === 0) {
-      window.toast("No response box found", 3000);
-      // Create a response box if none exists
-      this.appendGptResponse("");
-      // Try again with the newly created box
-      setTimeout(() => this.getCliResponse(question), 100);
-      return;
-    }
+    try {
+      // Make sure we have response boxes
+      const responseBoxes = Array.from(document.querySelectorAll(".ai_message"));
+      if (responseBoxes.length === 0) {
+        window.toast("No response box found", 3000);
+        // Create a response box if none exists
+        this.appendGptResponse("");
+        // Try again with the newly created box
+        setTimeout(() => this.getCliResponse(question), 100);
+        return;
+      }
 
-    const targetElem = responseBoxes[responseBoxes.length - 1];
-    if (!targetElem) {
-      window.toast("Target element not found", 3000);
-      return;
-    }
+      const targetElem = responseBoxes[responseBoxes.length - 1];
+      if (!targetElem) {
+        window.toast("Target element not found", 3000);
+        return;
+      }
 
-    // Check cache first
-    const cachedResponse = this.getCachedResponse(question);
-    if (cachedResponse) {
+      // Check cache first
+      const cachedResponse = this.getCachedResponse(question);
+      if (cachedResponse) {
+        clearInterval(this.$loadInterval);
+        this.$sendBtn.classList.add("hide");
+        this.$stopGenerationBtn.classList.remove('hide');
+
+        // Simulate streaming for cached response
+        targetElem.innerHTML = "";
+        let index = 0;
+        const streamCache = () => {
+          if (index < cachedResponse.length) {
+            targetElem.textContent += cachedResponse[index];
+            index++;
+            this.scrollToBottom();
+            setTimeout(streamCache, 10);
+          } else {
+            // Ensure markdown renderer is available
+            if (this.$mdIt && typeof this.$mdIt.render === 'function') {
+              const renderedHtml = this.$mdIt.render(cachedResponse);
+              targetElem.innerHTML = renderedHtml;
+
+              // Apply syntax highlighting to cached responses
+              targetElem.querySelectorAll('pre code').forEach((block) => {
+                if (window.hljs && window.hljs.highlightElement) {
+                  window.hljs.highlightElement(block);
+                }
+              });
+
+              // Enhanced copy button functionality with visual feedback
+              setTimeout(() => {
+                const copyBtns = targetElem.querySelectorAll(".copy-button");
+                if (copyBtns && copyBtns.length > 0) {
+                  for (const copyBtn of copyBtns) {
+                    copyBtn.addEventListener("click", function () {
+                      copy(this.dataset.str);
+                      // Enhanced visual feedback
+                      this.style.background = 'linear-gradient(45deg, #4CAF50, #45a049)';
+                      this.textContent = '✓ Copied!';
+                      setTimeout(() => {
+                        this.style.background = '';
+                        this.textContent = 'Copy';
+                      }, 2000);
+                      window.toast("📋 Copied to clipboard", 3000);
+                    });
+                  }
+                }
+              }, 100);
+            } else {
+              targetElem.textContent = cachedResponse;
+            }
+
+            this.$stopGenerationBtn.classList.add("hide");
+            this.$sendBtn.classList.remove("hide");
+            window.toast("Response from cache", 1500);
+          }
+        };
+        streamCache();
+        return;
+      }
+
+      // Original AI request code
+      this.abortController = new AbortController();
+      const { signal } = this.abortController;
+
+      // Get current file and project context
+      const activeFile = editorManager && editorManager.activeFile;
+      const currentFileName = activeFile ? activeFile.name : 'No file open';
+      const currentFilePath = activeFile ? (activeFile.uri || activeFile.filename || currentFileName) : 'No active file';
+      const currentFileDir = activeFile && activeFile.location ? activeFile.location : (currentFilePath ? currentFilePath.split('/').slice(0, -1).join('/') : '/sdcard');
+      const currentFileExt = currentFileName !== 'No file open' ? currentFileName.split('.').pop() : 'unknown';
+      const projectName = currentFileDir.split('/').pop() || 'Unknown Project';
+      const editorContent = activeFile && editor ? editor.getValue() : '';
+      const cursorPos = editor ? editor.getCursorPosition() : { row: 0, column: 0 };
+
+      const systemPromptWithContext = `AI assistant for Acode editor. Current: ${currentFileName} (${currentFileExt}) at line ${cursorPos.row + 1}. Can edit/create/delete files, run terminal commands. Use context in responses.`;
+
+      const prompt = ChatPromptTemplate.fromMessages([
+        [
+          "system",
+          systemPromptWithContext,
+        ],
+        ["placeholder", "{chat_history}"],
+        ["human", "{input}"],
+      ]);
+
+      const parser = new StringOutputParser();
+      const chain = prompt.pipe(this.modelInstance).pipe(parser);
+
+      const withMessageHistory = new RunnableWithMessageHistory({
+        runnable: chain,
+        getMessageHistory: async (sessionId) => {
+          if (!this.messageHistories[sessionId]) {
+            this.messageHistories[sessionId] = new InMemoryChatMessageHistory();
+          } else {
+            let history = await this.messageHistories[sessionId].getMessages();
+            this.messageHistories[sessionId].addMessages(history.slice(-6));
+          }
+          return this.messageHistories[sessionId];
+        },
+        inputMessagesKey: "input",
+        historyMessagesKey: "chat_history",
+      });
+
+      const stream = await withMessageHistory.stream(
+        {
+          input: question,
+        },
+        this.messageSessionConfig,
+        signal
+      );
+
       clearInterval(this.$loadInterval);
       this.$sendBtn.classList.add("hide");
-      this.$stopGenerationBtn.classList.remove('hide');
+      this.$stopGenerationBtn.classList.remove("hide");
 
-      // Simulate streaming for cached response
       targetElem.innerHTML = "";
-      let index = 0;
-      const streamCache = () => {
-        if (index < cachedResponse.length) {
-          targetElem.textContent += cachedResponse[index];
-          index++;
-          this.scrollToBottom();
-          setTimeout(streamCache, 10);
-        } else {
-          // Ensure markdown renderer is available
-          if (this.$mdIt && typeof this.$mdIt.render === 'function') {
-            const renderedHtml = this.$mdIt.render(cachedResponse);
-            targetElem.innerHTML = renderedHtml;
+      let result = "";
+      let displayBuffer = "";
+      let lastRenderTime = 0;
+      const renderDelay = 50; // Render every 50ms for smoother streaming
 
-            // Apply syntax highlighting to cached responses
-            targetElem.querySelectorAll('pre code').forEach((block) => {
-              if (window.hljs && window.hljs.highlightElement) {
-                window.hljs.highlightElement(block);
-              }
-            });
-
-            // Enhanced copy button functionality with visual feedback
-            setTimeout(() => {
-              const copyBtns = targetElem.querySelectorAll(".copy-button");
-              if (copyBtns && copyBtns.length > 0) {
-                for (const copyBtn of copyBtns) {
-                  copyBtn.addEventListener("click", function () {
-                    copy(this.dataset.str);
-                    // Enhanced visual feedback
-                    this.style.background = 'linear-gradient(45deg, #4CAF50, #45a049)';
-                    this.textContent = '✓ Copied!';
-                    setTimeout(() => {
-                      this.style.background = '';
-                      this.textContent = 'Copy';
-                    }, 2000);
-                    window.toast("📋 Copied to clipboard", 3000);
-                  });
-                }
-              }
-            }, 100);
-          } else {
-            targetElem.textContent = cachedResponse;
-          }
-
-          this.$stopGenerationBtn.classList.add("hide");
-          this.$sendBtn.classList.remove("hide");
-          window.toast("Response from cache", 1500);
-        }
-      };
-      streamCache();
-      return;
-    }
-
-    // Original AI request code
-    this.abortController = new AbortController();
-    const { signal } = this.abortController;
-
-    // Get current file and project context
-    const activeFile = editorManager && editorManager.activeFile;
-    const currentFileName = activeFile ? activeFile.name : 'No file open';
-    const currentFilePath = activeFile ? (activeFile.uri || activeFile.filename || currentFileName) : 'No active file';
-    const currentFileDir = activeFile && activeFile.location ? activeFile.location : (currentFilePath ? currentFilePath.split('/').slice(0, -1).join('/') : '/sdcard');
-    const currentFileExt = currentFileName !== 'No file open' ? currentFileName.split('.').pop() : 'unknown';
-    const projectName = currentFileDir.split('/').pop() || 'Unknown Project';
-    const editorContent = activeFile && editor ? editor.getValue() : '';
-    const cursorPos = editor ? editor.getCursorPosition() : { row: 0, column: 0 };
-
-    const systemPromptWithContext = `AI assistant for Acode editor. Current: ${currentFileName} (${currentFileExt}) at line ${cursorPos.row + 1}. Can edit/create/delete files, run terminal commands. Use context in responses.`;
-
-    const prompt = ChatPromptTemplate.fromMessages([
-      [
-        "system",
-        systemPromptWithContext,
-      ],
-      ["placeholder", "{chat_history}"],
-      ["human", "{input}"],
-    ]);
-
-    const parser = new StringOutputParser();
-    const chain = prompt.pipe(this.modelInstance).pipe(parser);
-
-    const withMessageHistory = new RunnableWithMessageHistory({
-      runnable: chain,
-      getMessageHistory: async (sessionId) => {
-        if (!this.messageHistories[sessionId]) {
-          this.messageHistories[sessionId] = new InMemoryChatMessageHistory();
-        } else {
-          let history = await this.messageHistories[sessionId].getMessages();
-          this.messageHistories[sessionId].addMessages(history.slice(-6));
-        }
-        return this.messageHistories[sessionId];
-      },
-      inputMessagesKey: "input",
-      historyMessagesKey: "chat_history",
-    });
-
-    const stream = await withMessageHistory.stream(
-      {
-        input: question,
-      },
-      this.messageSessionConfig,
-      signal
-    );
-
-    clearInterval(this.$loadInterval);
-    this.$sendBtn.classList.add("hide");
-    this.$stopGenerationBtn.classList.remove("hide");
-
-    targetElem.innerHTML = "";
-    let result = "";
-    let displayBuffer = "";
-    let lastRenderTime = 0;
-    const renderDelay = 50; // Render every 50ms for smoother streaming
-
-    // Enhanced styling for streaming response
-    targetElem.style.cssText = `
+      // Enhanced styling for streaming response
+      targetElem.style.cssText = `
       line-height: 1.6;
       font-size: 14px;
       color: var(--primary-text-color);
@@ -1591,73 +1607,73 @@ Exact name:`;
       animation: pulse 2s infinite;
     `;
 
-    // Add cursor animation for streaming effect
-    const cursor = tag("span", {
-      textContent: "▊",
-      className: "streaming-cursor",
-      style: `
+      // Add cursor animation for streaming effect
+      const cursor = tag("span", {
+        textContent: "▊",
+        className: "streaming-cursor",
+        style: `
         color: var(--accent-color);
         animation: blink 1s infinite;
         margin-left: 2px;
       `
-    });
-    targetElem.appendChild(cursor);
+      });
+      targetElem.appendChild(cursor);
 
-    for await (const chunk of stream) {
-      result += chunk;
-      displayBuffer += chunk;
+      for await (const chunk of stream) {
+        result += chunk;
+        displayBuffer += chunk;
 
-      // Throttled rendering for performance
-      const now = Date.now();
-      if (now - lastRenderTime > renderDelay || chunk.includes('\n')) {
-        // Remove cursor temporarily
-        if (cursor.parentNode) {
-          cursor.remove();
-        }
-
-        // Update content with better formatting
-        const lines = displayBuffer.split('\n');
-        targetElem.innerHTML = lines.map((line, index) => {
-          if (line.trim()) {
-            return `<div class="response-line">${line}</div>`;
+        // Throttled rendering for performance
+        const now = Date.now();
+        if (now - lastRenderTime > renderDelay || chunk.includes('\n')) {
+          // Remove cursor temporarily
+          if (cursor.parentNode) {
+            cursor.remove();
           }
-          return '<br>';
-        }).join('');
 
-        // Add cursor back
-        targetElem.appendChild(cursor);
+          // Update content with better formatting
+          const lines = displayBuffer.split('\n');
+          targetElem.innerHTML = lines.map((line, index) => {
+            if (line.trim()) {
+              return `<div class="response-line">${line}</div>`;
+            }
+            return '<br>';
+          }).join('');
 
-        displayBuffer = "";
-        lastRenderTime = now;
-        this.scrollToBottom();
+          // Add cursor back
+          targetElem.appendChild(cursor);
+
+          displayBuffer = "";
+          lastRenderTime = now;
+          this.scrollToBottom();
+        }
       }
-    }
 
-    // Remove cursor after streaming is complete
-    if (cursor && cursor.parentNode) {
-      cursor.remove();
-    }
+      // Remove cursor after streaming is complete
+      if (cursor && cursor.parentNode) {
+        cursor.remove();
+      }
 
-    // Remove streaming styles
-    targetElem.style.animation = "";
-    targetElem.style.border = "";
-    targetElem.style.background = "";
+      // Remove streaming styles
+      targetElem.style.animation = "";
+      targetElem.style.border = "";
+      targetElem.style.background = "";
 
-    // Cache the response
-    this.setCachedResponse(question, result);
+      // Cache the response
+      this.setCachedResponse(question, result);
 
-    // Enhanced markdown rendering with animations
-    if (this.$mdIt && typeof this.$mdIt.render === 'function') {
-      try {
-        // Use raw result for full markdown support without pre-processing
-        const renderedHtml = this.$mdIt.render(result);
+      // Enhanced markdown rendering with animations
+      if (this.$mdIt && typeof this.$mdIt.render === 'function') {
+        try {
+          // Use raw result for full markdown support without pre-processing
+          const renderedHtml = this.$mdIt.render(result);
 
-        // Apply with fade-in animation
-        targetElem.style.opacity = "0";
-        targetElem.innerHTML = renderedHtml;
+          // Apply with fade-in animation
+          targetElem.style.opacity = "0";
+          targetElem.innerHTML = renderedHtml;
 
-        // Enhanced styling for final response
-        targetElem.style.cssText = `
+          // Enhanced styling for final response
+          targetElem.style.cssText = `
           line-height: 1.6;
           font-size: 14px;
           color: var(--primary-text-color);
@@ -1671,149 +1687,149 @@ Exact name:`;
           transition: opacity 0.5s ease-in;
         `;
 
-        // Fade in
-        setTimeout(() => {
-          targetElem.style.opacity = "1";
-        }, 100);
+          // Fade in
+          setTimeout(() => {
+            targetElem.style.opacity = "1";
+          }, 100);
 
-        // Style code blocks and other elements
-        setTimeout(() => {
-          const codeBlocks = targetElem.querySelectorAll('pre code');
-          codeBlocks.forEach(block => {
-            block.parentElement.style.cssText = `
+          // Style code blocks and other elements
+          setTimeout(() => {
+            const codeBlocks = targetElem.querySelectorAll('pre code');
+            codeBlocks.forEach(block => {
+              block.parentElement.style.cssText = `
               background: #1e1e1e;
               border-radius: 6px;
               margin: 8px 0;
               border: 1px solid rgba(255,255,255,0.1);
             `;
-          });
+            });
 
-          const inlineCodes = targetElem.querySelectorAll('.inline-code');
-          inlineCodes.forEach(code => {
-            code.style.cssText = `
+            const inlineCodes = targetElem.querySelectorAll('.inline-code');
+            inlineCodes.forEach(code => {
+              code.style.cssText = `
               background: rgba(var(--accent-color-rgb), 0.2);
               padding: 2px 6px;
               border-radius: 3px;
               font-family: monospace;
               font-size: 13px;
             `;
-          });
-        }, 150);
+            });
+          }, 150);
 
-        // Add event listeners to copy buttons
-        setTimeout(() => {
-          const copyBtns = targetElem.querySelectorAll(".copy-button");
-          if (copyBtns && copyBtns.length > 0) {
-            for (const copyBtn of copyBtns) {
-              copyBtn.addEventListener("click", function () {
-                const codeText = this.dataset.str;
-                copy(codeText);
-                // Enhanced copy feedback
-                this.innerHTML = '✅';
-                this.style.background = '#4CAF50';
-                window.toast("✅ Code copied to clipboard!", 2000);
-                setTimeout(() => {
-                  this.innerHTML = copyIconSvg;
-                  this.style.background = '';
-                }, 1500);
+          // Add event listeners to copy buttons
+          setTimeout(() => {
+            const copyBtns = targetElem.querySelectorAll(".copy-button");
+            if (copyBtns && copyBtns.length > 0) {
+              for (const copyBtn of copyBtns) {
+                copyBtn.addEventListener("click", function () {
+                  const codeText = this.dataset.str;
+                  copy(codeText);
+                  // Enhanced copy feedback
+                  this.innerHTML = '✅';
+                  this.style.background = '#4CAF50';
+                  window.toast("✅ Code copied to clipboard!", 2000);
+                  setTimeout(() => {
+                    this.innerHTML = copyIconSvg;
+                    this.style.background = '';
+                  }, 1500);
 
-                // Check if this is a complete file that could be created
-                if (question.toLowerCase().includes("create") ||
+                  // Check if this is a complete file that could be created
+                  if (question.toLowerCase().includes("create") ||
                     question.toLowerCase().includes("generate") ||
                     question.toLowerCase().includes("make a file")) {
 
-                  // Offer to create file from copied code
-                  setTimeout(() => {
-                    const createFile = confirm("Would you like to create a file with this code?");
-                    if (createFile) {
-                      const filename = prompt("Enter filename:", "", "text");
-                      if (filename) {
-                        fs(filename).writeFile(codeText)
-                          .then(() => {
-                            window.toast(`File created: ${filename}`, 3000);
-                            // Open the created file
-                            editorManager.openFile(filename);
-                          })
-                          .catch(err => {
-                            window.toast(`Error creating file: ${err.message}`, 3000);
-                          });
+                    // Offer to create file from copied code
+                    setTimeout(() => {
+                      const createFile = confirm("Would you like to create a file with this code?");
+                      if (createFile) {
+                        const filename = prompt("Enter filename:", "", "text");
+                        if (filename) {
+                          fs(filename).writeFile(codeText)
+                            .then(() => {
+                              window.toast(`File created: ${filename}`, 3000);
+                              // Open the created file
+                              editorManager.openFile(filename);
+                            })
+                            .catch(err => {
+                              window.toast(`Error creating file: ${err.message}`, 3000);
+                            });
+                        }
                       }
-                    }
-                  }, 500);
-                }
-              });
+                    }, 500);
+                  }
+                });
+              }
             }
-          }
-        }, 100);
-      } catch (renderError) {
-        window.toast("Error rendering markdown", 3000);
+          }, 100);
+        } catch (renderError) {
+          window.toast("Error rendering markdown", 3000);
+          targetElem.textContent = result;
+        }
+      } else {
         targetElem.textContent = result;
       }
-    } else {
-      targetElem.textContent = result;
-    }
 
-    this.$stopGenerationBtn.classList.add("hide");
-    this.$sendBtn.classList.remove("hide");
+      this.$stopGenerationBtn.classList.add("hide");
+      this.$sendBtn.classList.remove("hide");
 
-    // Check if the response contains code that could be used to create a file
-    if ((question.toLowerCase().includes("create") ||
-         question.toLowerCase().includes("generate") ||
-         question.toLowerCase().includes("make a file")) &&
+      // Check if the response contains code that could be used to create a file
+      if ((question.toLowerCase().includes("create") ||
+        question.toLowerCase().includes("generate") ||
+        question.toLowerCase().includes("make a file")) &&
         result.includes("```")) {
 
-      // Extract code blocks
-      const codeMatches = result.match(/```(?:\w+)?\s*([\s\S]*?)\s*```/g);
-      if (codeMatches && codeMatches.length > 0) {
-        // Get the first code block content
-        const codeContent = codeMatches[0].replace(/```(?:\w+)?\s*([\s\S]*?)\s*```/g, '$1').trim();
+        // Extract code blocks
+        const codeMatches = result.match(/```(?:\w+)?\s*([\s\S]*?)\s*```/g);
+        if (codeMatches && codeMatches.length > 0) {
+          // Get the first code block content
+          const codeContent = codeMatches[0].replace(/```(?:\w+)?\s*([\s\S]*?)\s*```/g, '$1').trim();
 
-        // Offer to create file
-        setTimeout(() => {
-          const createFile = confirm("Would you like to create a file with the generated code?");
-          if (createFile) {
-            const filename = prompt("Enter filename:", "", "text");
-            if (filename) {
-              fs(filename).writeFile(codeContent)
-                .then(() => {
-                  window.toast(`File created: ${filename}`, 3000);
-                  // Open the created file
-                  editorManager.openFile(filename);
-                })
-                .catch(err => {
-                  window.toast(`Error creating file: ${err.message}`, 3000);
-                });
+          // Offer to create file
+          setTimeout(() => {
+            const createFile = confirm("Would you like to create a file with the generated code?");
+            if (createFile) {
+              const filename = prompt("Enter filename:", "", "text");
+              if (filename) {
+                fs(filename).writeFile(codeContent)
+                  .then(() => {
+                    window.toast(`File created: ${filename}`, 3000);
+                    // Open the created file
+                    editorManager.openFile(filename);
+                  })
+                  .catch(err => {
+                    window.toast(`Error creating file: ${err.message}`, 3000);
+                  });
+              }
             }
-          }
-        }, 1000);
+          }, 1000);
+        }
       }
-    }
 
-    await this.saveHistory();
-  } catch (error) {
-    window.toast("Error in getCliResponse", 3000);
+      await this.saveHistory();
+    } catch (error) {
+      window.toast("Error in getCliResponse", 3000);
 
-    const responseBoxes = Array.from(document.querySelectorAll(".ai_message"));
+      const responseBoxes = Array.from(document.querySelectorAll(".ai_message"));
 
-    // Clean up intervals and UI states
-    if (this.$loadInterval) {
-      clearInterval(this.$loadInterval);
-      this.$loadInterval = null;
-    }
+      // Clean up intervals and UI states
+      if (this.$loadInterval) {
+        clearInterval(this.$loadInterval);
+        this.$loadInterval = null;
+      }
 
-    // Reset button states
-    if (this.$stopGenerationBtn) {
-      this.$stopGenerationBtn.classList.add("hide");
-    }
-    if (this.$sendBtn) {
-      this.$sendBtn.classList.remove("hide");
-    }
+      // Reset button states
+      if (this.$stopGenerationBtn) {
+        this.$stopGenerationBtn.classList.add("hide");
+      }
+      if (this.$sendBtn) {
+        this.$sendBtn.classList.remove("hide");
+      }
 
-    if (responseBoxes.length > 0) {
-      const targetElem = responseBoxes[responseBoxes.length - 1];
-      if (targetElem) {
-        targetElem.innerHTML = "";
-        targetElem.style.cssText = `
+      if (responseBoxes.length > 0) {
+        const targetElem = responseBoxes[responseBoxes.length - 1];
+        if (targetElem) {
+          targetElem.innerHTML = "";
+          targetElem.style.cssText = `
           padding: 12px 16px;
           border-radius: 8px;
           background: linear-gradient(145deg, #ff4444, #cc3333);
@@ -1821,45 +1837,45 @@ Exact name:`;
           margin: 8px 0;
         `;
 
-        const $errorBox = tag("div", { 
-          className: "error-box",
-          style: `
+          const $errorBox = tag("div", {
+            className: "error-box",
+            style: `
             display: flex;
             align-items: center;
             gap: 8px;
           `
-        });
+          });
 
-        const errorIcon = tag("span", {
-          textContent: "⚠️",
-          style: "font-size: 18px;"
-        });
+          const errorIcon = tag("span", {
+            textContent: "⚠️",
+            style: "font-size: 18px;"
+          });
 
-        const errorText = tag("div");
+          const errorText = tag("div");
 
-        if (error.response) {
-          errorText.innerHTML = `<strong>API Error (${error.response.status}):</strong><br>${error.response.data?.error?.message || JSON.stringify(error.response.data)}`;
-        } else if (error.name === 'AbortError') {
-          errorText.innerHTML = `<strong>Request Cancelled:</strong><br>Generation was stopped by user`;
-        } else {
-          errorText.innerHTML = `<strong>Error:</strong><br>${error.message || 'Unknown error occurred'}`;
+          if (error.response) {
+            errorText.innerHTML = `<strong>API Error (${error.response.status}):</strong><br>${error.response.data?.error?.message || JSON.stringify(error.response.data)}`;
+          } else if (error.name === 'AbortError') {
+            errorText.innerHTML = `<strong>Request Cancelled:</strong><br>Generation was stopped by user`;
+          } else {
+            errorText.innerHTML = `<strong>Error:</strong><br>${error.message || 'Unknown error occurred'}`;
+          }
+
+          $errorBox.append(errorIcon, errorText);
+          targetElem.appendChild($errorBox);
+
+          // Auto-scroll to show error
+          this.scrollToBottom();
+
+          // Show error toast
+          window.toast("❌ AI request failed. Check your connection and API key.", 4000);
         }
-
-        $errorBox.append(errorIcon, errorText);
-        targetElem.appendChild($errorBox);
-
-        // Auto-scroll to show error
-        this.scrollToBottom();
-
-        // Show error toast
-        window.toast("❌ AI request failed. Check your connection and API key.", 4000);
       }
-    }
 
-    this.$stopGenerationBtn.classList.add("hide");
-    this.$sendBtn.classList.remove("hide");
+      this.$stopGenerationBtn.classList.add("hide");
+      this.$sendBtn.classList.remove("hide");
+    }
   }
-}
 
   async scrollToBottom() {
     this.$chatBox.scrollTop = this.$chatBox.scrollHeight;
@@ -1867,25 +1883,51 @@ Exact name:`;
 
   async loader() {
     /*
-    creates dot loader
+    creates proper loading dots animation
     */
-    // get all gptchat element for loader
+    // get all ai_message elements for loader
     const loadingDots = Array.from(document.querySelectorAll(".ai_message"));
     if (loadingDots.length != 0) {
-  let index = 0;
-  let el = loadingDots[loadingDots.length - 1];
-  let emojis = ["😖", "😹", "♥️", "🤓", "🗿", "🐍", "⏳", "🚀", "👍"];
+      let index = 0;
+      let el = loadingDots[loadingDots.length - 1];
+      let dots = ["", ".", "..", "...", ""];
 
-  this.$loadInterval = setInterval(() => {
-    el.innerText += emojis[index];
-    index++;
+      // Show proper loading dots animation
+      this.$loadInterval = setInterval(() => {
+        el.innerHTML = `<div style="color: var(--galaxy-star-blue); font-size: 14px; padding: 10px;">
+          <span>✨ AI is thinking${dots[index]}</span>
+        </div>`;
+        index++;
 
-    if (index >= emojis.length) {
-      index = 0;
-      el.innerText = "";
+        if (index >= dots.length) {
+          index = 0;
+        }
+      }, 400);
     }
-  }, 300);
-}
+  }
+
+  // Simple AI Response method for internal use (without UI updates)
+  async getAIResponse(question) {
+    try {
+      if (!this.modelInstance) {
+        throw new Error("AI model not initialized");
+      }
+
+      const systemPrompt = "You are a helpful AI assistant. Provide direct, concise answers.";
+      const prompt = ChatPromptTemplate.fromMessages([
+        ["system", systemPrompt],
+        ["human", "{input}"],
+      ]);
+
+      const parser = new StringOutputParser();
+      const chain = prompt.pipe(this.modelInstance).pipe(parser);
+
+      const result = await chain.invoke({ input: question });
+      return result;
+    } catch (error) {
+      console.error("AI Response Error:", error);
+      throw error;
+    }
   }
 
   // File Operations Methods
@@ -1908,7 +1950,7 @@ Exact name:`;
 
       const aiPrompt = `Create file: "${description}". Return JSON: {"filename": "name.ext", "content": "code"}.`;
 
-      const response = await this.appendGptResponse(aiPrompt);
+      const response = await this.getAIResponse(aiPrompt);
 
       loader.removeTitleLoader();
 
@@ -1960,7 +2002,7 @@ Exact name:`;
             type: "text"
           },
           {
-            id: "content", 
+            id: "content",
             placeholder: "File Content",
             value: suggestion.content,
             type: "textarea"
@@ -2054,8 +2096,7 @@ Exact name:`;
         }
       }
     } catch (error) {
-      window.toast("Error creating file with AI", 3000);
-      window.toast(`Error creating file: ${error.message}`, 3000);
+      window.toast(`Failed to create file with AI: ${error.message}`, 4000);
     }
   }
 
@@ -2131,7 +2172,7 @@ Suggest improvements:
 
 Response format: Clear actionable steps.`;
 
-      const response = await this.appendGptResponse(aiPrompt);
+      const response = await this.getAIResponse(aiPrompt);
       loader.removeTitleLoader();
 
       // Show suggestions in chat
@@ -2150,8 +2191,8 @@ Response format: Clear actionable steps.`;
 
   async scanProjectStructure() {
     // Cache project structure for 5 minutes
-    if (this.projectStructure && this.lastStructureScan && 
-        (Date.now() - this.lastStructureScan) < 300000) {
+    if (this.projectStructure && this.lastStructureScan &&
+      (Date.now() - this.lastStructureScan) < 300000) {
       return this.projectStructure;
     }
 
@@ -2203,7 +2244,7 @@ Response format: Clear actionable steps.`;
     try {
       const operation = await select("Bulk Operation", [
         "Rename multiple files",
-        "Move files to folders", 
+        "Move files to folders",
         "Delete unused files",
         "Add headers to files",
         "Convert file formats"
@@ -2259,7 +2300,7 @@ Response format: Clear actionable steps.`;
               renamedCount++;
             }
           } catch (err) {
-            window.toast('Error renaming file', 3000);
+            window.toast(`Error renaming file: ${err.message}`, 3000);
           }
         }
 
@@ -2388,7 +2429,7 @@ Response format: Clear actionable steps.`;
           required: true
         },
         {
-          id: "author", 
+          id: "author",
           placeholder: "Author name",
           value: "Developer",
           type: "text"
@@ -2459,7 +2500,7 @@ Response format: Clear actionable steps.`;
         {
           id: "toExt",
           placeholder: "To extension (e.g., .md)",
-          value: ".md", 
+          value: ".md",
           type: "text",
           required: true
         }
@@ -2884,84 +2925,84 @@ Response format: Clear actionable steps.`;
   }
 
   async readRelatedFiles(currentFilePath) {
-  try {
-    if (!await fs(currentFilePath).exists()) {
-      return { success: false, error: 'Current file not found' };
-    }
-
-    const content = await fs(currentFilePath).readFile('utf8');
-    const imports = [];
-
-    // Match import/require patterns
-    const importRegex = /(?:import.*from\s+['"]([^'"]+)['"]|require\(['"]([^'"]+)['"]\))/g;
-    let match;
-
-    while ((match = importRegex.exec(content)) !== null) {
-      const importPath = match[1] || match[2];
-      if (importPath && !importPath.startsWith('http') && !importPath.includes('node_modules')) {
-        imports.push(importPath);
-      }
-    }
-
-    const relatedFiles = [];
-    const basePath = currentFilePath.substring(0, currentFilePath.lastIndexOf('/'));
-
-    for (const importPath of imports) {
-      let resolvedPath;
-
-      // Resolve relative paths
-      if (importPath.startsWith('./')) {
-        resolvedPath = `${basePath}/${importPath.substring(2)}`;
-      } else if (importPath.startsWith('../')) {
-        // Handle multiple levels of ../
-        const upLevels = (importPath.match(/\.\.\//g) || []).length;
-        let parentPath = basePath;
-
-        for (let i = 0; i < upLevels; i++) {
-          const lastSlash = parentPath.lastIndexOf('/');
-          if (lastSlash > 0) {
-            parentPath = parentPath.substring(0, lastSlash);
-          }
-        }
-
-        const remainingPath = importPath.replace(/\.\.\//g, '');
-        resolvedPath = `${parentPath}/${remainingPath}`;
-      } else if (importPath.startsWith('/')) {
-        resolvedPath = importPath;
-      } else {
-        resolvedPath = `${basePath}/${importPath}`;
+    try {
+      if (!await fs(currentFilePath).exists()) {
+        return { success: false, error: 'Current file not found' };
       }
 
-      // Try different extensions
-      const extensions = ['', '.js', '.json', '.ts', '.jsx', '.tsx', '.vue', '.css', '.scss'];
-      let found = false;
+      const content = await fs(currentFilePath).readFile('utf8');
+      const imports = [];
 
-      for (const ext of extensions) {
-        const fullPath = resolvedPath + ext;
-        try {
-          if (await fs(fullPath).exists()) {
-            const fileContent = await fs(fullPath).readFile('utf8');
-            relatedFiles.push({ path: fullPath, content: fileContent });
-            found = true;
-            break;
-          }
-        } catch (error) {
-          // Continue trying other extensions
-          continue;
+      // Match import/require patterns
+      const importRegex = /(?:import.*from\s+['"]([^'"]+)['"]|require\(['"]([^'"]+)['"]\))/g;
+      let match;
+
+      while ((match = importRegex.exec(content)) !== null) {
+        const importPath = match[1] || match[2];
+        if (importPath && !importPath.startsWith('http') && !importPath.includes('node_modules')) {
+          imports.push(importPath);
         }
       }
 
-      if (!found) {
-        // Could not resolve import
-      }
-    }
+      const relatedFiles = [];
+      const basePath = currentFilePath.substring(0, currentFilePath.lastIndexOf('/'));
 
-    return { success: true, files: relatedFiles, imports };
-  } catch (error) {
-    window.toast('Error reading related files', 3000);
-    return { success: false, error: error.message };
+      for (const importPath of imports) {
+        let resolvedPath;
+
+        // Resolve relative paths
+        if (importPath.startsWith('./')) {
+          resolvedPath = `${basePath}/${importPath.substring(2)}`;
+        } else if (importPath.startsWith('../')) {
+          // Handle multiple levels of ../
+          const upLevels = (importPath.match(/\.\.\//g) || []).length;
+          let parentPath = basePath;
+
+          for (let i = 0; i < upLevels; i++) {
+            const lastSlash = parentPath.lastIndexOf('/');
+            if (lastSlash > 0) {
+              parentPath = parentPath.substring(0, lastSlash);
+            }
+          }
+
+          const remainingPath = importPath.replace(/\.\.\//g, '');
+          resolvedPath = `${parentPath}/${remainingPath}`;
+        } else if (importPath.startsWith('/')) {
+          resolvedPath = importPath;
+        } else {
+          resolvedPath = `${basePath}/${importPath}`;
+        }
+
+        // Try different extensions
+        const extensions = ['', '.js', '.json', '.ts', '.jsx', '.tsx', '.vue', '.css', '.scss'];
+        let found = false;
+
+        for (const ext of extensions) {
+          const fullPath = resolvedPath + ext;
+          try {
+            if (await fs(fullPath).exists()) {
+              const fileContent = await fs(fullPath).readFile('utf8');
+              relatedFiles.push({ path: fullPath, content: fileContent });
+              found = true;
+              break;
+            }
+          } catch (error) {
+            // Continue trying other extensions
+            continue;
+          }
+        }
+
+        if (!found) {
+          // Could not resolve import
+        }
+      }
+
+      return { success: true, files: relatedFiles, imports };
+    } catch (error) {
+      window.toast('Error reading related files', 3000);
+      return { success: false, error: error.message };
+    }
   }
-}
 
 
   // Enhanced UI and Direct Editing Features
@@ -3015,9 +3056,9 @@ Response format: Clear actionable steps.`;
 
     tokenDisplay.appendChild(tokenIcon);
     tokenDisplay.appendChild(this.$tokenText);
-    
+
     tokenDisplay.onclick = () => this.showTokenUsageDetails();
-    
+
     this.updateTokenDisplay();
     return tokenDisplay;
   }
@@ -3028,13 +3069,13 @@ Response format: Clear actionable steps.`;
       if (stored) {
         const data = JSON.parse(stored);
         const today = new Date().toDateString();
-        
+
         if (data.lastReset !== today) {
           // Reset daily counter
           data.today = 0;
           data.lastReset = today;
         }
-        
+
         this.tokenUsage = { ...this.tokenUsage, ...data };
       }
     } catch (error) {
@@ -3069,7 +3110,7 @@ Response format: Clear actionable steps.`;
   async showTokenUsageDetails() {
     const { total, today, session } = this.tokenUsage;
     const currentProvider = localStorage.getItem('ai-assistant-provider') || 'None';
-    
+
     const details = `📊 Token Usage Statistics
     
 🔹 Current Session: ${session.toLocaleString()} tokens
@@ -3086,22 +3127,22 @@ Response format: Clear actionable steps.`;
     try {
       const searchTerm = await prompt("Search in chat:", "", "text");
       if (!searchTerm) return;
-      
+
       const chatMessages = this.$chatBox.querySelectorAll('.message, .ai_message');
       let foundCount = 0;
-      
+
       chatMessages.forEach(msg => {
         const text = msg.textContent.toLowerCase();
         msg.style.backgroundColor = '';
         msg.style.border = '';
-        
+
         if (text.includes(searchTerm.toLowerCase())) {
           msg.style.backgroundColor = 'rgba(0, 212, 255, 0.2)';
           msg.style.border = '2px solid var(--galaxy-star-blue)';
           foundCount++;
         }
       });
-      
+
       if (foundCount > 0) {
         window.toast(`Found ${foundCount} messages containing "${searchTerm}"`, 4000);
         // Scroll to first match
@@ -3143,31 +3184,63 @@ Response format: Clear actionable steps.`;
         window.toast("No conversation to export", 3000);
         return;
       }
-      
-      let exportText = `# AI Chat Conversation\nExported: ${new Date().toLocaleString()}\nProvider: ${localStorage.getItem('ai-assistant-provider') || 'Unknown'}\n\n`;
-      
+
+      // Get current timestamp for filename
+      const timestamp = new Date().toISOString().slice(0, 19).replace(/:/g, '-');
+      const fileName = `ai-chat-conversation-${timestamp}.md`;
+
+      let exportText = `# AI Chat Conversation\n`;
+      exportText += `**Exported:** ${new Date().toLocaleString()}\n`;
+      exportText += `**Provider:** ${localStorage.getItem('ai-assistant-provider') || 'Unknown'}\n`;
+      exportText += `**Model:** ${localStorage.getItem('ai-assistant-model-name') || 'Unknown'}\n\n`;
+      exportText += `---\n\n`;
+
       chatMessages.forEach((wrapper, index) => {
         const isUser = wrapper.classList.contains('wrapper');
         const message = wrapper.querySelector('.message, .ai_message');
         const text = message ? message.textContent.trim() : '';
-        
+
         if (text) {
-          exportText += `## ${isUser ? 'User' : 'AI Assistant'} (${index + 1})\n${text}\n\n`;
+          const speaker = isUser ? '👤 **User**' : '🤖 **AI Assistant**';
+          exportText += `${speaker}\n\n${text}\n\n---\n\n`;
         }
       });
-      
-      const blob = new Blob([exportText], { type: 'text/markdown' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `ai-chat-${new Date().toISOString().slice(0, 10)}.md`;
-      a.click();
-      URL.revokeObjectURL(url);
-      
-      window.toast("📁 Conversation exported successfully", 3000);
+
+      exportText += `\n\n*Exported from Acode AI Assistant Plugin at ${new Date().toLocaleString()}*`;
+
+      // Use Acode file system to save the file
+      try {
+        const fileBrowser = acode.require('fileBrowser');
+        const result = await fileBrowser('folder', 'Select folder to save conversation');
+
+        if (result && result.url) {
+          const targetFs = fs(result.url);
+          await targetFs.createFile(fileName, exportText);
+          window.toast(`💾 Conversation exported to ${result.name}/${fileName}`, 4000);
+        } else {
+          // Fallback to default location
+          const defaultPath = window.DATA_STORAGE || '/sdcard';
+          const defaultFs = fs(defaultPath);
+          await defaultFs.createFile(fileName, exportText);
+          window.toast(`💾 Conversation exported to ${defaultPath}/${fileName}`, 4000);
+        }
+      } catch (fileError) {
+        // Fallback to browser download if file system fails
+        const blob = new Blob([exportText], { type: 'text/markdown' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = fileName;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        window.toast("📁 Conversation downloaded to browser downloads", 3000);
+      }
+
     } catch (error) {
-      window.toast('Error exporting conversation', 3000);
-      window.toast('❌ Export failed', 3000);
+      console.error('Export error:', error);
+      window.toast(`❌ Export failed: ${error.message}`, 3000);
     }
   }
 
@@ -3178,18 +3251,18 @@ Response format: Clear actionable steps.`;
         window.toast("No messages to copy", 3000);
         return;
       }
-      
+
       let allText = '';
       chatMessages.forEach((wrapper, index) => {
         const isUser = wrapper.classList.contains('wrapper');
         const message = wrapper.querySelector('.message, .ai_message');
         const text = message ? message.textContent.trim() : '';
-        
+
         if (text) {
           allText += `${isUser ? 'User' : 'AI'}: ${text}\n\n`;
         }
       });
-      
+
       if (copy(allText)) {
         window.toast("📋 All messages copied to clipboard", 3000);
       } else {
@@ -3205,16 +3278,16 @@ Response format: Clear actionable steps.`;
       const currentProvider = localStorage.getItem('ai-assistant-provider') || 'None';
       const currentModel = localStorage.getItem('ai-assistant-model-name') || 'None';
       const { total, today, session } = this.tokenUsage;
-      
+
       const settings = await select("Settings", [
         "Change Provider",
-        "Change Model", 
+        "Change Model",
         "Toggle Real-time Analysis",
         "Clear Token Usage",
         "Reset All Settings",
         "Back"
       ]);
-      
+
       switch (settings) {
         case "Change Provider":
           const newProvider = await select("Select Provider", AI_PROVIDERS);
@@ -3222,7 +3295,7 @@ Response format: Clear actionable steps.`;
             await this.switchProvider(newProvider);
           }
           break;
-          
+
         case "Change Model":
           const provider = localStorage.getItem('ai-assistant-provider');
           if (provider) {
@@ -3236,11 +3309,11 @@ Response format: Clear actionable steps.`;
             }
           }
           break;
-          
+
         case "Toggle Real-time Analysis":
           this.toggleRealTimeAI();
           break;
-          
+
         case "Clear Token Usage":
           const confirmClear = await select("Clear token usage statistics?", ["Yes", "No"]);
           if (confirmClear === "Yes") {
@@ -3250,7 +3323,7 @@ Response format: Clear actionable steps.`;
             window.toast("Token usage cleared", 3000);
           }
           break;
-          
+
         case "Reset All Settings":
           const confirmReset = await select("Reset all plugin settings?", ["Yes", "No"]);
           if (confirmReset === "Yes") {
@@ -3270,108 +3343,108 @@ Response format: Clear actionable steps.`;
   }
 
   async switchProvider(newProvider) {
-  try {
-    // Validate provider
-    if (!AI_PROVIDERS.includes(newProvider) && newProvider !== OPENAI_LIKE) {
-      throw new Error('Invalid provider selected');
-    }
-
-    const previousProvider = window.localStorage.getItem("ai-assistant-provider");
-    if (previousProvider === newProvider) {
-      return; // No change needed
-    }
-
-    // Handle different provider types
-    if (newProvider === "Ollama") {
-      // No API key needed for Ollama
-      window.localStorage.setItem("ai-assistant-provider", newProvider);
-
-      // Get available models for Ollama
-      try {
-        loader.showTitleLoader();
-        window.toast("Fetching available models...", 2000);
-        const modelList = await getModelsFromProvider(newProvider, "No Need Of API Key");
-        loader.removeTitleLoader();
-
-        const modelName = await select("Select AI Model", modelList);
-        if (modelName) {
-          window.localStorage.setItem("ai-assistant-model-name", modelName);
-          await this.apiKeyManager.saveAPIKey(newProvider, "No Need Of API Key");
-          this.initiateModel(newProvider, "No Need Of API Key", modelName);
-          window.toast(`Switched to ${newProvider}`, 3000);
-        }
-      } catch (error) {
-        // Revert to previous provider
-        if (previousProvider) {
-          window.localStorage.setItem("ai-assistant-provider", previousProvider);
-        }
-        throw error;
-      }
-    } else if (newProvider === OPENAI_LIKE) {
-      // Handle OpenAI-Like providers
-      const apiKey = await prompt("API Key", "", "password", { required: true });
-      if (!apiKey) {
-        return;
+    try {
+      // Validate provider
+      if (!AI_PROVIDERS.includes(newProvider) && newProvider !== OPENAI_LIKE) {
+        throw new Error('Invalid provider selected');
       }
 
-      const baseUrl = await prompt("API Base URL", "https://api.openai.com/v1", "text", {
-        required: true
-      });
-
-      const modelName = await prompt("Model", "", "text", { required: true });
-      if (!modelName) {
-        return;
+      const previousProvider = window.localStorage.getItem("ai-assistant-provider");
+      if (previousProvider === newProvider) {
+        return; // No change needed
       }
 
-      // Save settings
-      window.localStorage.setItem("ai-assistant-provider", OPENAI_LIKE);
-      window.localStorage.setItem("ai-assistant-model-name", modelName);
-      window.localStorage.setItem("openai-like-baseurl", baseUrl);
+      // Handle different provider types
+      if (newProvider === "Ollama") {
+        // No API key needed for Ollama
+        window.localStorage.setItem("ai-assistant-provider", newProvider);
 
-      await this.apiKeyManager.saveAPIKey(OPENAI_LIKE, apiKey);
-      this.initiateModel(OPENAI_LIKE, apiKey, modelName);
-      window.toast(`Switched to ${newProvider}`, 3000);
-    } else {
-      // Handle other providers (OpenAI, Google, Groq, etc.)
-      const apiKey = await prompt(`Enter API key for ${newProvider}:`, "", "password", {
-        required: true
-      });
+        // Get available models for Ollama
+        try {
+          loader.showTitleLoader();
+          window.toast("Fetching available models...", 2000);
+          const modelList = await getModelsFromProvider(newProvider, "No Need Of API Key");
+          loader.removeTitleLoader();
 
-      if (!apiKey) {
-        return;
-      }
-
-      try {
-        loader.showTitleLoader();
-        window.toast("Fetching available models...", 2000);
-        const modelList = await getModelsFromProvider(newProvider, apiKey);
-        loader.removeTitleLoader();
-
-        const modelName = await select("Select AI Model", modelList);
-        if (modelName) {
-          window.localStorage.setItem("ai-assistant-provider", newProvider);
-          window.localStorage.setItem("ai-assistant-model-name", modelName);
-
-          if (this.apiKeyManager) {
-            await this.apiKeyManager.saveAPIKey(newProvider, apiKey);
+          const modelName = await select("Select AI Model", modelList);
+          if (modelName) {
+            window.localStorage.setItem("ai-assistant-model-name", modelName);
+            await this.apiKeyManager.saveAPIKey(newProvider, "No Need Of API Key");
+            this.initiateModel(newProvider, "No Need Of API Key", modelName);
+            window.toast(`Switched to ${newProvider}`, 3000);
           }
+        } catch (error) {
+          // Revert to previous provider
+          if (previousProvider) {
+            window.localStorage.setItem("ai-assistant-provider", previousProvider);
+          }
+          throw error;
+        }
+      } else if (newProvider === OPENAI_LIKE) {
+        // Handle OpenAI-Like providers
+        const apiKey = await prompt("API Key", "", "password", { required: true });
+        if (!apiKey) {
+          return;
+        }
 
-          this.initiateModel(newProvider, apiKey, modelName);
-          window.toast(`Switched to ${newProvider}`, 3000);
+        const baseUrl = await prompt("API Base URL", "https://api.openai.com/v1", "text", {
+          required: true
+        });
+
+        const modelName = await prompt("Model", "", "text", { required: true });
+        if (!modelName) {
+          return;
         }
-      } catch (error) {
-        // Revert to previous provider
-        if (previousProvider) {
-          window.localStorage.setItem("ai-assistant-provider", previousProvider);
+
+        // Save settings
+        window.localStorage.setItem("ai-assistant-provider", OPENAI_LIKE);
+        window.localStorage.setItem("ai-assistant-model-name", modelName);
+        window.localStorage.setItem("openai-like-baseurl", baseUrl);
+
+        await this.apiKeyManager.saveAPIKey(OPENAI_LIKE, apiKey);
+        this.initiateModel(OPENAI_LIKE, apiKey, modelName);
+        window.toast(`Switched to ${newProvider}`, 3000);
+      } else {
+        // Handle other providers (OpenAI, Google, Groq, etc.)
+        const apiKey = await prompt(`Enter API key for ${newProvider}:`, "", "password", {
+          required: true
+        });
+
+        if (!apiKey) {
+          return;
         }
-        throw error;
+
+        try {
+          loader.showTitleLoader();
+          window.toast("Fetching available models...", 2000);
+          const modelList = await getModelsFromProvider(newProvider, apiKey);
+          loader.removeTitleLoader();
+
+          const modelName = await select("Select AI Model", modelList);
+          if (modelName) {
+            window.localStorage.setItem("ai-assistant-provider", newProvider);
+            window.localStorage.setItem("ai-assistant-model-name", modelName);
+
+            if (this.apiKeyManager) {
+              await this.apiKeyManager.saveAPIKey(newProvider, apiKey);
+            }
+
+            this.initiateModel(newProvider, apiKey, modelName);
+            window.toast(`Switched to ${newProvider}`, 3000);
+          }
+        } catch (error) {
+          // Revert to previous provider
+          if (previousProvider) {
+            window.localStorage.setItem("ai-assistant-provider", previousProvider);
+          }
+          throw error;
+        }
       }
+    } catch (error) {
+      window.toast('Error switching provider', 3000);
+      window.toast(`Error switching provider: ${error.message}`, 3000);
     }
-  } catch (error) {
-    window.toast('Error switching provider', 3000);
-    window.toast(`Error switching provider: ${error.message}`, 3000);
   }
-}
 
   showAiEditPopup(initialText = "") {
     // Create backdrop for better focus and visibility
@@ -3432,9 +3505,6 @@ Response format: Clear actionable steps.`;
       if (document.body.contains(backdrop)) {
         document.body.removeChild(backdrop);
       }
-      if (document.body.contains(popup)) {
-        document.body.removeChild(popup);
-      }
     };
 
     // Event listeners
@@ -3471,8 +3541,9 @@ Response format: Clear actionable steps.`;
 
     document.addEventListener('keydown', handleKeyDown);
 
-    // Append elements and focus
-    document.body.append(backdrop, popup);
+    // Append elements properly - backdrop first with popup inside
+    backdrop.appendChild(popup);
+    document.body.appendChild(backdrop);
 
     // Auto-focus with slight delay for better UX
     setTimeout(() => {
@@ -3484,32 +3555,32 @@ Response format: Clear actionable steps.`;
   }
 
   async processAiEdit(userPrompt) {
-  // Input validation
-  if (!userPrompt || userPrompt.trim().length === 0) {
-    window.toast("Please provide editing instructions", 3000);
-    return;
-  }
-
-  const loadingToast = window.toast("AI is processing your request...", 0);
-
-  try {
-    const activeFile = editorManager.activeFile;
-    if (!activeFile) {
-      throw new Error("No active file to edit");
+    // Input validation
+    if (!userPrompt || userPrompt.trim().length === 0) {
+      window.toast("Please provide editing instructions", 3000);
+      return;
     }
 
-    const currentContent = editor.getValue();
-    const selection = editor.getSelectedText();
-    const fileExtension = activeFile.name.split('.').pop();
+    const loadingToast = window.toast("AI is processing your request...", 0);
 
-    // Get file context information
-    const filePath = activeFile.uri || activeFile.filename || activeFile.name;
-    const fileDirectory = activeFile.location || (filePath ? filePath.split('/').slice(0, -1).join('/') : '');
-    const cursorPos = editor.getCursorPosition();
+    try {
+      const activeFile = editorManager.activeFile;
+      if (!activeFile) {
+        throw new Error("No active file to edit");
+      }
 
-    let aiPrompt;
-    if (selection) {
-      aiPrompt = `EDIT SELECTED CODE REQUEST
+      const currentContent = editor.getValue();
+      const selection = editor.getSelectedText();
+      const fileExtension = activeFile.name.split('.').pop();
+
+      // Get file context information
+      const filePath = activeFile.uri || activeFile.filename || activeFile.name;
+      const fileDirectory = activeFile.location || (filePath ? filePath.split('/').slice(0, -1).join('/') : '');
+      const cursorPos = editor.getCursorPosition();
+
+      let aiPrompt;
+      if (selection) {
+        aiPrompt = `EDIT SELECTED CODE REQUEST
 
 **FILE CONTEXT:**
 • File: ${activeFile.name}
@@ -3534,9 +3605,9 @@ ${selection}
 - Return ONLY the edited code block (no explanations)
 
 **OUTPUT:** Provide the improved code block ready to replace the selection:`;
-    } else {
-      // Full file edit with complete context
-      aiPrompt = `EDIT ENTIRE FILE REQUEST
+      } else {
+        // Full file edit with complete context
+        aiPrompt = `EDIT ENTIRE FILE REQUEST
 
 **FILE CONTEXT:**
 • File: ${activeFile.name}
@@ -3563,163 +3634,163 @@ ${currentContent}
 - Return the complete improved file (no explanations)
 
 **OUTPUT:** Provide the complete edited file ready to replace current content:`;
-    }
-
-    const response = await this.appendGptResponse(aiPrompt);
-
-    // FIX: Proper response validation
-    const hasValidResponse = response !== null && response !== undefined && typeof response === 'string' && response.trim().length > 0;
-    
-    if (hasValidResponse) {
-      // Enhanced code extraction with better pattern matching
-      let newCode = response.trim();
-
-      // Try multiple patterns to extract code
-      const codeBlockPatterns = [
-        /```[\w]*\s*([\s\S]*?)\s*```/g,  // Standard code blocks
-        /~~~[\w]*\s*([\s\S]*?)\s*~~~/g,  // Alternative code blocks
-        /<code>([\s\S]*?)<\/code>/g,     // HTML code tags
-        /`([^`\n]+)`/g                   // Inline code (single line)
-      ];
-
-      let codeMatch = null;
-      for (const pattern of codeBlockPatterns) {
-        const matches = [...response.matchAll(pattern)];
-        if (matches.length > 0 && matches[0][1]) {
-          // Take the largest code block found
-          codeMatch = matches.reduce((largest, current) => 
-            current[1].length > largest[1].length ? current : largest
-          );
-          break;
-        }
       }
 
-      if (codeMatch && codeMatch[1]) {
-        newCode = codeMatch[1].trim();
-        // Code extracted from block
-      } else {
-        // Enhanced filtering for explanatory text
-        const lines = response.split('\n');
-        const codeLines = lines.filter(line => {
-          const trimmed = line.trim();
-          return (
-            trimmed && // Not empty
-            !trimmed.startsWith('#') &&           // Not markdown heading
-            !trimmed.startsWith('>') &&           // Not quote
-            !trimmed.match(/^[0-9]+\.\s/) &&      // Not numbered list
-            !trimmed.match(/^\*\s/) &&             // Not bullet list
-            !trimmed.match(/^-\s/) &&              // Not dash list  
-            !trimmed.match(/^Here'?s?\s/i) &&       // Not explanation
-            !trimmed.match(/^The\s+code\s+/i) &&   // Not description
-            !trimmed.match(/^This\s+code\s+/i) &&  // Not description
-            !trimmed.match(/^I['']?ve?\s+/i)       // Not personal explanation
-          );
-        });
+      const response = await this.appendGptResponse(aiPrompt);
 
-        if (codeLines.length > 0) {
-          newCode = codeLines.join('\n').trim();
-          // Code extracted by filtering
-        } else {
-          // No code patterns matched, using full response
-        }
-      }
+      // FIX: Proper response validation
+      const hasValidResponse = response !== null && response !== undefined && typeof response === 'string' && response.trim().length > 0;
 
-      // Show diff before applying
-      const shouldApply = await this.showEditDiff(selection || currentContent, newCode, activeFile.name);
+      if (hasValidResponse) {
+        // Enhanced code extraction with better pattern matching
+        let newCode = response.trim();
 
-      if (shouldApply) {
-        if (selection) {
-          // Replace just the selected text
-          const currentPos = editor.getCursorPosition();
-          editor.session.replace(editor.selection.getRange(), newCode);
+        // Try multiple patterns to extract code
+        const codeBlockPatterns = [
+          /```[\w]*\s*([\s\S]*?)\s*```/g,  // Standard code blocks
+          /~~~[\w]*\s*([\s\S]*?)\s*~~~/g,  // Alternative code blocks
+          /<code>([\s\S]*?)<\/code>/g,     // HTML code tags
+          /`([^`\n]+)`/g                   // Inline code (single line)
+        ];
 
-          // Try to maintain cursor position
-          editor.moveCursorToPosition(currentPos);
-        } else {
-          // Replace entire file content
-          const currentPos = editor.getCursorPosition();
-          const scrollTop = editor.session.getScrollTop();
-
-          editor.setValue(newCode, -1); // -1 to keep undo history
-
-          // Restore cursor and scroll position
-          editor.moveCursorToPosition(currentPos);
-          editor.session.setScrollTop(scrollTop);
-        }
-
-        // Enhanced file saving with better error handling
-        if (activeFile && activeFile.uri) {
-          try {
-            // FIX: Safe method calling
-            try {
-              if (activeFile.markModified) {
-                activeFile.markModified();
-              }
-            } catch (markError) {
-              // markModified failed
-            }
-
-            // Use Acode's built-in save method if available
-            let saveSuccess = false;
-            try {
-              if (activeFile.save) {
-                await activeFile.save();
-                saveSuccess = true;
-              }
-            } catch (saveError) {
-              // activeFile.save failed
-            }
-
-            if (!saveSuccess) {
-              // Fallback to direct file write
-              await fs(activeFile.uri).writeFile(editor.getValue());
-            }
-
-            window.toast("✅ File updated and saved successfully!", 3000);
-
-            // FIX: Safe event triggering
-            try {
-              const editorMgr = window.editorManager;
-              if (editorMgr && editorMgr.onUpdate) {
-                editorMgr.onUpdate();
-              }
-            } catch (updateError) {
-              // onUpdate failed
-            }
-
-          } catch (saveError) {
-            window.toast('Error saving file', 3000);
-            window.toast(`⚠️ Code updated but couldn't save: ${saveError.message}`, 4000);
-
-            // Suggest manual save
-            setTimeout(() => {
-              window.toast("💡 Try Ctrl+S to save manually", 3000);
-            }, 1000);
+        let codeMatch = null;
+        for (const pattern of codeBlockPatterns) {
+          const matches = [...response.matchAll(pattern)];
+          if (matches.length > 0 && matches[0][1]) {
+            // Take the largest code block found
+            codeMatch = matches.reduce((largest, current) =>
+              current[1].length > largest[1].length ? current : largest
+            );
+            break;
           }
-        } else if (activeFile) {
-          // File exists but no URI (new file)
-          window.toast("✅ Code updated! Save file to persist changes.", 3000);
-        } else {
-          window.toast("⚠️ No active file found", 2000);
         }
+
+        if (codeMatch && codeMatch[1]) {
+          newCode = codeMatch[1].trim();
+          // Code extracted from block
+        } else {
+          // Enhanced filtering for explanatory text
+          const lines = response.split('\n');
+          const codeLines = lines.filter(line => {
+            const trimmed = line.trim();
+            return (
+              trimmed && // Not empty
+              !trimmed.startsWith('#') &&           // Not markdown heading
+              !trimmed.startsWith('>') &&           // Not quote
+              !trimmed.match(/^[0-9]+\.\s/) &&      // Not numbered list
+              !trimmed.match(/^\*\s/) &&             // Not bullet list
+              !trimmed.match(/^-\s/) &&              // Not dash list  
+              !trimmed.match(/^Here'?s?\s/i) &&       // Not explanation
+              !trimmed.match(/^The\s+code\s+/i) &&   // Not description
+              !trimmed.match(/^This\s+code\s+/i) &&  // Not description
+              !trimmed.match(/^I['']?ve?\s+/i)       // Not personal explanation
+            );
+          });
+
+          if (codeLines.length > 0) {
+            newCode = codeLines.join('\n').trim();
+            // Code extracted by filtering
+          } else {
+            // No code patterns matched, using full response
+          }
+        }
+
+        // Show diff before applying
+        const shouldApply = await this.showEditDiff(selection || currentContent, newCode, activeFile.name);
+
+        if (shouldApply) {
+          if (selection) {
+            // Replace just the selected text
+            const currentPos = editor.getCursorPosition();
+            editor.session.replace(editor.selection.getRange(), newCode);
+
+            // Try to maintain cursor position
+            editor.moveCursorToPosition(currentPos);
+          } else {
+            // Replace entire file content
+            const currentPos = editor.getCursorPosition();
+            const scrollTop = editor.session.getScrollTop();
+
+            editor.setValue(newCode, -1); // -1 to keep undo history
+
+            // Restore cursor and scroll position
+            editor.moveCursorToPosition(currentPos);
+            editor.session.setScrollTop(scrollTop);
+          }
+
+          // Enhanced file saving with better error handling
+          if (activeFile && activeFile.uri) {
+            try {
+              // FIX: Safe method calling
+              try {
+                if (activeFile.markModified) {
+                  activeFile.markModified();
+                }
+              } catch (markError) {
+                // markModified failed
+              }
+
+              // Use Acode's built-in save method if available
+              let saveSuccess = false;
+              try {
+                if (activeFile.save) {
+                  await activeFile.save();
+                  saveSuccess = true;
+                }
+              } catch (saveError) {
+                // activeFile.save failed
+              }
+
+              if (!saveSuccess) {
+                // Fallback to direct file write
+                await fs(activeFile.uri).writeFile(editor.getValue());
+              }
+
+              window.toast("✅ File updated and saved successfully!", 3000);
+
+              // FIX: Safe event triggering
+              try {
+                const editorMgr = window.editorManager;
+                if (editorMgr && editorMgr.onUpdate) {
+                  editorMgr.onUpdate();
+                }
+              } catch (updateError) {
+                // onUpdate failed
+              }
+
+            } catch (saveError) {
+              window.toast('Error saving file', 3000);
+              window.toast(`⚠️ Code updated but couldn't save: ${saveError.message}`, 4000);
+
+              // Suggest manual save
+              setTimeout(() => {
+                window.toast("💡 Try Ctrl+S to save manually", 3000);
+              }, 1000);
+            }
+          } else if (activeFile) {
+            // File exists but no URI (new file)
+            window.toast("✅ Code updated! Save file to persist changes.", 3000);
+          } else {
+            window.toast("⚠️ No active file found", 2000);
+          }
+        }
+      } else {
+        throw new Error("No response from AI");
       }
-    } else {
-      throw new Error("No response from AI");
-    }
-  } catch (error) {
-    window.toast('Error in processAiEdit', 3000);
-    window.toast(`Error: ${error.message}`, 3000);
-  } finally {
-    // FIX: Safe cleanup
-    try {
-      if (loadingToast && loadingToast.hide) {
-        loadingToast.hide();
+    } catch (error) {
+      window.toast('Error in processAiEdit', 3000);
+      window.toast(`Error: ${error.message}`, 3000);
+    } finally {
+      // FIX: Safe cleanup
+      try {
+        if (loadingToast && loadingToast.hide) {
+          loadingToast.hide();
+        }
+      } catch (hideError) {
+        // Failed to hide loading toast
       }
-    } catch (hideError) {
-      // Failed to hide loading toast
     }
   }
-}
 
   async showEditDiff(originalCode, newCode, filename) {
     // Generate diff HTML
@@ -3935,59 +4006,59 @@ ${currentContent}
   }
 
   async handleSelectionAction(action, selectedText) {
-  const activeFile = editorManager.activeFile;
+    const activeFile = editorManager.activeFile;
 
-  switch (action) {
-    case "Explain Code":
-      await this.explainCodeWithChat(selectedText, activeFile);
-      break;
-    case "Rewrite":
-      await this.rewriteCodeWithChat(selectedText);
-      break;
-    case "Generate Code":
-      await this.showGenerateCodePopup();
-      break;
-    case "Optimize Function":
-      await this.optimizeFunctionWithChat(selectedText);
-      break;
-    case "Add Comments":
-      await this.addCommentsWithChat(selectedText);
-      break;
-    case "Generate Docs":
-      await this.generateDocsWithChat(selectedText);
-      break;
-    case "Edit with AI":
-      this.showAiEditPopup();
-      break;
+    switch (action) {
+      case "Explain Code":
+        await this.explainCodeWithChat(selectedText, activeFile);
+        break;
+      case "Rewrite":
+        await this.rewriteCodeWithChat(selectedText);
+        break;
+      case "Generate Code":
+        await this.showGenerateCodePopup();
+        break;
+      case "Optimize Function":
+        await this.optimizeFunctionWithChat(selectedText);
+        break;
+      case "Add Comments":
+        await this.addCommentsWithChat(selectedText);
+        break;
+      case "Generate Docs":
+        await this.generateDocsWithChat(selectedText);
+        break;
+      case "Edit with AI":
+        this.showAiEditPopup();
+        break;
+    }
   }
-}
 
   async explainCodeWithChat(selectedText, activeFile) {
-  try {
-    // Enhanced chat opening with comprehensive null safety
-    if (!this.$page || !this.$page.isVisible) {
-      await this.run();
-    }
+    try {
+      // Enhanced chat opening with comprehensive null safety
+      if (!this.$page || !this.$page.isVisible) {
+        await this.run();
+      }
 
-    // Additional null safety checks
-    if (!editorManager) {
-      window.toast('⚠️ Editor not available', 3000);
-      return;
-    }
+      // Additional null safety checks
+      if (!editorManager) {
+        window.toast('⚠️ Editor not available', 3000);
+        return;
+      }
 
-    // Enhanced null safety for file context
-    const fileName = activeFile && activeFile.name ? activeFile.name : 'Unknown';
-    const fileExtension = fileName !== 'Unknown' ? fileName.split('.').pop() || 'txt' : 'txt';
+      // Enhanced null safety for file context
+      const fileName = activeFile && activeFile.name ? activeFile.name : 'Unknown';
+      const fileExtension = fileName !== 'Unknown' ? fileName.split('.').pop() || 'txt' : 'txt';
 
-    const systemPrompt = `You are a professional code explainer. Focus on the selected code provided and explain it clearly and comprehensively.`;
+      const systemPrompt = `You are a professional code explainer. Focus on the selected code provided and explain it clearly and comprehensively.`;
 
-    // Get comprehensive file context
-    const filePath = activeFile && activeFile.uri ? activeFile.uri : fileName;
-    const fileDirectory = activeFile && activeFile.location ? activeFile.location : (filePath ? filePath.split('/').slice(0, -1).join('/') : 'Unknown');
-    const projectContext = fileDirectory !== 'Unknown' ? fileDirectory.split('/').pop() : 'Current Project';
+      // Get comprehensive file context
+      const filePath = activeFile && activeFile.uri ? activeFile.uri : fileName;
+      const fileDirectory = activeFile && activeFile.location ? activeFile.location : (filePath ? filePath.split('/').slice(0, -1).join('/') : 'Unknown');
+      const projectContext = fileDirectory !== 'Unknown' ? fileDirectory.split('/').pop() : 'Current Project';
 
-    // Enhanced prompt with better structure and context
-    const userPrompt = `CODE EXPLANATION REQUEST
+      // Enhanced prompt with better structure and context
+      const userPrompt = `CODE EXPLANATION REQUEST
 
 **FILE CONTEXT:**
 • File: ${fileName}
@@ -4015,123 +4086,123 @@ Please provide a comprehensive explanation covering:
 
 Focus specifically on the selected code while considering its context within the file.`;
 
-    this.appendUserQuery(userPrompt);
-    this.scrollToBottom();
-    this.appendGptResponse("");
-    this.loader();
-    await this.getCliResponse(systemPrompt + "\n\n" + userPrompt);
-  } catch (error) {
-    window.toast('Error in explainCodeWithChat', 3000);
-    window.toast(`Error explaining code: ${error.message}`, 3000);
+      this.appendUserQuery(userPrompt);
+      this.scrollToBottom();
+      this.appendGptResponse("");
+      this.loader();
+      await this.getCliResponse(systemPrompt + "\n\n" + userPrompt);
+    } catch (error) {
+      window.toast('Error in explainCodeWithChat', 3000);
+      window.toast(`Error explaining code: ${error.message}`, 3000);
+    }
   }
-}
 
   async showGenerateCodePopup() {
-  const popup = tag("div", {
-    className: "ai-edit-popup"
-  });
+    const popup = tag("div", {
+      className: "ai-edit-popup"
+    });
 
-  const header = tag("div", {
-    className: "ai-edit-popup-header"
-  });
+    const header = tag("div", {
+      className: "ai-edit-popup-header"
+    });
 
-  const title = tag("div", {
-    className: "ai-edit-popup-title",
-    textContent: "Generate Code"
-  });
+    const title = tag("div", {
+      className: "ai-edit-popup-title",
+      textContent: "Generate Code"
+    });
 
-  const closeBtn = tag("button", {
-    className: "ai-edit-popup-close",
-    innerHTML: "X"
-  });
+    const closeBtn = tag("button", {
+      className: "ai-edit-popup-close",
+      innerHTML: "X"
+    });
 
-  header.append(title, closeBtn);
+    header.append(title, closeBtn);
 
-  const body = tag("div", {
-    className: "ai-edit-popup-body"
-  });
+    const body = tag("div", {
+      className: "ai-edit-popup-body"
+    });
 
-  const promptArea = tag("textarea", {
-    className: "ai-edit-prompt",
-    placeholder: "Describe what code you want to generate...\nExample: 'Create a function to validate email addresses'"
-  });
+    const promptArea = tag("textarea", {
+      className: "ai-edit-prompt",
+      placeholder: "Describe what code you want to generate...\nExample: 'Create a function to validate email addresses'"
+    });
 
-  const actions = tag("div", {
-    className: "ai-edit-actions"
-  });
+    const actions = tag("div", {
+      className: "ai-edit-actions"
+    });
 
-  const cancelBtn = tag("button", {
-    className: "ai-edit-btn secondary",
-    textContent: "Cancel"
-  });
+    const cancelBtn = tag("button", {
+      className: "ai-edit-btn secondary",
+      textContent: "Cancel"
+    });
 
-  const generateBtn = tag("button", {
-    className: "ai-edit-btn primary",
-    textContent: "Generate Code"
-  });
+    const generateBtn = tag("button", {
+      className: "ai-edit-btn primary",
+      textContent: "Generate Code"
+    });
 
-  actions.append(cancelBtn, generateBtn);
-  body.append(promptArea, actions);
-  popup.append(header, body);
+    actions.append(cancelBtn, generateBtn);
+    body.append(promptArea, actions);
+    popup.append(header, body);
 
-  // Event listeners
-  closeBtn.onclick = cancelBtn.onclick = () => {
-    if (document.body.contains(popup)) {
-      document.body.removeChild(popup);
-    }
-  };
-
-  generateBtn.onclick = async () => {
-    const userPrompt = promptArea.value.trim();
-    if (userPrompt) {
+    // Event listeners
+    closeBtn.onclick = cancelBtn.onclick = () => {
       if (document.body.contains(popup)) {
         document.body.removeChild(popup);
       }
-      await this.processCodeGeneration(userPrompt);
-    } else {
-      window.toast("Please enter a description", 3000);
-    }
-  };
+    };
 
-  // Handle Enter key
-  promptArea.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
-      generateBtn.click();
-    }
-  });
+    generateBtn.onclick = async () => {
+      const userPrompt = promptArea.value.trim();
+      if (userPrompt) {
+        if (document.body.contains(popup)) {
+          document.body.removeChild(popup);
+        }
+        await this.processCodeGeneration(userPrompt);
+      } else {
+        window.toast("Please enter a description", 3000);
+      }
+    };
 
-  document.body.appendChild(popup);
-  promptArea.focus();
-}
+    // Handle Enter key
+    promptArea.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+        generateBtn.click();
+      }
+    });
+
+    document.body.appendChild(popup);
+    promptArea.focus();
+  }
 
   async processCodeGeneration(userPrompt) {
-  // Input validation
-  if (!userPrompt || userPrompt.trim().length === 0) {
-    window.toast("Please provide a description for code generation", 3000);
-    return;
-  }
+    // Input validation
+    if (!userPrompt || userPrompt.trim().length === 0) {
+      window.toast("Please provide a description for code generation", 3000);
+      return;
+    }
 
-  if (userPrompt.length > 1000) {
-    window.toast("Description too long. Please keep it under 1000 characters", 3000);
-    return;
-  }
+    if (userPrompt.length > 1000) {
+      window.toast("Description too long. Please keep it under 1000 characters", 3000);
+      return;
+    }
 
-  const activeFile = editorManager.activeFile;
-  let fileContent = "";
-  let fileExtension = "js"; // default extension
+    const activeFile = editorManager.activeFile;
+    let fileContent = "";
+    let fileExtension = "js"; // default extension
 
-  if (activeFile) {
-    fileContent = editor.getValue();
-    fileExtension = activeFile.name.split('.').pop() || "js";
-  }
+    if (activeFile) {
+      fileContent = editor.getValue();
+      fileExtension = activeFile.name.split('.').pop() || "js";
+    }
 
-  // Show loading
-  loader.showTitleLoader();
-  window.toast("Generating code...", 3000);
+    // Show loading
+    loader.showTitleLoader();
+    window.toast("Generating code...", 3000);
 
-  try {
-    // Improved prompt for better code generation
-    const systemPrompt = `You are a professional code generator. Generate clean, efficient, and well-documented code based on user requirements.
+    try {
+      // Improved prompt for better code generation
+      const systemPrompt = `You are a professional code generator. Generate clean, efficient, and well-documented code based on user requirements.
 
 **Instructions:**
 1. Generate ONLY the requested code - no explanations
@@ -4140,89 +4211,88 @@ Focus specifically on the selected code while considering its context within the
 4. Follow best practices and conventions
 5. Make code production-ready with error handling`;
 
-    const aiPrompt = `${systemPrompt}
+      const aiPrompt = `${systemPrompt}
 
 **File Type:** ${fileExtension}
 **User Request:** ${userPrompt}
 
 Generate the ${fileExtension} code:`;
 
-// Try to get AI response with fallback
-let response;
-try {
-  response = await this.appendGptResponse(aiPrompt);
-} catch (error) {
-  window.toast('Primary AI service failed', 4000);
-  // Fallback: try with basic model if advanced fails
-  try {
-    response = await this.sendAiQuery(aiPrompt);
-  } catch (fallbackError) {
-    window.toast('Fallback AI service also failed', 4000);
-    response = null;
-  }
-}
-
-    // Extract code from response
-    const codeMatch = response.match(/```[\w]*\n([\s\S]*?)\n```/);
-    let generatedCode = codeMatch ? codeMatch[1].trim() : response.trim();
-
-    // Clean up common AI response artifacts
-    generatedCode = generatedCode
-      .replace(/^Here'?s the code:?\s*/i, '')
-      .replace(/^The code is:?\s*/i, '')
-      .replace(/^```[\w]*\n?/g, '')
-      .replace(/\n?```$/g, '')
-      .trim();
-
-    if (!generatedCode) {
-      throw new Error("No valid code generated");
-    }
-
-    // Insert at cursor position
-    const cursor = editor.getCursorPosition();
-    editor.session.insert(cursor, generatedCode + '\n');
-
-    // Auto-save if file exists
-    if (activeFile && activeFile.uri) {
+      // Try to get AI response with fallback
+      let response;
       try {
-        await activeFile.save();
-        window.toast("Code generated and saved successfully!", 3000);
-      } catch (saveError) {
-        window.toast("Code generated! Please save manually.", 3000);
-      }
-    } else {
-      window.toast("Code generated successfully!", 3000);
-    }
-
-    // Ask if user wants to run the code
-    setTimeout(async () => {
-      const shouldRun = await select("Run the generated code?", ["Yes", "No", "Cancel"]);
-      if (shouldRun === "Yes") {
-        this.runCurrentFile(); // Removed await since we're not checking the result
-      }
-    }, 1000);
-
-  } catch (error) {
-    window.toast('Error generating code', 3000);
-    window.toast(`Error: ${error.message}`, 4000);
-
-    // Show fallback options
-    setTimeout(async () => {
-      const fallback = await select("Code generation failed. Try:", ["Retry", "Chat Mode", "Cancel"]);
-      if (fallback === "Retry") {
-        this.processCodeGeneration(userPrompt); // Removed await since we're not checking the result
-      } else if (fallback === "Chat Mode") {
-        if (!this.$page.isVisible) {
-          await this.run();
+        response = await this.appendGptResponse(aiPrompt);
+      } catch (error) {
+        window.toast('Primary AI service failed', 4000);
+        // Fallback: try with basic model if advanced fails
+        try {
+          response = await this.sendAiQuery(aiPrompt);
+        } catch (fallbackError) {
+          window.toast('Fallback AI service also failed', 4000);
+          response = null;
         }
-        this.appendUserQuery(`Generate code: ${userPrompt}`);
-        this.sendAiQuery(userPrompt); // Removed await since we're not checking the result
       }
-    }, 500);
-  } finally {
-    loader.removeTitleLoader();
+
+      // Extract code from response
+      const codeMatch = response.match(/```[\w]*\n([\s\S]*?)\n```/);
+      let generatedCode = codeMatch ? codeMatch[1].trim() : response.trim();
+
+      // Clean up common AI response artifacts
+      generatedCode = generatedCode
+        .replace(/^Here'?s the code:?\s*/i, '')
+        .replace(/^The code is:?\s*/i, '')
+        .replace(/^```[\w]*\n?/g, '')
+        .replace(/\n?```$/g, '')
+        .trim();
+
+      if (!generatedCode) {
+        throw new Error("No valid code generated");
+      }
+
+      // Insert at cursor position
+      const cursor = editor.getCursorPosition();
+      editor.session.insert(cursor, generatedCode + '\n');
+
+      // Auto-save if file exists
+      if (activeFile && activeFile.uri) {
+        try {
+          await activeFile.save();
+          window.toast("Code generated and saved successfully!", 3000);
+        } catch (saveError) {
+          window.toast("Code generated! Please save manually.", 3000);
+        }
+      } else {
+        window.toast("Code generated successfully!", 3000);
+      }
+
+      // Ask if user wants to run the code
+      setTimeout(async () => {
+        const shouldRun = await select("Run the generated code?", ["Yes", "No", "Cancel"]);
+        if (shouldRun === "Yes") {
+          this.runCurrentFile(); // Removed await since we're not checking the result
+        }
+      }, 1000);
+
+    } catch (error) {
+      window.toast(`Code generation failed: ${error.message}`, 4000);
+
+      // Show fallback options
+      setTimeout(async () => {
+        const fallback = await select("Code generation failed. Try:", ["Retry", "Chat Mode", "Cancel"]);
+        if (fallback === "Retry") {
+          this.processCodeGeneration(userPrompt); // Removed await since we're not checking the result
+        } else if (fallback === "Chat Mode") {
+          if (!this.$page.isVisible) {
+            await this.run();
+          }
+          this.appendUserQuery(`Generate code: ${userPrompt}`);
+          this.sendAiQuery(userPrompt); // Removed await since we're not checking the result
+        }
+      }, 500);
+    } finally {
+      loader.removeTitleLoader();
+    }
   }
-}
 
   async runCurrentFile() {
     /*
@@ -4563,17 +4633,17 @@ try {
   }
 
   async optimizeFunctionWithChat(selectedText) {
-  try {
-    if (!this.$page || !this.$page.isVisible) {
-      await this.run();
-    }
+    try {
+      if (!this.$page || !this.$page.isVisible) {
+        await this.run();
+      }
 
-  const activeFile = editorManager.activeFile;
-  const fileExtension = activeFile ? activeFile.name.split('.').pop() : 'code';
+      const activeFile = editorManager.activeFile;
+      const fileExtension = activeFile ? activeFile.name.split('.').pop() : 'code';
 
-  const systemPrompt = `You are a code optimization expert. Focus on the selected code and provide optimizations for better performance, readability, and maintainability.`;
+      const systemPrompt = `You are a code optimization expert. Focus on the selected code and provide optimizations for better performance, readability, and maintainability.`;
 
-  const userPrompt = `Please optimize this ${fileExtension} code:
+      const userPrompt = `Please optimize this ${fileExtension} code:
 
 **Selected Code:**
 \`\`\`${fileExtension}
@@ -4589,29 +4659,29 @@ Optimization requirements:
 
 Provide the optimized code with detailed explanations:`;
 
-    this.appendUserQuery(userPrompt);
-    this.scrollToBottom();
-    this.appendGptResponse("");
-    this.loader();
-    await this.getCliResponse(systemPrompt + "\n\n" + userPrompt);
-  } catch (error) {
-    window.toast('Error in optimizeFunctionWithChat', 3000);
-    window.toast(`Error optimizing function: ${error.message}`, 3000);
+      this.appendUserQuery(userPrompt);
+      this.scrollToBottom();
+      this.appendGptResponse("");
+      this.loader();
+      await this.getCliResponse(systemPrompt + "\n\n" + userPrompt);
+    } catch (error) {
+      window.toast('Error in optimizeFunctionWithChat', 3000);
+      window.toast(`Error optimizing function: ${error.message}`, 3000);
+    }
   }
-}
 
   async addCommentsWithChat(selectedText) {
-  try {
-    if (!this.$page || !this.$page.isVisible) {
-      await this.run();
-    }
+    try {
+      if (!this.$page || !this.$page.isVisible) {
+        await this.run();
+      }
 
-  const activeFile = editorManager.activeFile;
-  const fileExtension = activeFile ? activeFile.name.split('.').pop() : 'code';
+      const activeFile = editorManager.activeFile;
+      const fileExtension = activeFile ? activeFile.name.split('.').pop() : 'code';
 
-  const systemPrompt = `You are a documentation expert. Add comprehensive, professional comments to the selected code only.`;
+      const systemPrompt = `You are a documentation expert. Add comprehensive, professional comments to the selected code only.`;
 
-  const userPrompt = `Please add detailed comments to this ${fileExtension} code:
+      const userPrompt = `Please add detailed comments to this ${fileExtension} code:
 
 **Selected Code:**
 \`\`\`${fileExtension}
@@ -4628,44 +4698,44 @@ Comment requirements:
 
 Return the code with appropriate comments added:`;
 
-    this.appendUserQuery(userPrompt);
-    this.scrollToBottom();
-    this.appendGptResponse("");
-    this.loader();
-    await this.getCliResponse(systemPrompt + "\n\n" + userPrompt);
-  } catch (error) {
-    window.toast('Error in addCommentsWithChat', 3000);
-    window.toast(`Error adding comments: ${error.message}`, 3000);
+      this.appendUserQuery(userPrompt);
+      this.scrollToBottom();
+      this.appendGptResponse("");
+      this.loader();
+      await this.getCliResponse(systemPrompt + "\n\n" + userPrompt);
+    } catch (error) {
+      window.toast('Error in addCommentsWithChat', 3000);
+      window.toast(`Error adding comments: ${error.message}`, 3000);
+    }
   }
-}
 
   async generateDocsWithChat(selectedText) {
-  if (!this.$page.isVisible) {
-    await this.run();
-  }
+    if (!this.$page.isVisible) {
+      await this.run();
+    }
 
-  const activeFile = editorManager.activeFile;
-  const fileName = activeFile ? activeFile.name : 'Unknown';
-  const fileExtension = fileName.split('.').pop();
+    const activeFile = editorManager.activeFile;
+    const fileName = activeFile ? activeFile.name : 'Unknown';
+    const fileExtension = fileName.split('.').pop();
 
-  if (selectedText) {
-    // Generate docs for selection only - avoid full file content
-    const systemPrompt = `Generate docs for selected code only.`;
+    if (selectedText) {
+      // Generate docs for selection only - avoid full file content
+      const systemPrompt = `Generate docs for selected code only.`;
 
-    const userPrompt = `Document ${fileExtension} code:
+      const userPrompt = `Document ${fileExtension} code:
 \`\`\`
 ${selectedText}
 \`\`\`
 Include: JSDoc, params, returns, examples.`;
 
-    this.appendUserQuery(userPrompt);
-    this.appendGptResponse("");
-    this.loader();
-    await this.getCliResponse(systemPrompt + "\n\n" + userPrompt);
-  } else {
-    window.toast("Please select code to generate documentation", 3000);
+      this.appendUserQuery(userPrompt);
+      this.appendGptResponse("");
+      this.loader();
+      await this.getCliResponse(systemPrompt + "\n\n" + userPrompt);
+    } else {
+      window.toast("Please select code to generate documentation", 3000);
+    }
   }
-}
 
   async sendAiQuery(prompt) {
     // Open the AI assistant if not already open
@@ -4681,49 +4751,49 @@ Include: JSDoc, params, returns, examples.`;
   }
 
   initializeMarkdown() {
-  if (!this.$mdIt && window.markdownit) {
-    this.$mdIt = window.markdownit({
-      html: false,
-      xhtmlOut: false,
-      breaks: true,
-      linkify: true,
-      typographer: true,
-      quotes: '""\'\'',
-      highlight: function (str, lang) {
-        const copyBtn = document.createElement("button");
-        copyBtn.classList.add("copy-button");
-        copyBtn.innerHTML = copyIconSvg;
-        copyBtn.setAttribute("data-str", str);
-        const codesArea = `<pre class="hljs codesArea"><code>${window.hljs ? window.hljs.highlightAuto(str).value : str}</code></pre>`;
-        const codeBlock = `<div class="codeBlock">${copyBtn.outerHTML}${codesArea}</div>`;
-        return codeBlock;
-      },
-    });
+    if (!this.$mdIt && window.markdownit) {
+      this.$mdIt = window.markdownit({
+        html: false,
+        xhtmlOut: false,
+        breaks: true,
+        linkify: true,
+        typographer: true,
+        quotes: '""\'\'',
+        highlight: function (str, lang) {
+          const copyBtn = document.createElement("button");
+          copyBtn.classList.add("copy-button");
+          copyBtn.innerHTML = copyIconSvg;
+          copyBtn.setAttribute("data-str", str);
+          const codesArea = `<pre class="hljs codesArea"><code>${window.hljs ? window.hljs.highlightAuto(str).value : str}</code></pre>`;
+          const codeBlock = `<div class="codeBlock">${copyBtn.outerHTML}${codesArea}</div>`;
+          return codeBlock;
+        },
+      });
+    }
+    return this.$mdIt;
   }
-  return this.$mdIt;
-}
 
   async rewriteCodeWithChat(selectedText) {
-  if (!this.$page.isVisible) {
-    await this.run();
-  }
+    if (!this.$page.isVisible) {
+      await this.run();
+    }
 
-  const activeFile = editorManager.activeFile;
-  const fileExtension = activeFile ? activeFile.name.split('.').pop() : 'code';
+    const activeFile = editorManager.activeFile;
+    const fileExtension = activeFile ? activeFile.name.split('.').pop() : 'code';
 
-  const systemPrompt = `Rewrite code: cleaner, efficient, same functionality.`;
+    const systemPrompt = `Rewrite code: cleaner, efficient, same functionality.`;
 
-  const userPrompt = `Rewrite ${fileExtension} code:
+    const userPrompt = `Rewrite ${fileExtension} code:
 \`\`\`
 ${selectedText}
 \`\`\`
 Make cleaner, more efficient. Same functionality.`;
 
-  this.appendUserQuery(userPrompt);
-  this.appendGptResponse("");
-  this.loader();
-  await this.getCliResponse(systemPrompt + "\n\n" + userPrompt);
-}
+    this.appendUserQuery(userPrompt);
+    this.appendGptResponse("");
+    this.loader();
+    await this.getCliResponse(systemPrompt + "\n\n" + userPrompt);
+  }
 
   // Safe UTF-8 encoding function to replace btoa
   safeBase64Encode(str) {
@@ -4811,54 +4881,54 @@ Make cleaner, more efficient. Same functionality.`;
   }
 
   setupRealTimeAI() {
-  // Toggle real-time AI command
-  editor.commands.addCommand({
-    name: "toggle_realtime_ai",
-    description: "Toggle Real-time Renz Ai",
-    bindKey: { win: "Ctrl-Alt-A", mac: "Cmd-Alt-A" },
-    exec: () => this.toggleRealTimeAI()
-  });
+    // Toggle real-time AI command
+    editor.commands.addCommand({
+      name: "toggle_realtime_ai",
+      description: "Toggle Real-time Renz Ai",
+      bindKey: { win: "Ctrl-Alt-A", mac: "Cmd-Alt-A" },
+      exec: () => this.toggleRealTimeAI()
+    });
 
-  // Setup editor change listener
-  editor.on('change', (e) => {
-    if (this.realTimeEnabled) {
-      this.handleEditorChange(e);
-    }
-  });
+    // Setup editor change listener
+    editor.on('change', (e) => {
+      if (this.realTimeEnabled) {
+        this.handleEditorChange(e);
+      }
+    });
 
-  // Setup cursor change listener
-  editor.on('changeSelection', (e) => {
-    if (this.realTimeEnabled) {
-      this.handleCursorChange(e);
-    }
-  });
+    // Setup cursor change listener
+    editor.on('changeSelection', (e) => {
+      if (this.realTimeEnabled) {
+        this.handleCursorChange(e);
+      }
+    });
 
-  // Create suggestion widget
-  this.createSuggestionWidget();
-}
+    // Create suggestion widget
+    this.createSuggestionWidget();
+  }
 
   toggleRealTimeAI() {
-  this.realTimeEnabled = !this.realTimeEnabled;
+    this.realTimeEnabled = !this.realTimeEnabled;
 
-  if (this.realTimeEnabled) {
-    window.toast("Real-time Renz Ai enabled âœ¨", 3000);
-    this.showRealTimeStatus(true);
-    this.analyzeCurrentFile();
-  } else {
-    window.toast("Real-time Renz Ai disabled", 2000);
-    this.showRealTimeStatus(false);
-    this.clearSuggestions();
-    this.clearErrorMarkers();
+    if (this.realTimeEnabled) {
+      window.toast("Real-time Renz Ai enabled âœ¨", 3000);
+      this.showRealTimeStatus(true);
+      this.analyzeCurrentFile();
+    } else {
+      window.toast("Real-time Renz Ai disabled", 2000);
+      this.showRealTimeStatus(false);
+      this.clearSuggestions();
+      this.clearErrorMarkers();
+    }
   }
-}
 
-showRealTimeStatus(enabled) {
-  // Update UI to show real-time status
-  const statusElement = document.querySelector('.realtime-ai-status') || 
-    tag("div", { className: "realtime-ai-status" });
+  showRealTimeStatus(enabled) {
+    // Update UI to show real-time status
+    const statusElement = document.querySelector('.realtime-ai-status') ||
+      tag("div", { className: "realtime-ai-status" });
 
-  statusElement.textContent = enabled ? "😍AI Active" : "";
-  statusElement.style.cssText = `
+    statusElement.textContent = enabled ? "😍AI Active" : "";
+    statusElement.style.cssText = `
   position: fixed;
   top: 10px;
   right: 110px;
@@ -4872,80 +4942,80 @@ showRealTimeStatus(enabled) {
   transition: all 0.3s ease;
 `;
 
-  if (enabled && !document.body.contains(statusElement)) {
-    document.body.appendChild(statusElement);
-  } else if (!enabled && document.body.contains(statusElement)) {
-    document.body.removeChild(statusElement);
-  }
-}
-
-handleEditorChange(e) {
-  // Debounce untuk menghindari terlalu banyak request
-  if (this.realTimeDebounceTimer) {
-    clearTimeout(this.realTimeDebounceTimer);
+    if (enabled && !document.body.contains(statusElement)) {
+      document.body.appendChild(statusElement);
+    } else if (!enabled && document.body.contains(statusElement)) {
+      document.body.removeChild(statusElement);
+    }
   }
 
-  this.realTimeDebounceTimer = setTimeout(() => {
-    this.analyzeCurrentCode();
-  }, this.realTimeDelay);
-}
-
-handleCursorChange(e) {
-  if (this.realTimeEnabled) {
-    this.showContextualSuggestions();
-  }
-}
-
-async analyzeCurrentCode() {
-  try {
-    const activeFile = editorManager.activeFile;
-    if (!activeFile) return;
-
-    const content = editor.getValue();
-    const cursorPos = editor.getCursorPosition();
-    const currentLine = editor.session.getLine(cursorPos.row);
-
-    // Skip jika konten sama dengan analisis terakhir atau perubahan terlalu kecil
-    const contentDiff = this.getContentDifference(content, this.lastAnalyzedContent);
-    if (content === this.lastAnalyzedContent || contentDiff < 10) return;
-    this.lastAnalyzedContent = content;
-
-    // Check cache first
-    const cacheKey = this.getRealTimeCacheKey(content, cursorPos);
-    const cached = this.realTimeAnalysisCache.get(cacheKey);
-    if (cached && (Date.now() - cached.timestamp) < 300000) { // 5 menit cache for better efficiency
-      this.applySuggestions(cached.suggestions);
-      return;
+  handleEditorChange(e) {
+    // Debounce untuk menghindari terlalu banyak request
+    if (this.realTimeDebounceTimer) {
+      clearTimeout(this.realTimeDebounceTimer);
     }
 
-    // Analyze dengan AI
-    const analysis = await this.performRealTimeAnalysis(content, currentLine, cursorPos, activeFile);
-
-    // Cache hasil
-    this.realTimeAnalysisCache.set(cacheKey, {
-      suggestions: analysis,
-      timestamp: Date.now()
-    });
-
-    this.applySuggestions(analysis);
-
-  } catch (error) {
-    window.toast('Real-time analysis error', 3000);
+    this.realTimeDebounceTimer = setTimeout(() => {
+      this.analyzeCurrentCode();
+    }, this.realTimeDelay);
   }
-}
 
-async performRealTimeAnalysis(content, currentLine, cursorPos, activeFile) {
-  const fileExtension = activeFile.name.split('.').pop();
-  const filePath = activeFile.uri || activeFile.name;
-  const currentDir = activeFile.location || (activeFile.uri ? activeFile.uri.split('/').slice(0, -1).join('/') : '');
+  handleCursorChange(e) {
+    if (this.realTimeEnabled) {
+      this.showContextualSuggestions();
+    }
+  }
 
-  // Optimized prompt for token efficiency - focus only on essential analysis
-  const contextLines = content.split('\n');
-  const startLine = Math.max(0, cursorPos.row - 5);
-  const endLine = Math.min(contextLines.length, cursorPos.row + 5);
-  const contextContent = contextLines.slice(startLine, endLine).join('\n');
+  async analyzeCurrentCode() {
+    try {
+      const activeFile = editorManager.activeFile;
+      if (!activeFile) return;
 
-  const prompt = `CODE ANALYSIS ${fileExtension} L${cursorPos.row + 1}
+      const content = editor.getValue();
+      const cursorPos = editor.getCursorPosition();
+      const currentLine = editor.session.getLine(cursorPos.row);
+
+      // Skip jika konten sama dengan analisis terakhir atau perubahan terlalu kecil
+      const contentDiff = this.getContentDifference(content, this.lastAnalyzedContent);
+      if (content === this.lastAnalyzedContent || contentDiff < 10) return;
+      this.lastAnalyzedContent = content;
+
+      // Check cache first
+      const cacheKey = this.getRealTimeCacheKey(content, cursorPos);
+      const cached = this.realTimeAnalysisCache.get(cacheKey);
+      if (cached && (Date.now() - cached.timestamp) < 300000) { // 5 menit cache for better efficiency
+        this.applySuggestions(cached.suggestions);
+        return;
+      }
+
+      // Analyze dengan AI
+      const analysis = await this.performRealTimeAnalysis(content, currentLine, cursorPos, activeFile);
+
+      // Cache hasil
+      this.realTimeAnalysisCache.set(cacheKey, {
+        suggestions: analysis,
+        timestamp: Date.now()
+      });
+
+      this.applySuggestions(analysis);
+
+    } catch (error) {
+      window.toast('Real-time analysis error', 3000);
+    }
+  }
+
+  async performRealTimeAnalysis(content, currentLine, cursorPos, activeFile) {
+    const fileExtension = activeFile.name.split('.').pop();
+    const filePath = activeFile.uri || activeFile.name;
+    const currentDir = activeFile.location || (activeFile.uri ? activeFile.uri.split('/').slice(0, -1).join('/') : '');
+
+    // Optimized prompt for token efficiency - focus only on essential analysis
+    const contextLines = content.split('\n');
+    const startLine = Math.max(0, cursorPos.row - 5);
+    const endLine = Math.min(contextLines.length, cursorPos.row + 5);
+    const contextContent = contextLines.slice(startLine, endLine).join('\n');
+
+    const prompt = `CODE ANALYSIS ${fileExtension} L${cursorPos.row + 1}
 
 CONTEXT:
 \`\`\`
@@ -4961,88 +5031,88 @@ RESPONSE JSON:
 
 Focus cursor area only.`;
 
-  try {
-    const response = await this.appendGptResponse(prompt);
+    try {
+      const response = await this.appendGptResponse(prompt);
 
-    // Clean the response - remove markdown wrappers if present
-    let cleanResponse = response.trim();
-    const jsonMatch = cleanResponse.match(/```(?:json)?\s*(\{[\s\S]*?\})\s*```/);
-    if (jsonMatch) {
-      cleanResponse = jsonMatch[1];
-    } else if (cleanResponse.startsWith('```')) {
-      cleanResponse = cleanResponse.replace(/^```[\w]*\n?/, '').replace(/\n?```$/, '');
+      // Clean the response - remove markdown wrappers if present
+      let cleanResponse = response.trim();
+      const jsonMatch = cleanResponse.match(/```(?:json)?\s*(\{[\s\S]*?\})\s*```/);
+      if (jsonMatch) {
+        cleanResponse = jsonMatch[1];
+      } else if (cleanResponse.startsWith('```')) {
+        cleanResponse = cleanResponse.replace(/^```[\w]*\n?/, '').replace(/\n?```$/, '');
+      }
+
+      return JSON.parse(cleanResponse);
+    } catch (error) {
+      // Handle AI analysis error silently and return empty result
+      return {
+        syntax_errors: [],
+        missing_imports: [],
+        code_suggestions: [],
+        auto_complete: [],
+        quick_fixes: []
+      };
+    }
+  }
+
+  applySuggestions(analysis) {
+    // Clear previous suggestions
+    this.clearSuggestions();
+    this.clearErrorMarkers();
+
+    // Apply syntax error markers
+    if (analysis.syntax_errors && analysis.syntax_errors.length > 0) {
+      this.showSyntaxErrors(analysis.syntax_errors);
     }
 
-    return JSON.parse(cleanResponse);
-  } catch (error) {
-    // Handle AI analysis error silently and return empty result
-    return {
-      syntax_errors: [],
-      missing_imports: [],
-      code_suggestions: [],
-      auto_complete: [],
-      quick_fixes: []
-    };
-  }
-}
+    // Show missing imports
+    if (analysis.missing_imports && analysis.missing_imports.length > 0) {
+      this.showMissingImports(analysis.missing_imports);
+    }
 
-applySuggestions(analysis) {
-  // Clear previous suggestions
-  this.clearSuggestions();
-  this.clearErrorMarkers();
+    // Show code suggestions
+    if (analysis.code_suggestions && analysis.code_suggestions.length > 0) {
+      this.showCodeSuggestions(analysis.code_suggestions);
+    }
 
-  // Apply syntax error markers
-  if (analysis.syntax_errors && analysis.syntax_errors.length > 0) {
-    this.showSyntaxErrors(analysis.syntax_errors);
+    // Show auto-complete
+    if (analysis.auto_complete && analysis.auto_complete.length > 0) {
+      this.showAutoComplete(analysis.auto_complete);
+    }
+
+    // Show quick fixes
+    if (analysis.quick_fixes && analysis.quick_fixes.length > 0) {
+      this.showQuickFixes(analysis.quick_fixes);
+    }
   }
 
-  // Show missing imports
-  if (analysis.missing_imports && analysis.missing_imports.length > 0) {
-    this.showMissingImports(analysis.missing_imports);
+  showSyntaxErrors(errors) {
+    errors.forEach(error => {
+      const marker = editor.session.addMarker(
+        new ace.Range(error.line - 1, 0, error.line - 1, 1),
+        error.severity === 'error' ? 'ace_error-marker' : 'ace_warning-marker',
+        'fullLine'
+      );
+
+      this.errorMarkers.push(marker);
+
+      // Add gutter decoration
+      editor.session.setAnnotations([{
+        row: error.line - 1,
+        column: 0,
+        text: error.message,
+        type: error.severity
+      }]);
+    });
   }
 
-  // Show code suggestions
-  if (analysis.code_suggestions && analysis.code_suggestions.length > 0) {
-    this.showCodeSuggestions(analysis.code_suggestions);
-  }
+  showMissingImports(imports) {
+    if (imports.length === 0) return;
 
-  // Show auto-complete
-  if (analysis.auto_complete && analysis.auto_complete.length > 0) {
-    this.showAutoComplete(analysis.auto_complete);
-  }
-
-  // Show quick fixes
-  if (analysis.quick_fixes && analysis.quick_fixes.length > 0) {
-    this.showQuickFixes(analysis.quick_fixes);
-  }
-}
-
-showSyntaxErrors(errors) {
-  errors.forEach(error => {
-    const marker = editor.session.addMarker(
-      new ace.Range(error.line - 1, 0, error.line - 1, 1),
-      error.severity === 'error' ? 'ace_error-marker' : 'ace_warning-marker',
-      'fullLine'
-    );
-
-    this.errorMarkers.push(marker);
-
-    // Add gutter decoration
-    editor.session.setAnnotations([{
-      row: error.line - 1,
-      column: 0,
-      text: error.message,
-      type: error.severity
-    }]);
-  });
-}
-
-showMissingImports(imports) {
-  if (imports.length === 0) return;
-
-  const notification = tag("div", {
-    className: "ai-import-suggestion",
-    style: `
+    const notification = tag("div", {
+      className: "ai-import-suggestion",
+      style: `
       position: fixed;
       top: 50px;
       right: 10px;
@@ -5054,31 +5124,31 @@ showMissingImports(imports) {
       z-index: 1000;
       box-shadow: 0 2px 10px rgba(0,0,0,0.2);
     `
-  });
-
-  const title = tag("div", {
-    textContent: "Missing Imports:",
-    style: "font-weight: bold; margin-bottom: 5px;"
-  });
-
-  const importList = tag("div");
-  imports.forEach(imp => {
-    const importItem = tag("div", {
-      textContent: imp,
-      style: "cursor: pointer; padding: 2px 0; border-bottom: 1px solid rgba(255,255,255,0.3);"
     });
 
-    importItem.onclick = () => {
-      this.addImportToFile(imp);
-      document.body.removeChild(notification);
-    };
+    const title = tag("div", {
+      textContent: "Missing Imports:",
+      style: "font-weight: bold; margin-bottom: 5px;"
+    });
 
-    importList.appendChild(importItem);
-  });
+    const importList = tag("div");
+    imports.forEach(imp => {
+      const importItem = tag("div", {
+        textContent: imp,
+        style: "cursor: pointer; padding: 2px 0; border-bottom: 1px solid rgba(255,255,255,0.3);"
+      });
 
-  const closeBtn = tag("button", {
-    textContent: "X",
-    style: `
+      importItem.onclick = () => {
+        this.addImportToFile(imp);
+        document.body.removeChild(notification);
+      };
+
+      importList.appendChild(importItem);
+    });
+
+    const closeBtn = tag("button", {
+      textContent: "X",
+      style: `
       position: absolute;
       top: 5px;
       right: 5px;
@@ -5088,757 +5158,755 @@ showMissingImports(imports) {
       cursor: pointer;
       font-size: 16px;
     `
-  });
+    });
 
-  closeBtn.onclick = () => {
-    if (document.body.contains(notification)) {
-      document.body.removeChild(notification);
-    }
-  };
+    closeBtn.onclick = () => {
+      if (document.body.contains(notification)) {
+        document.body.removeChild(notification);
+      }
+    };
 
-  notification.append(title, importList, closeBtn);
-  document.body.appendChild(notification);
+    notification.append(title, importList, closeBtn);
+    document.body.appendChild(notification);
 
-  // Auto remove after 10 seconds
-  setTimeout(() => {
-    if (document.body.contains(notification)) {
-      document.body.removeChild(notification);
-    }
-  }, 10000);
-}
-
-addImportToFile(importStatement) {
-  const content = editor.getValue();
-  const lines = content.split('\n');
-
-  // Find the best position to insert import
-  let insertLine = 0;
-  for (let i = 0; i < lines.length; i++) {
-    if (lines[i].trim().startsWith('import ') || lines[i].trim().startsWith('const ') || lines[i].trim().startsWith('require(')) {
-      insertLine = i + 1;
-    } else if (lines[i].trim() === '') {
-      continue;
-    } else {
-      break;
-    }
+    // Auto remove after 10 seconds
+    setTimeout(() => {
+      if (document.body.contains(notification)) {
+        document.body.removeChild(notification);
+      }
+    }, 10000);
   }
 
-  // Insert import
-  editor.session.insert({row: insertLine, column: 0}, importStatement + '\n');
-  window.toast(`Added import: ${importStatement}`, 2000);
-}
+  addImportToFile(importStatement) {
+    const content = editor.getValue();
+    const lines = content.split('\n');
 
-showContextualSuggestions() {
-  const cursorPos = editor.getCursorPosition();
-  const screenPos = editor.renderer.textToScreenCoordinates(cursorPos.row, cursorPos.column);
+    // Find the best position to insert import
+    let insertLine = 0;
+    for (let i = 0; i < lines.length; i++) {
+      if (lines[i].trim().startsWith('import ') || lines[i].trim().startsWith('const ') || lines[i].trim().startsWith('require(')) {
+        insertLine = i + 1;
+      } else if (lines[i].trim() === '') {
+        continue;
+      } else {
+        break;
+      }
+    }
 
-  if (this.currentSuggestions.length > 0) {
-    this.suggestionWidget.innerHTML = '';
+    // Insert import
+    editor.session.insert({ row: insertLine, column: 0 }, importStatement + '\n');
+    window.toast(`Added import: ${importStatement}`, 2000);
+  }
 
-    this.currentSuggestions.forEach(suggestion => {
-      const suggestionItem = tag("div", {
-        textContent: suggestion.text || suggestion,
-        style: `
+  showContextualSuggestions() {
+    const cursorPos = editor.getCursorPosition();
+    const screenPos = editor.renderer.textToScreenCoordinates(cursorPos.row, cursorPos.column);
+
+    if (this.currentSuggestions.length > 0) {
+      this.suggestionWidget.innerHTML = '';
+
+      this.currentSuggestions.forEach(suggestion => {
+        const suggestionItem = tag("div", {
+          textContent: suggestion.text || suggestion,
+          style: `
           padding: 4px 8px;
           cursor: pointer;
           border-radius: 2px;
           margin: 2px 0;
         `,
-        className: "suggestion-item"
+          className: "suggestion-item"
+        });
+
+        suggestionItem.onmouseenter = () => {
+          suggestionItem.style.background = '#333';
+        };
+
+        suggestionItem.onmouseleave = () => {
+          suggestionItem.style.background = 'transparent';
+        };
+
+        suggestionItem.onclick = () => {
+          this.applySuggestion(suggestion);
+          this.hideSuggestionWidget();
+        };
+
+        this.suggestionWidget.appendChild(suggestionItem);
       });
 
-      suggestionItem.onmouseenter = () => {
-        suggestionItem.style.background = '#333';
-      };
+      // Position widget
+      this.suggestionWidget.style.left = screenPos.pageX + 'px';
+      this.suggestionWidget.style.top = (screenPos.pageY + 20) + 'px';
+      this.suggestionWidget.style.display = 'block';
 
-      suggestionItem.onmouseleave = () => {
-        suggestionItem.style.background = 'transparent';
-      };
-
-      suggestionItem.onclick = () => {
-        this.applySuggestion(suggestion);
+      // Auto hide after 5 seconds
+      setTimeout(() => {
         this.hideSuggestionWidget();
-      };
+      }, 5000);
+    }
+  }
 
-      this.suggestionWidget.appendChild(suggestionItem);
+  hideSuggestionWidget() {
+    if (this.suggestionWidget) {
+      this.suggestionWidget.style.display = 'none';
+    }
+  }
+
+  clearSuggestions() {
+    this.currentSuggestions = [];
+    this.hideSuggestionWidget();
+  }
+
+  clearErrorMarkers() {
+    this.errorMarkers.forEach(marker => {
+      editor.session.removeMarker(marker);
+    });
+    this.errorMarkers = [];
+    editor.session.clearAnnotations();
+  }
+
+  createSuggestionWidget() {
+    if (this.suggestionWidget) {
+      this.suggestionWidget.remove();
+    }
+
+    this.suggestionWidget = tag("div", {
+      className: "ai-suggestion-widget"
     });
 
-    // Position widget
-    this.suggestionWidget.style.left = screenPos.pageX + 'px';
-    this.suggestionWidget.style.top = (screenPos.pageY + 20) + 'px';
-    this.suggestionWidget.style.display = 'block';
-
-    // Auto hide after 5 seconds
-    setTimeout(() => {
-      this.hideSuggestionWidget();
-    }, 5000);
-  }
-}
-
-hideSuggestionWidget() {
-  if (this.suggestionWidget) {
-    this.suggestionWidget.style.display = 'none';
-  }
-}
-
-clearSuggestions() {
-  this.currentSuggestions = [];
-  this.hideSuggestionWidget();
-}
-
-clearErrorMarkers() {
-  this.errorMarkers.forEach(marker => {
-    editor.session.removeMarker(marker);
-  });
-  this.errorMarkers = [];
-  editor.session.clearAnnotations();
-}
-
-createSuggestionWidget() {
-  if (this.suggestionWidget) {
-    this.suggestionWidget.remove();
+    document.body.appendChild(this.suggestionWidget);
+    return this.suggestionWidget;
   }
 
-  this.suggestionWidget = tag("div", {
-    className: "ai-suggestion-widget"
-  });
-
-  document.body.appendChild(this.suggestionWidget);
-  return this.suggestionWidget;
-}
-
-showCodeSuggestions(suggestions) {
-  try {
-    if (!suggestions || suggestions.length === 0) {
-      if (this.suggestionWidget) {
-        this.suggestionWidget.style.display = 'none';
-      }
-      return;
-    }
-
-    if (!this.suggestionWidget) {
-      this.createSuggestionWidget();
-    }
-
-    // Clear previous suggestions
-    this.suggestionWidget.innerHTML = '';
-
-    // Create header
-    const header = tag("div", {
-      className: "suggestion-header",
-      textContent: "💡 AI Suggestions"
-    });
-
-    this.suggestionWidget.appendChild(header);
-
-    // Create suggestion items
-    suggestions.forEach((suggestion, index) => {
-      const item = tag("div", {
-        className: "suggestion-item"
-      });
-
-      const title = tag("div", {
-        className: "suggestion-title",
-        textContent: suggestion.title || `Suggestion ${index + 1}`
-      });
-
-      const description = tag("div", {
-        className: "suggestion-description",
-        textContent: suggestion.description || suggestion.text
-      });
-
-      item.append(title, description);
-
-      // Add click handler
-      item.addEventListener('click', () => {
-        this.applySuggestion(suggestion);
-        this.suggestionWidget.style.display = 'none';
-      });
-
-      this.suggestionWidget.appendChild(item);
-    });
-
-    // Position and show widget
-    this.positionSuggestionWidget();
-    this.suggestionWidget.style.display = 'block';
-
-  } catch (error) {
-    window.toast('Error showing code suggestions', 3000);
-  }
-}
-
-showAutoComplete(completions) {
-  try {
-    if (!completions || completions.length === 0) {
-      if (this.suggestionWidget) {
-        this.suggestionWidget.style.display = 'none';
-      }
-      return;
-    }
-
-    if (!this.suggestionWidget) {
-      this.createSuggestionWidget();
-    }
-
-    // Clear previous content
-    this.suggestionWidget.innerHTML = '';
-
-    // Create header
-    const header = tag("div", {
-      className: "autocomplete-header",
-      textContent: "🔍 Auto Complete"
-    });
-
-    this.suggestionWidget.appendChild(header);
-
-    // Create completion items
-    completions.forEach((completion, index) => {
-      const item = tag("div", {
-        className: "completion-item"
-      });
-
-      // Add icon based on completion type
-      const icon = tag("span", {
-        className: "completion-icon",
-        textContent: this.getCompletionIcon(completion.type || 'text')
-      });
-
-      const content = tag("div", {
-        className: "completion-content"
-      });
-
-      const label = tag("div", {
-        className: "completion-label",
-        textContent: completion.label || completion.text
-      });
-
-      const detail = tag("div", {
-        className: "completion-detail",
-        textContent: completion.detail || completion.description || ''
-      });
-
-      content.append(label, detail);
-      item.append(icon, content);
-
-      // Add click handler
-      item.addEventListener('click', () => {
-        this.applyCompletion(completion);
-        this.suggestionWidget.style.display = 'none';
-      });
-
-      this.suggestionWidget.appendChild(item);
-    });
-
-    // Position and show widget
-    this.positionSuggestionWidget();
-    this.suggestionWidget.style.display = 'block';
-
-  } catch (error) {
-    window.toast('Error showing auto complete', 3000);
-  }
-}
-
-showQuickFixes(fixes) {
-  try {
-    if (!fixes || fixes.length === 0) {
-      if (this.suggestionWidget) {
-        this.suggestionWidget.style.display = 'none';
-      }
-      return;
-    }
-
-    if (!this.suggestionWidget) {
-      this.createSuggestionWidget();
-    }
-
-    // Clear previous content
-    this.suggestionWidget.innerHTML = '';
-
-    // Create header
-    const header = tag("div", {
-      className: "quickfix-header",
-      textContent: "🔧 Quick Fixes"
-    });
-
-    this.suggestionWidget.appendChild(header);
-
-    // Create fix items
-    fixes.forEach((fix, index) => {
-      const item = tag("div", {
-        className: "quickfix-item"
-      });
-
-      const fixHeader = tag("div", {
-        className: "quickfix-item-header"
-      });
-
-      const severity = tag("span", {
-        className: "fix-severity",
-        textContent: this.getSeverityIcon(fix.severity || 'error')
-      });
-
-      const title = tag("span", {
-        className: "fix-title",
-        textContent: fix.title || `Fix ${index + 1}`
-      });
-
-      fixHeader.append(severity, title);
-
-      const description = tag("div", {
-        className: "fix-description",
-        textContent: fix.description || fix.message
-      });
-
-      const action = tag("div", {
-        className: "fix-action",
-        textContent: fix.action || 'Apply Fix'
-      });
-
-      item.append(fixHeader, description, action);
-
-      // Add click handler
-      item.addEventListener('click', () => {
-        this.applyQuickFix(fix);
-        this.suggestionWidget.style.display = 'none';
-      });
-
-      this.suggestionWidget.appendChild(item);
-    });
-
-    // Position and show widget
-    this.positionSuggestionWidget();
-    this.suggestionWidget.style.display = 'block';
-
-  } catch (error) {
-    window.toast('Error showing quick fixes', 3000);
-  }
-}
-
-positionSuggestionWidget() {
-  if (!this.suggestionWidget || !editor) return;
-
-  try {
-    const cursorPosition = editor.getCursorPosition();
-    const renderer = editor.renderer;
-    const coords = renderer.textToScreenCoordinates(cursorPosition.row, cursorPosition.column);
-
-    // Get editor container position
-    const editorContainer = editor.container;
-    const editorRect = editorContainer.getBoundingClientRect();
-
-    // Calculate position relative to viewport
-    const left = coords.pageX;
-    const top = coords.pageY + 20; // Offset below cursor
-
-    // Ensure widget stays within viewport
-    const viewportWidth = window.innerWidth;
-    const viewportHeight = window.innerHeight;
-    const widgetWidth = 400;
-    const widgetHeight = 300;
-
-    let finalLeft = left;
-    let finalTop = top;
-
-    // Adjust horizontal position
-    if (left + widgetWidth > viewportWidth) {
-      finalLeft = viewportWidth - widgetWidth - 10;
-    }
-
-    // Adjust vertical position
-    if (top + widgetHeight > viewportHeight) {
-      finalTop = coords.pageY - widgetHeight - 10; // Show above cursor
-    }
-
-    this.suggestionWidget.style.left = `${Math.max(10, finalLeft)}px`;
-    this.suggestionWidget.style.top = `${Math.max(10, finalTop)}px`;
-
-  } catch (error) {
-    window.toast('Error positioning suggestion widget', 3000);
-    // Fallback positioning
-    this.suggestionWidget.style.left = '50px';
-    this.suggestionWidget.style.top = '100px';
-  }
-}
-
-getCompletionIcon(type) {
-  const icons = {
-    'function': '🔧',
-    'variable': '📦',
-    'class': '🏗️',
-    'method': '⚙️',
-    'property': '🔗',
-    'keyword': '🔑',
-    'snippet': '📝',
-    'text': '📄',
-    'module': '📚',
-    'file': '📁'
-  };
-  return icons[type] || '📄';
-}
-
-getSeverityIcon(severity) {
-  const icons = {
-    'error': '❌',
-    'warning': '⚠️',
-    'info': 'ℹ️',
-    'hint': '💡'
-  };
-  return icons[severity] || '❌';
-}
-
-applySuggestion(suggestion) {
-  try {
-    if (!editor || !suggestion) return;
-
-    const cursor = editor.getCursorPosition();
-
-    if (suggestion.insertText) {
-      editor.session.insert(cursor, suggestion.insertText);
-    } else if (suggestion.replaceRange && suggestion.newText) {
-      const range = new editor.Range(
-        suggestion.replaceRange.start.row,
-        suggestion.replaceRange.start.column,
-        suggestion.replaceRange.end.row,
-        suggestion.replaceRange.end.column
-      );
-      editor.session.replace(range, suggestion.newText);
-    }
-
-    // Execute any additional actions
-    if (suggestion.command) {
-      editor.execCommand(suggestion.command);
-    }
-
-    window.toast('Suggestion applied', 2000);
-
-  } catch (error) {
-    window.toast('Error applying suggestion', 3000);
-    window.toast('Error applying suggestion', 3000);
-  }
-}
-
-applyCompletion(completion) {
-  try {
-    if (!editor || !completion) return;
-
-    const cursor = editor.getCursorPosition();
-    const session = editor.session;
-
-    // Get current line and determine insertion point
-    const line = session.getLine(cursor.row);
-    const insertText = completion.insertText || completion.label || completion.text;
-
-    if (completion.range) {
-      // Replace specific range
-      const range = new editor.Range(
-        completion.range.start.row,
-        completion.range.start.column,
-        completion.range.end.row,
-        completion.range.end.column
-      );
-      session.replace(range, insertText);
-    } else {
-      // Insert at cursor position
-      session.insert(cursor, insertText);
-    }
-
-    // Handle cursor positioning after insertion
-    if (completion.cursorOffset) {
-      const newPos = {
-        row: cursor.row,
-        column: cursor.column + completion.cursorOffset
-      };
-      editor.moveCursorToPosition(newPos);
-    }
-
-    window.toast('Completion applied', 2000);
-
-  } catch (error) {
-    window.toast('Error applying completion', 3000);
-    window.toast('Error applying completion', 3000);
-  }
-}
-
-applyQuickFix(fix) {
-  try {
-    if (!editor || !fix) return;
-
-    // Apply text edits if provided
-    if (fix.edits && Array.isArray(fix.edits)) {
-      // Apply edits in reverse order to maintain positions
-      const sortedEdits = fix.edits.sort((a, b) => {
-        if (a.range.start.row !== b.range.start.row) {
-          return b.range.start.row - a.range.start.row;
+  showCodeSuggestions(suggestions) {
+    try {
+      if (!suggestions || suggestions.length === 0) {
+        if (this.suggestionWidget) {
+          this.suggestionWidget.style.display = 'none';
         }
-        return b.range.start.column - a.range.start.column;
+        return;
+      }
+
+      if (!this.suggestionWidget) {
+        this.createSuggestionWidget();
+      }
+
+      // Clear previous suggestions
+      this.suggestionWidget.innerHTML = '';
+
+      // Create header
+      const header = tag("div", {
+        className: "suggestion-header",
+        textContent: "💡 AI Suggestions"
       });
 
-      sortedEdits.forEach(edit => {
+      this.suggestionWidget.appendChild(header);
+
+      // Create suggestion items
+      suggestions.forEach((suggestion, index) => {
+        const item = tag("div", {
+          className: "suggestion-item"
+        });
+
+        const title = tag("div", {
+          className: "suggestion-title",
+          textContent: suggestion.title || `Suggestion ${index + 1}`
+        });
+
+        const description = tag("div", {
+          className: "suggestion-description",
+          textContent: suggestion.description || suggestion.text
+        });
+
+        item.append(title, description);
+
+        // Add click handler
+        item.addEventListener('click', () => {
+          this.applySuggestion(suggestion);
+          this.suggestionWidget.style.display = 'none';
+        });
+
+        this.suggestionWidget.appendChild(item);
+      });
+
+      // Position and show widget
+      this.positionSuggestionWidget();
+      this.suggestionWidget.style.display = 'block';
+
+    } catch (error) {
+      window.toast('Error showing code suggestions', 3000);
+    }
+  }
+
+  showAutoComplete(completions) {
+    try {
+      if (!completions || completions.length === 0) {
+        if (this.suggestionWidget) {
+          this.suggestionWidget.style.display = 'none';
+        }
+        return;
+      }
+
+      if (!this.suggestionWidget) {
+        this.createSuggestionWidget();
+      }
+
+      // Clear previous content
+      this.suggestionWidget.innerHTML = '';
+
+      // Create header
+      const header = tag("div", {
+        className: "autocomplete-header",
+        textContent: "🔍 Auto Complete"
+      });
+
+      this.suggestionWidget.appendChild(header);
+
+      // Create completion items
+      completions.forEach((completion, index) => {
+        const item = tag("div", {
+          className: "completion-item"
+        });
+
+        // Add icon based on completion type
+        const icon = tag("span", {
+          className: "completion-icon",
+          textContent: this.getCompletionIcon(completion.type || 'text')
+        });
+
+        const content = tag("div", {
+          className: "completion-content"
+        });
+
+        const label = tag("div", {
+          className: "completion-label",
+          textContent: completion.label || completion.text
+        });
+
+        const detail = tag("div", {
+          className: "completion-detail",
+          textContent: completion.detail || completion.description || ''
+        });
+
+        content.append(label, detail);
+        item.append(icon, content);
+
+        // Add click handler
+        item.addEventListener('click', () => {
+          this.applyCompletion(completion);
+          this.suggestionWidget.style.display = 'none';
+        });
+
+        this.suggestionWidget.appendChild(item);
+      });
+
+      // Position and show widget
+      this.positionSuggestionWidget();
+      this.suggestionWidget.style.display = 'block';
+
+    } catch (error) {
+      window.toast('Error showing auto complete', 3000);
+    }
+  }
+
+  showQuickFixes(fixes) {
+    try {
+      if (!fixes || fixes.length === 0) {
+        if (this.suggestionWidget) {
+          this.suggestionWidget.style.display = 'none';
+        }
+        return;
+      }
+
+      if (!this.suggestionWidget) {
+        this.createSuggestionWidget();
+      }
+
+      // Clear previous content
+      this.suggestionWidget.innerHTML = '';
+
+      // Create header
+      const header = tag("div", {
+        className: "quickfix-header",
+        textContent: "🔧 Quick Fixes"
+      });
+
+      this.suggestionWidget.appendChild(header);
+
+      // Create fix items
+      fixes.forEach((fix, index) => {
+        const item = tag("div", {
+          className: "quickfix-item"
+        });
+
+        const fixHeader = tag("div", {
+          className: "quickfix-item-header"
+        });
+
+        const severity = tag("span", {
+          className: "fix-severity",
+          textContent: this.getSeverityIcon(fix.severity || 'error')
+        });
+
+        const title = tag("span", {
+          className: "fix-title",
+          textContent: fix.title || `Fix ${index + 1}`
+        });
+
+        fixHeader.append(severity, title);
+
+        const description = tag("div", {
+          className: "fix-description",
+          textContent: fix.description || fix.message
+        });
+
+        const action = tag("div", {
+          className: "fix-action",
+          textContent: fix.action || 'Apply Fix'
+        });
+
+        item.append(fixHeader, description, action);
+
+        // Add click handler
+        item.addEventListener('click', () => {
+          this.applyQuickFix(fix);
+          this.suggestionWidget.style.display = 'none';
+        });
+
+        this.suggestionWidget.appendChild(item);
+      });
+
+      // Position and show widget
+      this.positionSuggestionWidget();
+      this.suggestionWidget.style.display = 'block';
+
+    } catch (error) {
+      window.toast('Error showing quick fixes', 3000);
+    }
+  }
+
+  positionSuggestionWidget() {
+    if (!this.suggestionWidget || !editor) return;
+
+    try {
+      const cursorPosition = editor.getCursorPosition();
+      const renderer = editor.renderer;
+      const coords = renderer.textToScreenCoordinates(cursorPosition.row, cursorPosition.column);
+
+      // Get editor container position
+      const editorContainer = editor.container;
+      const editorRect = editorContainer.getBoundingClientRect();
+
+      // Calculate position relative to viewport
+      const left = coords.pageX;
+      const top = coords.pageY + 20; // Offset below cursor
+
+      // Ensure widget stays within viewport
+      const viewportWidth = window.innerWidth;
+      const viewportHeight = window.innerHeight;
+      const widgetWidth = 400;
+      const widgetHeight = 300;
+
+      let finalLeft = left;
+      let finalTop = top;
+
+      // Adjust horizontal position
+      if (left + widgetWidth > viewportWidth) {
+        finalLeft = viewportWidth - widgetWidth - 10;
+      }
+
+      // Adjust vertical position
+      if (top + widgetHeight > viewportHeight) {
+        finalTop = coords.pageY - widgetHeight - 10; // Show above cursor
+      }
+
+      this.suggestionWidget.style.left = `${Math.max(10, finalLeft)}px`;
+      this.suggestionWidget.style.top = `${Math.max(10, finalTop)}px`;
+
+    } catch (error) {
+      window.toast('Error positioning suggestion widget', 3000);
+      // Fallback positioning
+      this.suggestionWidget.style.left = '50px';
+      this.suggestionWidget.style.top = '100px';
+    }
+  }
+
+  getCompletionIcon(type) {
+    const icons = {
+      'function': '🔧',
+      'variable': '📦',
+      'class': '🏗️',
+      'method': '⚙️',
+      'property': '🔗',
+      'keyword': '🔑',
+      'snippet': '📝',
+      'text': '📄',
+      'module': '📚',
+      'file': '📁'
+    };
+    return icons[type] || '📄';
+  }
+
+  getSeverityIcon(severity) {
+    const icons = {
+      'error': '❌',
+      'warning': '⚠️',
+      'info': 'ℹ️',
+      'hint': '💡'
+    };
+    return icons[severity] || '❌';
+  }
+
+  applySuggestion(suggestion) {
+    try {
+      if (!editor || !suggestion) return;
+
+      const cursor = editor.getCursorPosition();
+
+      if (suggestion.insertText) {
+        editor.session.insert(cursor, suggestion.insertText);
+      } else if (suggestion.replaceRange && suggestion.newText) {
         const range = new editor.Range(
-          edit.range.start.row,
-          edit.range.start.column,
-          edit.range.end.row,
-          edit.range.end.column
+          suggestion.replaceRange.start.row,
+          suggestion.replaceRange.start.column,
+          suggestion.replaceRange.end.row,
+          suggestion.replaceRange.end.column
         );
-        editor.session.replace(range, edit.newText || '');
-      });
-    }
-
-    // Execute command if provided
-    if (fix.command) {
-      if (typeof fix.command === 'string') {
-        editor.execCommand(fix.command);
-      } else if (fix.command.id) {
-        // Handle complex command objects
-        editor.execCommand(fix.command.id, fix.command.arguments);
+        editor.session.replace(range, suggestion.newText);
       }
+
+      // Execute any additional actions
+      if (suggestion.command) {
+        editor.execCommand(suggestion.command);
+      }
+
+      window.toast('Suggestion applied', 2000);
+
+    } catch (error) {
+      window.toast('Error applying suggestion', 3000);
+      window.toast('Error applying suggestion', 3000);
     }
+  }
 
-    // Show success message
-    window.toast(fix.successMessage || 'Quick fix applied', 2000);
+  applyCompletion(completion) {
+    try {
+      if (!editor || !completion) return;
 
-    // Remove error markers if this fix resolves them
-    if (fix.resolvesMarkers && this.errorMarkers) {
-      fix.resolvesMarkers.forEach(markerId => {
-        const markerIndex = this.errorMarkers.findIndex(m => m.id === markerId);
-        if (markerIndex !== -1) {
-          editor.session.removeMarker(this.errorMarkers[markerIndex].aceMarkerId);
-          this.errorMarkers.splice(markerIndex, 1);
+      const cursor = editor.getCursorPosition();
+      const session = editor.session;
+
+      // Get current line and determine insertion point
+      const line = session.getLine(cursor.row);
+      const insertText = completion.insertText || completion.label || completion.text;
+
+      if (completion.range) {
+        // Replace specific range
+        const range = new editor.Range(
+          completion.range.start.row,
+          completion.range.start.column,
+          completion.range.end.row,
+          completion.range.end.column
+        );
+        session.replace(range, insertText);
+      } else {
+        // Insert at cursor position
+        session.insert(cursor, insertText);
+      }
+
+      // Handle cursor positioning after insertion
+      if (completion.cursorOffset) {
+        const newPos = {
+          row: cursor.row,
+          column: cursor.column + completion.cursorOffset
+        };
+        editor.moveCursorToPosition(newPos);
+      }
+
+      window.toast('Completion applied', 2000);
+
+    } catch (error) {
+      window.toast(`Error applying completion: ${error.message}`, 3000);
+    }
+  }
+
+  applyQuickFix(fix) {
+    try {
+      if (!editor || !fix) return;
+
+      // Apply text edits if provided
+      if (fix.edits && Array.isArray(fix.edits)) {
+        // Apply edits in reverse order to maintain positions
+        const sortedEdits = fix.edits.sort((a, b) => {
+          if (a.range.start.row !== b.range.start.row) {
+            return b.range.start.row - a.range.start.row;
+          }
+          return b.range.start.column - a.range.start.column;
+        });
+
+        sortedEdits.forEach(edit => {
+          const range = new editor.Range(
+            edit.range.start.row,
+            edit.range.start.column,
+            edit.range.end.row,
+            edit.range.end.column
+          );
+          editor.session.replace(range, edit.newText || '');
+        });
+      }
+
+      // Execute command if provided
+      if (fix.command) {
+        if (typeof fix.command === 'string') {
+          editor.execCommand(fix.command);
+        } else if (fix.command.id) {
+          // Handle complex command objects
+          editor.execCommand(fix.command.id, fix.command.arguments);
         }
-      });
+      }
+
+      // Show success message
+      window.toast(fix.successMessage || 'Quick fix applied', 2000);
+
+      // Remove error markers if this fix resolves them
+      if (fix.resolvesMarkers && this.errorMarkers) {
+        fix.resolvesMarkers.forEach(markerId => {
+          const markerIndex = this.errorMarkers.findIndex(m => m.id === markerId);
+          if (markerIndex !== -1) {
+            editor.session.removeMarker(this.errorMarkers[markerIndex].aceMarkerId);
+            this.errorMarkers.splice(markerIndex, 1);
+          }
+        });
+      }
+
+    } catch (error) {
+      window.toast(`Error applying quick fix: ${error.message}`, 3000);
     }
-
-  } catch (error) {
-    window.toast('Error applying quick fix', 3000);
-    window.toast('Error applying quick fix', 3000);
   }
-}
 
-async analyzeCurrentFile() {
-  if (!this.realTimeEnabled) return;
+  async analyzeCurrentFile() {
+    if (!this.realTimeEnabled) return;
 
-  const activeFile = editorManager.activeFile;
-  if (!activeFile) return;
+    const activeFile = editorManager.activeFile;
+    if (!activeFile) return;
 
-  const content = editor.getValue();
-  if (content.trim().length === 0) return;
+    const content = editor.getValue();
+    if (content.trim().length === 0) return;
 
-  try {
-    const analysis = await this.performRealTimeAnalysis(
-      content, 
-      editor.session.getLine(editor.getCursorPosition().row),
-      editor.getCursorPosition(),
-      activeFile
-    );
+    try {
+      const analysis = await this.performRealTimeAnalysis(
+        content,
+        editor.session.getLine(editor.getCursorPosition().row),
+        editor.getCursorPosition(),
+        activeFile
+      );
 
-    this.applySuggestions(analysis);
-  } catch (error) {
-    window.toast('File analysis error', 3000);
+      this.applySuggestions(analysis);
+    } catch (error) {
+      window.toast('File analysis error', 3000);
+    }
   }
-}
 
   async destroy() {
-  try {
-    // Clear all intervals
-    if (this.$loadInterval) {
-      clearInterval(this.$loadInterval);
-      this.$loadInterval = null;
-    }
-
-    // Clear real-time intervals
-    if (this.realTimeInterval) {
-      clearInterval(this.realTimeInterval);
-      this.realTimeInterval = null;
-    }
-
-    if (this.contextUpdateInterval) {
-      clearInterval(this.contextUpdateInterval);
-      this.contextUpdateInterval = null;
-    }
-
-    // Safely abort ongoing requests
     try {
-      if (this.abortController) {
-        this.abortController.abort();
-        this.abortController = null;
+      // Clear all intervals
+      if (this.$loadInterval) {
+        clearInterval(this.$loadInterval);
+        this.$loadInterval = null;
       }
-    } catch (abortError) {
-      // Error aborting request
-    }
 
-    // Abort real-time requests
-    if (this.realTimeAbortController) {
-      this.realTimeAbortController.abort();
-      this.realTimeAbortController = null;
-    }
+      // Clear real-time intervals
+      if (this.realTimeInterval) {
+        clearInterval(this.realTimeInterval);
+        this.realTimeInterval = null;
+      }
 
-    // Close WebSocket connections
-    if (this.websocket) {
+      if (this.contextUpdateInterval) {
+        clearInterval(this.contextUpdateInterval);
+        this.contextUpdateInterval = null;
+      }
+
+      // Safely abort ongoing requests
       try {
-        this.websocket.close();
-        this.websocket = null;
-      } catch (error) {
-        // Error closing WebSocket
+        if (this.abortController) {
+          this.abortController.abort();
+          this.abortController = null;
+        }
+      } catch (abortError) {
+        // Error aborting request
       }
-    }
 
-    // Clear EventSource connections
-    if (this.eventSource) {
-      try {
-        this.eventSource.close();
-        this.eventSource = null;
-      } catch (error) {
-        // Error closing EventSource
+      // Abort real-time requests
+      if (this.realTimeAbortController) {
+        this.realTimeAbortController.abort();
+        this.realTimeAbortController = null;
       }
-    }
 
-    // Clear message histories and real-time data
-    this.messageHistories = {};
-    this.messageSessionConfig = null;
-    this.realTimeContext = {};
-    this.contextHistory = [];
-    this.realTimeEnabled = false;
-
-    // Clear cache
-    if (this.cache) {
-      this.cache.clear();
-    }
-
-    // Clear real-time cache
-    if (this.realTimeCache) {
-      this.realTimeCache.clear();
-    }
-
-    // Safely remove event listeners
-    try {
-      if (this.editorChangeListener && typeof editor !== 'undefined' && editor && editor.off) {
+      // Close WebSocket connections
+      if (this.websocket) {
         try {
-          editor.off('change', this.editorChangeListener);
+          this.websocket.close();
+          this.websocket = null;
         } catch (error) {
-          // Error removing editor listener
-        } finally {
-          this.editorChangeListener = null;
+          // Error closing WebSocket
         }
       }
-    } catch (error) {
-      // Could not remove editor change listener
-    }
 
-    if (this.cursorChangeListener) {
-      try {
-        editor.off('changeSelection', this.cursorChangeListener);
-        this.cursorChangeListener = null;
-      } catch (error) {
-        // Could not remove cursor change listener
+      // Clear EventSource connections
+      if (this.eventSource) {
+        try {
+          this.eventSource.close();
+          this.eventSource = null;
+        } catch (error) {
+          // Error closing EventSource
+        }
       }
-    }
 
-    // Safely remove all commands
-    if (typeof editor !== 'undefined' && editor && editor.commands && editor.commands.removeCommand) {
-      const commands = [
-        "ai_assistant",
-        "ai_edit_current_file", 
-        "ai_explain_code",
-        "ai_generate_code",
-        "ai_optimize_function",
-        "ai_add_comments",
-        "ai_generate_docs",
-        "ai_rewrite_code",
-        "ai_toggle_realtime",
-        "ai_realtime_suggest",
-        "ai_clear_realtime_context"
+      // Clear message histories and real-time data
+      this.messageHistories = {};
+      this.messageSessionConfig = null;
+      this.realTimeContext = {};
+      this.contextHistory = [];
+      this.realTimeEnabled = false;
+
+      // Clear cache
+      if (this.cache) {
+        this.cache.clear();
+      }
+
+      // Clear real-time cache
+      if (this.realTimeCache) {
+        this.realTimeCache.clear();
+      }
+
+      // Safely remove event listeners
+      try {
+        if (this.editorChangeListener && typeof editor !== 'undefined' && editor && editor.off) {
+          try {
+            editor.off('change', this.editorChangeListener);
+          } catch (error) {
+            // Error removing editor listener
+          } finally {
+            this.editorChangeListener = null;
+          }
+        }
+      } catch (error) {
+        // Could not remove editor change listener
+      }
+
+      if (this.cursorChangeListener) {
+        try {
+          editor.off('changeSelection', this.cursorChangeListener);
+          this.cursorChangeListener = null;
+        } catch (error) {
+          // Could not remove cursor change listener
+        }
+      }
+
+      // Safely remove all commands
+      if (typeof editor !== 'undefined' && editor && editor.commands && editor.commands.removeCommand) {
+        const commands = [
+          "ai_assistant",
+          "ai_edit_current_file",
+          "ai_explain_code",
+          "ai_generate_code",
+          "ai_optimize_function",
+          "ai_add_comments",
+          "ai_generate_docs",
+          "ai_rewrite_code",
+          "ai_toggle_realtime",
+          "ai_realtime_suggest",
+          "ai_clear_realtime_context"
+        ];
+
+        commands.forEach(cmd => {
+          try {
+            editor.commands.removeCommand(cmd);
+          } catch (error) {
+            // Could not remove command
+          }
+        });
+      }
+
+      // Remove localStorage items including real-time settings
+      const storageKeys = [
+        "ai-assistant-provider",
+        "ai-assistant-model-name",
+        "openai-like-baseurl",
+        "Ollama-Host",
+        "ai-realtime-enabled",
+        "ai-realtime-interval",
+        "ai-context-update-interval",
+        "ai-realtime-cache-size"
       ];
 
-      commands.forEach(cmd => {
-        try {
-          editor.commands.removeCommand(cmd);
-        } catch (error) {
-          // Could not remove command
-        }
+      storageKeys.forEach(key => {
+        window.localStorage.removeItem(key);
       });
-    }
 
-    // Remove localStorage items including real-time settings
-    const storageKeys = [
-      "ai-assistant-provider",
-      "ai-assistant-model-name", 
-      "openai-like-baseurl",
-      "Ollama-Host",
-      "ai-realtime-enabled",
-      "ai-realtime-interval",
-      "ai-context-update-interval",
-      "ai-realtime-cache-size"
-    ];
-
-    storageKeys.forEach(key => {
-      window.localStorage.removeItem(key);
-    });
-
-    // Safely remove secret key file
-    try {
-      if (window.DATA_STORAGE && typeof fs !== 'undefined') {
-        const secretKeyPath = window.DATA_STORAGE + "secret.key";
-        if (await fs(secretKeyPath).exists()) {
-          await fs(secretKeyPath).delete();
-        }
-      }
-    } catch (error) {
-      // Could not remove secret key file
-    }
-
-    // Remove real-time context file
-    try {
-      const contextPath = window.DATA_STORAGE + "realtime-context.json";
-      if (await fs(contextPath).exists()) {
-        await fs(contextPath).delete();
-      }
-    } catch (error) {
-      // Could not remove real-time context file
-    }
-
-    // Remove DOM elements
-    const elementsToRemove = [
-      this.$githubDarkFile,
-      this.$higlightJsFile, 
-      this.$markdownItFile,
-      this.$style,
-      this.$realTimeIndicator,
-      this.$contextPanel
-    ];
-
-    elementsToRemove.forEach(element => {
+      // Safely remove secret key file
       try {
-        if (element && element.parentNode) {
-          element.remove();
+        if (window.DATA_STORAGE && typeof fs !== 'undefined') {
+          const secretKeyPath = window.DATA_STORAGE + "secret.key";
+          if (await fs(secretKeyPath).exists()) {
+            await fs(secretKeyPath).delete();
+          }
         }
       } catch (error) {
-        // Could not remove DOM element
+        // Could not remove secret key file
       }
-    });
 
-    // Clear all references
-    this.modelInstance = null;
-    this.apiKeyManager = null;
-    this.$page = null;
-    this.realTimeManager = null;
-    this.contextManager = null;
+      // Remove real-time context file
+      try {
+        const contextPath = window.DATA_STORAGE + "realtime-context.json";
+        if (await fs(contextPath).exists()) {
+          await fs(contextPath).delete();
+        }
+      } catch (error) {
+        // Could not remove real-time context file
+      }
 
-    // Clear timeouts
-    if (this.debounceTimeout) {
-      clearTimeout(this.debounceTimeout);
-      this.debounceTimeout = null;
+      // Remove DOM elements
+      const elementsToRemove = [
+        this.$githubDarkFile,
+        this.$higlightJsFile,
+        this.$markdownItFile,
+        this.$style,
+        this.$realTimeIndicator,
+        this.$contextPanel
+      ];
+
+      elementsToRemove.forEach(element => {
+        try {
+          if (element && element.parentNode) {
+            element.remove();
+          }
+        } catch (error) {
+          // Could not remove DOM element
+        }
+      });
+
+      // Clear all references
+      this.modelInstance = null;
+      this.apiKeyManager = null;
+      this.$page = null;
+      this.realTimeManager = null;
+      this.contextManager = null;
+
+      // Clear timeouts
+      if (this.debounceTimeout) {
+        clearTimeout(this.debounceTimeout);
+        this.debounceTimeout = null;
+      }
+
+      if (this.contextSaveTimeout) {
+        clearTimeout(this.contextSaveTimeout);
+        this.contextSaveTimeout = null;
+      }
+
+      // Plugin destroyed successfully
+    } catch (error) {
+      window.toast("Error during plugin destruction", 3000);
     }
-
-    if (this.contextSaveTimeout) {
-      clearTimeout(this.contextSaveTimeout);
-      this.contextSaveTimeout = null;
-    }
-
-    // Plugin destroyed successfully
-  } catch (error) {
-    window.toast("Error during plugin destruction", 3000);
   }
-}
 
 }
 
