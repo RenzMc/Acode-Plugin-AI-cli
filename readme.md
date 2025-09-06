@@ -9,7 +9,7 @@
 
 An advanced AI-powered coding assistant plugin for Acode (Android Code Editor) that brings intelligent code assistance, real-time analysis, and comprehensive project management directly to your mobile development workflow.
 
-![Acode AI CLI Preview](dist/assets/user_profile.png)
+![Acode AI CLI Preview](dist/assets/user_avatar.png)
 
 ## 🚀 Features
 
