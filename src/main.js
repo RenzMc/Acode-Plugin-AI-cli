@@ -172,12 +172,14 @@ class AIAssistant {
         const content = editor.getValue();
         const contextPrompt = `Current file: ${activeFile && activeFile.name ? activeFile.name : 'Unknown'}\n\nContent:\n\`\`\`\n${content || ''}\n\`\`\`\n\nHow can I help you with this code?`;
 
-        if (!this.$page.isVisible) {
+        if (!this.$page || !this.$page.isVisible) {
           await this.run();
         }
 
-        this.$chatTextarea.value = contextPrompt;
-        this.$chatTextarea.focus();
+        if (this.$chatTextarea) {
+          this.$chatTextarea.value = contextPrompt;
+          this.$chatTextarea.focus();
+        }
       } else {
         window.toast("No active file to insert context", 3000);
       }
@@ -192,7 +194,13 @@ class AIAssistant {
       textContent: "🔍",
       title: "Search in chat"
     });
-    searchBtn.onclick = () => this.searchInChat();
+    searchBtn.onclick = () => {
+      try {
+        this.searchInChat();
+      } catch (error) {
+        window.toast("Search error", 3000);
+      }
+    };
 
     this.$page.header.append(tokenDisplay, searchBtn, newChatBtn, insertContextBtn, historyBtn, menuBtn);
 
@@ -747,11 +755,12 @@ Exact name:`;
 
       // Authentication and API key handling
       let passPhrase;
-      if (await fs(window.DATA_STORAGE + "secret.key").exists()) {
-        passPhrase = await fs(window.DATA_STORAGE + "secret.key").readFile(
-          "utf-8",
-        );
-      } else {
+      try {
+        const secretKeyPath = window.DATA_STORAGE + "secret.key";
+        const secretKeyFs = fs(secretKeyPath);
+        if (secretKeyFs && await secretKeyFs.exists()) {
+          passPhrase = await secretKeyFs.readFile("utf-8");
+        } else {
         let secretPassphrase = await prompt(
           "Enter a secret pass phrase to save the API key",
           "",
@@ -762,6 +771,10 @@ Exact name:`;
         );
         if (!secretPassphrase) return;
         passPhrase = secretPassphrase;
+        }
+      } catch (fsError) {
+        window.toast("Error accessing storage", 3000);
+        return;
       }
 
       this.apiKeyManager = new APIKeyManager(passPhrase);
@@ -1001,8 +1014,16 @@ Exact name:`;
           );
           const uniqueName = `${sanitisedFileNme}__${sessionId}.json`;
 
-          if (!(await fs(AI_HISTORY_PATH).exists())) {
-            await fs(window.DATA_STORAGE).createDirectory("cli");
+          try {
+            const historyFs = fs(AI_HISTORY_PATH);
+            if (historyFs && !(await historyFs.exists())) {
+              const storageFs = fs(window.DATA_STORAGE);
+              if (storageFs) {
+                await storageFs.createDirectory("cli");
+              }
+            }
+          } catch (dirError) {
+            window.toast("Error creating history directory", 3000);
           }
           let messages = await this.messageHistories[sessionId].getMessages();
           const history = this.transformMessages(messages);
@@ -1015,7 +1036,8 @@ Exact name:`;
         }
       } else {
         try {
-          if (!(await fs(CURRENT_SESSION_FILEPATH).exists())) {
+          const sessionFs = fs(CURRENT_SESSION_FILEPATH);
+          if (!sessionFs || !(await sessionFs.exists())) {
             this.newChat();
             window.toast(
               "Some error occurred or file you trying to open has been deleted",
@@ -1056,8 +1078,10 @@ Exact name:`;
     /*
     get list of history items
     */
-    if (await fs(AI_HISTORY_PATH).exists()) {
-      const allFiles = await fs(AI_HISTORY_PATH).lsDir();
+    try {
+      const historyFs = fs(AI_HISTORY_PATH);
+      if (historyFs && await historyFs.exists()) {
+        const allFiles = await historyFs.lsDir();
       let elems = "";
       for (let i = 0; i < allFiles.length; i++) {
         elems += `<li class="dialog-item" style="background: var(--secondary-color);color: var(--secondary-text-color);padding: 5px;margin-bottom: 5px;border-radius: 8px;font-size:15px;display:flex;flex-direction:row;justify-content:space-between;gap:5px;" data-path="${JSON.parse(JSON.stringify(allFiles[i])).url
@@ -1069,12 +1093,16 @@ Exact name:`;
               25,
             )}...</p><div><button class="delete-history-btn" style="height:25px;width:25px;border:none;padding:5px;outline:none;border-radius:50%;background:var(--error-text-color);text-align:center;">✗</button></div>
                 </li>`;
+        }
+        return elems;
+      } else {
+        let elems = "";
+        elems = `<li style="background: var(--secondary-color);color: var(--secondary-text-color);padding: 10px;border-radius: 8px;" data-path="#not-available">Not Available</li>`;
+        return elems;
       }
-      return elems;
-    } else {
-      let elems = "";
-      elems = `<li style="background: var(--secondary-color);color: var(--secondary-text-color);padding: 10px;border-radius: 8px;" data-path="#not-available">Not Available</li>`;
-      return elems;
+    } catch (error) {
+      window.toast("Error loading history", 3000);
+      return `<li style="background: var(--secondary-color);color: var(--secondary-text-color);padding: 10px;border-radius: 8px;" data-path="#not-available">Error Loading History</li>`;
     }
   }
 
@@ -1101,11 +1129,18 @@ Exact name:`;
       window.toast("Some error occurred");
       return;
     }
-    if (!(await fs(fileUrl).exists())) {
+    try {
+      const fileFs = fs(fileUrl);
+      if (!fileFs || !(await fileFs.exists())) {
+        this.newChat();
+        window.toast(
+          "Some error occurred or file you trying to open has been deleted",
+        );
+        return;
+      }
+    } catch (error) {
       this.newChat();
-      window.toast(
-        "Some error occurred or file you trying to open has been deleted",
-      );
+      window.toast("Error accessing file", 3000);
       return;
     }
 
@@ -1113,15 +1148,33 @@ Exact name:`;
     try {
       historyDialogBox.hide();
       loader.create("Wait", "Fetching chat history....");
-      const fileData = await fs(fileUrl).readFile();
+      const fileFs = fs(fileUrl);
+      if (!fileFs) {
+        throw new Error("Cannot access file system");
+      }
+      const fileData = await fileFs.readFile();
       const responses = JSON.parse(await helpers.decodeText(fileData));
       this.messageHistories = {};
-      this.messageHistories[sessionId] = new InMemoryChatMessageHistory();
-      let messages = responses.flatMap((pair) => [
-        new HumanMessage({ content: pair.prompt }),
-        new AIMessage({ content: pair.result }),
-      ]);
-      await this.messageHistories[sessionId].addMessages(messages);
+      
+      // Make sure we have the required classes available
+      if (typeof InMemoryChatMessageHistory === 'undefined' || 
+          typeof HumanMessage === 'undefined' || 
+          typeof AIMessage === 'undefined') {
+        // Use a simple array-based history fallback
+        this.messageHistories[sessionId] = {
+          messages: [],
+          addMessages: async function(msgs) {
+            this.messages.push(...msgs);
+          }
+        };
+      } else {
+        this.messageHistories[sessionId] = new InMemoryChatMessageHistory();
+        let messages = responses.flatMap((pair) => [
+          new HumanMessage({ content: pair.prompt }),
+          new AIMessage({ content: pair.result }),
+        ]);
+        await this.messageHistories[sessionId].addMessages(messages);
+      }
       this.messageSessionConfig = {
         configurable: {
           sessionId,
@@ -1154,8 +1207,13 @@ Exact name:`;
 
       historyDialogBox.onclick(async (e) => {
         const dialogItem = e.target.closest(".dialog-item");
+        if (!dialogItem) {
+          return;
+        }
+        
         const deleteButton = dialogItem.querySelector(".delete-history-btn");
         const historyItem = dialogItem.querySelector(".history-item");
+        
         if (dialogItem.getAttribute("data-path") == "#not-available") {
           return;
         }
@@ -1169,7 +1227,17 @@ Exact name:`;
           const fileUrl = JSON.stringify(dialogItem.getAttribute("data-path"));
           const url = fileUrl.slice(1, fileUrl.length - 1);
 
-          await fs(dialogItem.getAttribute("data-path")).delete();
+          try {
+            const pathValue = dialogItem.getAttribute("data-path");
+            if (pathValue) {
+              const fileFs = fs(pathValue);
+              if (fileFs) {
+                await fileFs.delete();
+              }
+            }
+          } catch (error) {
+            window.toast('Error deleting history item', 3000);
+          }
           //alert(CURRENT_SESSION_FILEPATH);
 
           if (CURRENT_SESSION_FILEPATH == url) {
@@ -1878,7 +1946,13 @@ Exact name:`;
   }
 
   async scrollToBottom() {
-    this.$chatBox.scrollTop = this.$chatBox.scrollHeight;
+    try {
+      if (this.$chatBox) {
+        this.$chatBox.scrollTop = this.$chatBox.scrollHeight;
+      }
+    } catch (error) {
+      // Could not scroll chat box
+    }
   }
 
   async loader() {
@@ -2600,8 +2674,9 @@ Response format: Clear actionable steps.`;
     Read file content from project
     */
     try {
-      if (await fs(filePath).exists()) {
-        const content = await fs(filePath).readFile('utf8');
+      const fileFs = fs(filePath);
+      if (fileFs && await fileFs.exists()) {
+        const content = await fileFs.readFile('utf8');
         return { success: true, content, path: filePath };
       } else {
         return { success: false, error: `File not found: ${filePath}` };
@@ -2616,18 +2691,27 @@ Response format: Clear actionable steps.`;
     Edit file content in project with backup using proper Acode API
     */
     try {
-      const fileFs = await fs(filePath);
+      const fileFs = fs(filePath);
+      if (!fileFs) {
+        throw new Error("Cannot access file system");
+      }
 
       // Create backup before editing
       if (await fileFs.exists()) {
         const originalContent = await fileFs.readFile('utf8');
         const backupPath = filePath + '.backup.' + Date.now();
         const parentDir = filePath.substring(0, filePath.lastIndexOf('/'));
-        const parentFs = await fs(parentDir);
+        const parentFs = fs(parentDir);
         const backupFileName = backupPath.split('/').pop();
 
         // Create backup file
-        await parentFs.createFile(backupFileName, originalContent);
+        if (parentFs) {
+          try {
+            await parentFs.createFile(backupFileName, originalContent);
+          } catch (error) {
+            // Could not create backup file
+          }
+        }
 
         // Store backup info for undo
         this.storeUndoInfo(filePath, originalContent);
@@ -2661,13 +2745,17 @@ Response format: Clear actionable steps.`;
     Delete file from project with backup
     */
     try {
-      if (await fs(filePath).exists()) {
+      const fileFs = fs(filePath);
+      if (fileFs && await fileFs.exists()) {
         // Create backup before deleting
-        const content = await fs(filePath).readFile('utf8');
+        const content = await fileFs.readFile('utf8');
         const backupPath = window.DATA_STORAGE + 'deleted_files/' + Date.now() + '_' + filePath.split('/').pop();
-        await fs(backupPath).writeFile(content);
+        const backupFs = fs(backupPath);
+        if (backupFs) {
+          await backupFs.writeFile(content);
+        }
 
-        await fs(filePath).delete();
+        await fileFs.delete();
         return { success: true, message: `File deleted successfully: ${filePath}` };
       } else {
         return { success: false, error: `File not found: ${filePath}` };
@@ -2841,19 +2929,24 @@ Response format: Clear actionable steps.`;
     try {
       const files = [];
       const scanDirectory = async (dirPath) => {
-        if (await fs(dirPath).exists()) {
-          const items = await fs(dirPath).lsDir();
-          for (const item of items) {
-            const fullPath = `${dirPath}/${item.name}`;
-            if (item.isDirectory && !item.name.startsWith('.')) {
-              await scanDirectory(fullPath);
-            } else if (item.isFile) {
-              const hasValidExt = extensions.some(ext => item.name.endsWith(ext));
-              if (hasValidExt) {
-                files.push(fullPath);
+        try {
+          const dirFs = fs(dirPath);
+          if (dirFs && await dirFs.exists()) {
+            const items = await dirFs.lsDir();
+            for (const item of items) {
+              const fullPath = `${dirPath}/${item.name}`;
+              if (item.isDirectory && !item.name.startsWith('.')) {
+                await scanDirectory(fullPath);
+              } else if (item.isFile) {
+                const hasValidExt = extensions.some(ext => item.name.endsWith(ext));
+                if (hasValidExt) {
+                  files.push(fullPath);
+                }
               }
             }
           }
+        } catch (error) {
+          // Could not scan directory
         }
       };
 
@@ -3128,27 +3221,38 @@ Response format: Clear actionable steps.`;
       const searchTerm = await prompt("Search in chat:", "", "text");
       if (!searchTerm) return;
 
+      if (!this.$chatBox) {
+        window.toast("Chat not initialized", 3000);
+        return;
+      }
+
       const chatMessages = this.$chatBox.querySelectorAll('.message, .ai_message');
       let foundCount = 0;
 
       chatMessages.forEach(msg => {
-        const text = msg.textContent.toLowerCase();
-        msg.style.backgroundColor = '';
-        msg.style.border = '';
+        if (msg && msg.textContent) {
+          const text = msg.textContent.toLowerCase();
+          msg.style.backgroundColor = '';
+          msg.style.border = '';
 
-        if (text.includes(searchTerm.toLowerCase())) {
-          msg.style.backgroundColor = 'rgba(0, 212, 255, 0.2)';
-          msg.style.border = '2px solid var(--galaxy-star-blue)';
-          foundCount++;
+          if (text.includes(searchTerm.toLowerCase())) {
+            msg.style.backgroundColor = 'rgba(0, 212, 255, 0.2)';
+            msg.style.border = '2px solid var(--accent-color)';
+            foundCount++;
+          }
         }
       });
 
       if (foundCount > 0) {
         window.toast(`Found ${foundCount} messages containing "${searchTerm}"`, 4000);
         // Scroll to first match
-        const firstMatch = this.$chatBox.querySelector('[style*="border: 2px solid"]');
-        if (firstMatch) {
-          firstMatch.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        try {
+          const firstMatch = this.$chatBox ? this.$chatBox.querySelector('[style*="border: 2px solid"]') : null;
+          if (firstMatch) {
+            firstMatch.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          }
+        } catch (error) {
+          // Could not scroll to first match
         }
       } else {
         window.toast(`No messages found containing "${searchTerm}"`, 3000);
@@ -4010,25 +4114,53 @@ ${currentContent}
 
     switch (action) {
       case "Explain Code":
-        await this.explainCodeWithChat(selectedText, activeFile);
+        try {
+          await this.explainCodeWithChat(selectedText, activeFile);
+        } catch (error) {
+          window.toast('Error explaining code: ' + (error.message || 'Unknown error'), 3000);
+        }
         break;
       case "Rewrite":
-        await this.rewriteCodeWithChat(selectedText);
+        try {
+          await this.rewriteCodeWithChat(selectedText);
+        } catch (error) {
+          window.toast('Error rewriting code: ' + (error.message || 'Unknown error'), 3000);
+        }
         break;
       case "Generate Code":
-        await this.showGenerateCodePopup();
+        try {
+          await this.showGenerateCodePopup();
+        } catch (error) {
+          window.toast('Error generating code: ' + (error.message || 'Unknown error'), 3000);
+        }
         break;
       case "Optimize Function":
-        await this.optimizeFunctionWithChat(selectedText);
+        try {
+          await this.optimizeFunctionWithChat(selectedText);
+        } catch (error) {
+          window.toast('Error optimizing code: ' + (error.message || 'Unknown error'), 3000);
+        }
         break;
       case "Add Comments":
-        await this.addCommentsWithChat(selectedText);
+        try {
+          await this.addCommentsWithChat(selectedText);
+        } catch (error) {
+          window.toast('Error adding comments: ' + (error.message || 'Unknown error'), 3000);
+        }
         break;
       case "Generate Docs":
-        await this.generateDocsWithChat(selectedText);
+        try {
+          await this.generateDocsWithChat(selectedText);
+        } catch (error) {
+          window.toast('Error generating docs: ' + (error.message || 'Unknown error'), 3000);
+        }
         break;
       case "Edit with AI":
-        this.showAiEditPopup();
+        try {
+          this.showAiEditPopup();
+        } catch (error) {
+          window.toast('Error showing AI edit popup: ' + (error.message || 'Unknown error'), 3000);
+        }
         break;
     }
   }
@@ -4710,7 +4842,7 @@ Return the code with appropriate comments added:`;
   }
 
   async generateDocsWithChat(selectedText) {
-    if (!this.$page.isVisible) {
+    if (!this.$page || !this.$page.isVisible) {
       await this.run();
     }
 
@@ -4739,7 +4871,7 @@ Include: JSDoc, params, returns, examples.`;
 
   async sendAiQuery(prompt) {
     // Open the AI assistant if not already open
-    if (!this.$page.isVisible) {
+    if (!this.$page || !this.$page.isVisible) {
       await this.run();
     }
 
@@ -4774,7 +4906,7 @@ Include: JSDoc, params, returns, examples.`;
   }
 
   async rewriteCodeWithChat(selectedText) {
-    if (!this.$page.isVisible) {
+    if (!this.$page || !this.$page.isVisible) {
       await this.run();
     }
 
@@ -4923,29 +5055,45 @@ Make cleaner, more efficient. Same functionality.`;
   }
 
   showRealTimeStatus(enabled) {
-    // Update UI to show real-time status
-    const statusElement = document.querySelector('.realtime-ai-status') ||
-      tag("div", { className: "realtime-ai-status" });
+    try {
+      // Update UI to show real-time status
+      let statusElement = null;
+      try {
+        statusElement = document.querySelector('.realtime-ai-status');
+      } catch (error) {
+        // Could not query status element
+      }
+      
+      if (!statusElement) {
+        statusElement = tag("div", { className: "realtime-ai-status" });
+      }
 
-    statusElement.textContent = enabled ? "😍AI Active" : "";
-    statusElement.style.cssText = `
-  position: fixed;
-  top: 10px;
-  right: 110px;
-  background: ${enabled ? 'rgba(76, 175, 80, 0.7)' : 'rgba(0,0,0,0.3)'};
-  color: white;
-  padding: 3px 6px; /* lebih kecil */
-  border-radius: 10px;
-  font-size: 10px; /* lebih kecil */
-  opacity: 0.7; /* transparan */
-  z-index: 1000;
-  transition: all 0.3s ease;
-`;
+      statusElement.textContent = enabled ? "😍AI Active" : "";
+      statusElement.style.cssText = `
+    position: fixed;
+    top: 10px;
+    right: 110px;
+    background: ${enabled ? 'rgba(76, 175, 80, 0.7)' : 'rgba(0,0,0,0.3)'};
+    color: white;
+    padding: 3px 6px;
+    border-radius: 10px;
+    font-size: 10px;
+    opacity: 0.7;
+    z-index: 1000;
+    transition: all 0.3s ease;
+  `;
 
-    if (enabled && !document.body.contains(statusElement)) {
-      document.body.appendChild(statusElement);
-    } else if (!enabled && document.body.contains(statusElement)) {
-      document.body.removeChild(statusElement);
+      try {
+        if (enabled && statusElement && document.body && !document.body.contains(statusElement)) {
+          document.body.appendChild(statusElement);
+        } else if (!enabled && statusElement && document.body && document.body.contains(statusElement)) {
+          document.body.removeChild(statusElement);
+        }
+      } catch (error) {
+        // Could not modify status element in DOM
+      }
+    } catch (error) {
+      // Silent fail for status display
     }
   }
 
@@ -4961,15 +5109,19 @@ Make cleaner, more efficient. Same functionality.`;
   }
 
   handleCursorChange(e) {
-    if (this.realTimeEnabled) {
-      this.showContextualSuggestions();
+    if (this.realTimeEnabled && editor && editor.session) {
+      try {
+        this.showContextualSuggestions();
+      } catch (error) {
+        // Silent fail for cursor change errors
+      }
     }
   }
 
   async analyzeCurrentCode() {
     try {
-      const activeFile = editorManager.activeFile;
-      if (!activeFile) return;
+      const activeFile = editorManager && editorManager.activeFile;
+      if (!activeFile || !editor || !editor.session) return;
 
       const content = editor.getValue();
       const cursorPos = editor.getCursorPosition();
@@ -5139,8 +5291,14 @@ Focus cursor area only.`;
       });
 
       importItem.onclick = () => {
-        this.addImportToFile(imp);
-        document.body.removeChild(notification);
+        try {
+          this.addImportToFile(imp);
+          if (notification && document.body && document.body.contains(notification)) {
+            document.body.removeChild(notification);
+          }
+        } catch (error) {
+          window.toast('Error adding import', 3000);
+        }
       };
 
       importList.appendChild(importItem);
@@ -5161,46 +5319,78 @@ Focus cursor area only.`;
     });
 
     closeBtn.onclick = () => {
-      if (document.body.contains(notification)) {
-        document.body.removeChild(notification);
+      try {
+        if (notification && document.body && document.body.contains(notification)) {
+          document.body.removeChild(notification);
+        }
+      } catch (error) {
+        // Could not remove notification from DOM
       }
     };
 
     notification.append(title, importList, closeBtn);
-    document.body.appendChild(notification);
+    try {
+      if (document.body) {
+        document.body.appendChild(notification);
+      }
+    } catch (error) {
+      // Could not add notification to DOM
+    }
 
     // Auto remove after 10 seconds
     setTimeout(() => {
-      if (document.body.contains(notification)) {
-        document.body.removeChild(notification);
+      try {
+        if (notification && document.body && document.body.contains(notification)) {
+          document.body.removeChild(notification);
+        }
+      } catch (error) {
+        // Could not remove notification from DOM
       }
     }, 10000);
   }
 
   addImportToFile(importStatement) {
-    const content = editor.getValue();
-    const lines = content.split('\n');
-
-    // Find the best position to insert import
-    let insertLine = 0;
-    for (let i = 0; i < lines.length; i++) {
-      if (lines[i].trim().startsWith('import ') || lines[i].trim().startsWith('const ') || lines[i].trim().startsWith('require(')) {
-        insertLine = i + 1;
-      } else if (lines[i].trim() === '') {
-        continue;
-      } else {
-        break;
+    try {
+      if (!editor) {
+        window.toast('Editor not available', 3000);
+        return;
       }
-    }
+      
+      const content = editor.getValue();
+      const lines = content.split('\n');
 
-    // Insert import
-    editor.session.insert({ row: insertLine, column: 0 }, importStatement + '\n');
-    window.toast(`Added import: ${importStatement}`, 2000);
+      // Find the best position to insert import
+      let insertLine = 0;
+      for (let i = 0; i < lines.length; i++) {
+        if (lines[i].trim().startsWith('import ') || lines[i].trim().startsWith('const ') || lines[i].trim().startsWith('require(')) {
+          insertLine = i + 1;
+        } else if (lines[i].trim() === '') {
+          continue;
+        } else {
+          break;
+        }
+      }
+
+      // Insert import
+      if (editor.session && typeof editor.session.insert === 'function') {
+        editor.session.insert({ row: insertLine, column: 0 }, importStatement + '\n');
+        window.toast(`Added import: ${importStatement}`, 2000);
+      } else {
+        window.toast('Could not insert import', 3000);
+      }
+    } catch (error) {
+      window.toast('Error adding import: ' + (error.message || 'Unknown error'), 3000);
+    }
   }
 
   showContextualSuggestions() {
-    const cursorPos = editor.getCursorPosition();
-    const screenPos = editor.renderer.textToScreenCoordinates(cursorPos.row, cursorPos.column);
+    try {
+      if (!editor || !editor.getCursorPosition || !editor.renderer) {
+        return;
+      }
+      
+      const cursorPos = editor.getCursorPosition();
+      const screenPos = editor.renderer.textToScreenCoordinates(cursorPos.row, cursorPos.column);
 
     if (this.currentSuggestions.length > 0) {
       this.suggestionWidget.innerHTML = '';
@@ -5273,7 +5463,13 @@ Focus cursor area only.`;
       className: "ai-suggestion-widget"
     });
 
-    document.body.appendChild(this.suggestionWidget);
+    try {
+      if (document.body) {
+        document.body.appendChild(this.suggestionWidget);
+      }
+    } catch (error) {
+      // Could not add suggestion widget to DOM
+    }
     return this.suggestionWidget;
   }
 
@@ -5846,8 +6042,9 @@ Focus cursor area only.`;
       try {
         if (window.DATA_STORAGE && typeof fs !== 'undefined') {
           const secretKeyPath = window.DATA_STORAGE + "secret.key";
-          if (await fs(secretKeyPath).exists()) {
-            await fs(secretKeyPath).delete();
+          const secretFs = fs(secretKeyPath);
+          if (secretFs && await secretFs.exists()) {
+            await secretFs.delete();
           }
         }
       } catch (error) {
@@ -5857,8 +6054,9 @@ Focus cursor area only.`;
       // Remove real-time context file
       try {
         const contextPath = window.DATA_STORAGE + "realtime-context.json";
-        if (await fs(contextPath).exists()) {
-          await fs(contextPath).delete();
+        const contextFs = fs(contextPath);
+        if (contextFs && await contextFs.exists()) {
+          await contextFs.delete();
         }
       } catch (error) {
         // Could not remove real-time context file
