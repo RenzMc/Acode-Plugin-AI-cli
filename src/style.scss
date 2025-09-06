@@ -1,1655 +1,1003 @@
-// ========================================
-// GALAXY THEME ULTRA MODERN - ACODE AI ASSISTANT
-// Enhanced with Advanced Animations & Effects
-// ========================================
+/* Modern Galaxy-Themed Responsive SCSS for Acode AI CLI Plugin */
 
-// Variables with Acode Theme Support
+// CSS Variables for consistent theming
 :root {
-  // Galaxy Color Palette with Acode Theme Integration
-  --galaxy-deep-space: var(--app-background, #0a0a0f);
-  --galaxy-nebula: var(--popup-background, #1a1a2e);
-  --galaxy-cosmic: var(--secondary-background, #16213e);
-  --galaxy-star-blue: var(--accent-color, #00d4ff);
-  --galaxy-star-purple: var(--primary-color, #8b5cf6);
-  --galaxy-star-green: var(--success-color, #00ff88);
-  --galaxy-star-pink: var(--warning-color, #ff0080);
-  --galaxy-void: var(--tertiary-background, #0f172a);
-  --galaxy-glass: var(--glass-background, rgba(255, 255, 255, 0.08));
-  --galaxy-glass-border: var(--border-color, rgba(255, 255, 255, 0.12));
-
-  // Text Colors with Acode Theme Support
-  --galaxy-text-primary: var(--primary-text-color, #ffffff);
-  --galaxy-text-secondary: var(--secondary-text-color, #94a3b8);
-  --galaxy-text-muted: var(--tertiary-text-color, #64748b);
-
-  // Galaxy Gradients - Enhanced
-  --galaxy-gradient-primary: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  --galaxy-gradient-cosmic: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
-  --galaxy-gradient-nebula: linear-gradient(45deg, #00d4ff, #8b5cf6, #00ff88, #ff0080);
-  --galaxy-gradient-void: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%);
-  --galaxy-gradient-aurora: linear-gradient(90deg, #ff0080, #00d4ff, #8b5cf6, #00ff88);
-  --galaxy-gradient-plasma: radial-gradient(circle, #ff0080 0%, #8b5cf6 50%, #00d4ff 100%);
-
-  // Shadows & Effects - Enhanced
-  --galaxy-shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.4);
-  --galaxy-shadow-md: 0 4px 16px rgba(0, 0, 0, 0.5);
-  --galaxy-shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.6);
-  --galaxy-shadow-xl: 0 16px 64px rgba(0, 0, 0, 0.7);
-  --galaxy-shadow-cosmic: 0 0 25px rgba(0, 212, 255, 0.4);
-  --galaxy-shadow-nebula: 0 0 35px rgba(139, 92, 246, 0.5);
-  --galaxy-shadow-aurora: 0 0 45px rgba(255, 0, 128, 0.4);
-
-  // Transitions - Smooth & Natural
-  --galaxy-transition-fast: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  --galaxy-transition-normal: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  --galaxy-transition-slow: 0.5s cubic-bezier(0.4, 0, 0.2, 1);
-  --galaxy-transition-bounce: 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+  --galaxy-primary: #0f0f1e;
+  --galaxy-secondary: #1a1a2e;
+  --galaxy-accent: #16213e;
+  --galaxy-star-blue: #00d4ff;
+  --galaxy-star-purple: #9d4edd;
+  --galaxy-star-pink: #ff006e;
+  --galaxy-nebula-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  --galaxy-cosmic-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+  --galaxy-text-primary: #ffffff;
+  --galaxy-text-secondary: #b8b8ff;
+  --galaxy-text-muted: #8892b0;
+  --galaxy-border: rgba(0, 212, 255, 0.3);
+  --galaxy-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  --galaxy-glow: 0 0 20px rgba(0, 212, 255, 0.3);
+  --galaxy-hover-bg: rgba(0, 212, 255, 0.1);
+  --galaxy-error: #ff4757;
+  --galaxy-success: #2ed573;
+  --galaxy-warning: #ffa502;
+  
+  // Responsive breakpoints
+  --mobile-max: 767px;
+  --tablet-min: 768px;
+  --tablet-max: 1024px;
+  --desktop-min: 1025px;
 }
 
-// ========================================
-// ENHANCED GALAXY ANIMATIONS
-// ========================================
-
-@keyframes galaxy-pulse {
-  0%, 100% { 
-    opacity: 1; 
-    transform: scale(1);
-  }
-  50% { 
-    opacity: 0.8; 
-    transform: scale(1.02);
-  }
+// Base styles
+* {
+  box-sizing: border-box;
 }
 
-@keyframes galaxy-glow {
-  0%, 100% { 
-    box-shadow: 0 0 20px rgba(0, 212, 255, 0.3);
-    filter: brightness(1) hue-rotate(0deg);
-  }
-  25% {
-    box-shadow: 0 0 30px rgba(139, 92, 246, 0.4);
-    filter: brightness(1.1) hue-rotate(90deg);
-  }
-  50% { 
-    box-shadow: 0 0 40px rgba(0, 255, 136, 0.5);
-    filter: brightness(1.2) hue-rotate(180deg);
-  }
-  75% {
-    box-shadow: 0 0 30px rgba(255, 0, 128, 0.4);
-    filter: brightness(1.1) hue-rotate(270deg);
-  }
-}
-
-@keyframes galaxy-float {
-  0%, 100% { transform: translateY(0px) rotate(0deg); }
-  33% { transform: translateY(-8px) rotate(1deg); }
-  66% { transform: translateY(-4px) rotate(-1deg); }
-}
-
-@keyframes galaxy-slide-up {
-  from {
-    opacity: 0;
-    transform: translateY(30px) scale(0.95);
-    filter: blur(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-    filter: blur(0);
-  }
-}
-
-@keyframes galaxy-fade-in {
-  from { 
-    opacity: 0; 
-    filter: blur(10px) brightness(0.5);
-    transform: scale(0.9);
-  }
-  to { 
-    opacity: 1; 
-    filter: blur(0) brightness(1);
-    transform: scale(1);
-  }
-}
-
-@keyframes galaxy-typing {
-  0%, 50% { opacity: 1; }
-  51%, 100% { opacity: 0.3; }
-}
-
-@keyframes galaxy-nebula-flow {
-  0% { 
-    background-position: 0% 50%; 
-    filter: hue-rotate(0deg);
-  }
-  25% {
-    background-position: 50% 0%;
-    filter: hue-rotate(90deg);
-  }
-  50% { 
-    background-position: 100% 50%; 
-    filter: hue-rotate(180deg);
-  }
-  75% {
-    background-position: 50% 100%;
-    filter: hue-rotate(270deg);
-  }
-  100% { 
-    background-position: 0% 50%; 
-    filter: hue-rotate(360deg);
-  }
-}
-
-@keyframes galaxy-stars-twinkle {
-  0%, 100% { 
-    opacity: 0.6; 
-    transform: scale(1) rotate(0deg);
-  }
-  25% {
-    opacity: 0.9;
-    transform: scale(1.1) rotate(90deg);
-  }
-  50% { 
-    opacity: 1; 
-    transform: scale(1.2) rotate(180deg);
-  }
-  75% {
-    opacity: 0.8;
-    transform: scale(1.05) rotate(270deg);
-  }
-}
-
-@keyframes galaxy-aurora {
-  0% {
-    background-position: 0% 0%;
-    opacity: 0.3;
-  }
-  50% {
-    background-position: 100% 100%;
-    opacity: 0.7;
-  }
-  100% {
-    background-position: 0% 0%;
-    opacity: 0.3;
-  }
-}
-
-@keyframes galaxy-plasma {
-  0% {
-    transform: rotate(0deg) scale(1);
-    opacity: 0.4;
-  }
-  50% {
-    transform: rotate(180deg) scale(1.1);
-    opacity: 0.8;
-  }
-  100% {
-    transform: rotate(360deg) scale(1);
-    opacity: 0.4;
-  }
-}
-
-// ========================================
-// MAIN APP CONTAINER - ULTRA ENHANCED
-// ========================================
-
-#acode-ai-assistant {
-  background: var(--galaxy-deep-space);
-  color: var(--galaxy-text-primary);
-  font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  height: 100vh;
-  overflow: hidden;
-  position: relative;
+// Main app container
+.mainApp {
   display: flex;
   flex-direction: column;
-
-  // Galaxy Background Layer - Multi-layered
+  height: 100vh;
+  background: var(--galaxy-primary);
+  color: var(--galaxy-text-primary);
+  font-family: 'SF Pro Display', 'Segoe UI', 'Roboto', -apple-system, BlinkMacSystemFont, sans-serif;
+  overflow: hidden;
+  position: relative;
+  
   &::before {
     content: '';
-    position: fixed;
+    position: absolute;
     top: 0;
     left: 0;
     right: 0;
     bottom: 0;
     background: 
-      url('../assets/galaxy.png') center center / cover no-repeat,
-      radial-gradient(ellipse at 20% 30%, rgba(0, 212, 255, 0.15) 0%, transparent 60%),
-      radial-gradient(ellipse at 80% 70%, rgba(139, 92, 246, 0.15) 0%, transparent 60%),
-      radial-gradient(ellipse at 50% 10%, rgba(0, 255, 136, 0.1) 0%, transparent 50%),
-      radial-gradient(ellipse at 10% 80%, rgba(255, 0, 128, 0.1) 0%, transparent 50%),
-      linear-gradient(135deg, #0a0a0f 0%, #1a1a2e 30%, #16213e 70%, #0f172a 100%);
-    opacity: 1;
+      radial-gradient(circle at 20% 80%, rgba(0, 212, 255, 0.1) 0%, transparent 50%),
+      radial-gradient(circle at 80% 20%, rgba(157, 78, 221, 0.1) 0%, transparent 50%),
+      radial-gradient(circle at 40% 40%, rgba(255, 0, 110, 0.05) 0%, transparent 50%);
+    pointer-events: none;
     z-index: 0;
   }
 
-  // Enhanced Cosmic Overlay Effects
-  &::after {
-    content: '';
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: 
-      var(--galaxy-gradient-aurora),
-      radial-gradient(circle at 25% 25%, rgba(0, 212, 255, 0.1) 0%, transparent 50%),
-      radial-gradient(circle at 75% 75%, rgba(139, 92, 246, 0.1) 0%, transparent 50%),
-      radial-gradient(circle at 50% 50%, rgba(255, 0, 128, 0.05) 0%, transparent 70%);
-    pointer-events: none;
+  > * {
+    position: relative;
     z-index: 1;
-    animation: galaxy-aurora 25s ease-in-out infinite;
-    background-size: 400% 400%, 100% 100%, 100% 100%, 100% 100%;
-    opacity: 0.6;
-  }
-
-  .mainApp {
-    position: relative;
-    z-index: 2;
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-    backdrop-filter: blur(2px);
   }
 }
 
-// ========================================
-// ENHANCED HEADER - ULTRA MODERN
-// ========================================
-
-.page-header {
-  background: var(--galaxy-glass);
-  backdrop-filter: blur(30px);
-  border-bottom: 1px solid var(--galaxy-glass-border);
-  padding: 18px 24px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  position: relative;
-  box-shadow: var(--galaxy-shadow-md);
-
-  &::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: var(--galaxy-gradient-plasma);
-    opacity: 0.03;
-    pointer-events: none;
-    animation: galaxy-plasma 20s linear infinite;
-  }
-
-  &::after {
-    content: '';
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    height: 3px;
-    background: var(--galaxy-gradient-nebula);
-    opacity: 0.6;
-    animation: galaxy-nebula-flow 12s linear infinite;
-    background-size: 300% 300%;
-  }
-
-  .page-title {
-    font-size: 20px;
-    font-weight: 700;
-    color: var(--galaxy-text-primary);
-    text-shadow: 
-      0 0 10px rgba(0, 212, 255, 0.4),
-      0 0 20px rgba(139, 92, 246, 0.2);
-    background: var(--galaxy-gradient-nebula);
-    background-clip: text;
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    animation: galaxy-nebula-flow 15s linear infinite;
-    background-size: 200% 200%;
-  }
-
-  .icon {
-    color: var(--galaxy-star-blue);
-    font-size: 24px;
-    padding: 12px;
-    border-radius: 16px;
-    background: var(--galaxy-glass);
-    border: 1px solid var(--galaxy-glass-border);
-    cursor: pointer;
-    transition: all var(--galaxy-transition-bounce);
-    position: relative;
-    overflow: hidden;
-
-    &::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: -100%;
-      width: 100%;
-      height: 100%;
-      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
-      transition: left 0.6s ease;
-    }
-
-    &::after {
-      content: '';
-      position: absolute;
-      top: -2px;
-      left: -2px;
-      right: -2px;
-      bottom: -2px;
-      background: var(--galaxy-gradient-nebula);
-      border-radius: 18px;
-      opacity: 0;
-      transition: opacity var(--galaxy-transition-fast);
-      z-index: -1;
-      animation: galaxy-nebula-flow 8s linear infinite;
-      background-size: 200% 200%;
-    }
-
-    &:hover {
-      background: var(--galaxy-star-blue);
-      color: var(--galaxy-deep-space);
-      box-shadow: var(--galaxy-shadow-cosmic);
-      transform: translateY(-4px) scale(1.1) rotate(5deg);
-
-      &::before {
-        left: 100%;
-      }
-
-      &::after {
-        opacity: 0.8;
-      }
-    }
-
-    &:active {
-      transform: translateY(-2px) scale(1.05) rotate(-2deg);
-    }
-  }
-}
-
-// ========================================
-// PROVIDER DROPDOWN - ENHANCED
-// ========================================
-
-.provider-dropdown {
-  .provider-select {
-    background: var(--galaxy-glass);
-    border: 2px solid var(--galaxy-glass-border);
-    border-radius: 16px;
-    color: var(--galaxy-text-primary);
-    padding: 14px 20px;
-    font-size: 15px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all var(--galaxy-transition-bounce);
-    backdrop-filter: blur(15px);
-    position: relative;
-    overflow: hidden;
-
-    &::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background: var(--galaxy-gradient-cosmic);
-      opacity: 0;
-      transition: opacity var(--galaxy-transition-fast);
-      z-index: -1;
-    }
-
-    &:hover {
-      border-color: var(--galaxy-star-blue);
-      box-shadow: var(--galaxy-shadow-cosmic);
-      background: var(--galaxy-nebula);
-      transform: translateY(-2px) scale(1.02);
-
-      &::before {
-        opacity: 0.1;
-      }
-    }
-
-    &:focus {
-      outline: none;
-      border-color: var(--galaxy-star-purple);
-      box-shadow: 0 0 0 4px rgba(139, 92, 246, 0.3);
-      transform: translateY(-3px) scale(1.03);
-    }
-
-    option {
-      background: var(--galaxy-nebula);
-      color: var(--galaxy-text-primary);
-      padding: 12px;
-      font-weight: 500;
-    }
-  }
-}
-
-// ========================================
-// CHAT CONTAINER - ULTRA ENHANCED
-// ========================================
-
+// Chat container
 .chatBox {
   flex: 1;
+  padding: 1rem;
   overflow-y: auto;
-  padding: 32px 24px 140px 24px;
   scroll-behavior: smooth;
-  position: relative;
-
-  // Enhanced Custom Scrollbar
+  
   &::-webkit-scrollbar {
-    width: 10px;
+    width: 6px;
   }
-
+  
   &::-webkit-scrollbar-track {
-    background: var(--galaxy-glass);
-    border-radius: 6px;
-    margin: 4px;
+    background: var(--galaxy-secondary);
+    border-radius: 10px;
   }
-
+  
   &::-webkit-scrollbar-thumb {
-    background: var(--galaxy-gradient-cosmic);
-    border-radius: 6px;
-    border: 1px solid var(--galaxy-glass-border);
-
+    background: var(--galaxy-star-blue);
+    border-radius: 10px;
+    transition: background 0.3s ease;
+    
     &:hover {
-      background: var(--galaxy-gradient-nebula);
-      box-shadow: var(--galaxy-shadow-cosmic);
+      background: var(--galaxy-star-purple);
     }
   }
-
-  // Enhanced floating particles effect
-  &::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background-image: 
-      radial-gradient(3px 3px at 25px 35px, rgba(0, 212, 255, 0.4), transparent),
-      radial-gradient(2px 2px at 45px 75px, rgba(139, 92, 246, 0.5), transparent),
-      radial-gradient(1px 1px at 95px 45px, rgba(0, 255, 136, 0.4), transparent),
-      radial-gradient(2px 2px at 15px 85px, rgba(255, 0, 128, 0.3), transparent),
-      radial-gradient(1px 1px at 75px 15px, rgba(255, 255, 255, 0.6), transparent);
-    background-repeat: repeat;
-    background-size: 120px 120px;
-    animation: galaxy-stars-twinkle 6s ease-in-out infinite;
-    pointer-events: none;
-    opacity: 0.8;
-  }
-
-  // Additional cosmic dust layer
-  &::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: var(--galaxy-gradient-aurora);
-    opacity: 0.02;
-    animation: galaxy-aurora 30s ease-in-out infinite;
-    background-size: 500% 500%;
-    pointer-events: none;
+  
+  // Mobile optimization
+  @media (max-width: var(--mobile-max)) {
+    padding: 0.75rem;
   }
 }
 
-// ========================================
-// ENHANCED CHAT MESSAGES - ULTRA MODERN
-// ========================================
-
+// Message wrappers
 .wrapper, .ai_wrapper {
-  margin-bottom: 32px;
-  animation: galaxy-slide-up 0.6s ease-out;
-  position: relative;
+  margin-bottom: 1.5rem;
+  animation: fadeInUp 0.5s ease-out;
+  
+  @media (max-width: var(--mobile-max)) {
+    margin-bottom: 1rem;
+  }
 }
 
 .chat, .ai_chat {
   display: flex;
-  gap: 18px;
   align-items: flex-start;
-  max-width: 85%;
-  position: relative;
-}
-
-// User Messages (Right Side) - Enhanced
-.wrapper .chat {
-  margin-left: auto;
-  flex-direction: row-reverse;
-
-  .message {
-    background: var(--galaxy-gradient-cosmic);
-    color: white;
-    padding: 20px 28px;
-    border-radius: 28px 28px 8px 28px;
-    box-shadow: var(--galaxy-shadow-lg);
-    position: relative;
-    backdrop-filter: blur(15px);
-    border: 2px solid rgba(255, 255, 255, 0.1);
-    font-weight: 500;
-    line-height: 1.6;
-
-    &::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background: var(--galaxy-gradient-nebula);
-      border-radius: inherit;
-      opacity: 0;
-      transition: opacity var(--galaxy-transition-fast);
-      z-index: -1;
-      animation: galaxy-nebula-flow 20s linear infinite;
-      background-size: 300% 300%;
-    }
-
-    &::after {
-      content: '';
-      position: absolute;
-      top: -2px;
-      left: -2px;
-      right: -2px;
-      bottom: -2px;
-      background: var(--galaxy-gradient-aurora);
-      border-radius: 30px 30px 10px 30px;
-      opacity: 0;
-      transition: opacity var(--galaxy-transition-fast);
-      z-index: -2;
-      animation: galaxy-aurora 15s ease-in-out infinite;
-      background-size: 200% 200%;
-    }
-
-    &:hover {
-      transform: translateY(-4px) scale(1.02);
-      box-shadow: var(--galaxy-shadow-xl);
-
-      &::before {
-        opacity: 0.3;
-      }
-
-      &::after {
-        opacity: 0.5;
-      }
-    }
+  gap: 1rem;
+  max-width: 100%;
+  
+  @media (max-width: var(--mobile-max)) {
+    gap: 0.75rem;
   }
 }
 
-// AI Messages (Left Side) - Enhanced
-.ai_wrapper .ai_chat {
-  .ai_message {
-    background: var(--galaxy-glass);
-    backdrop-filter: blur(30px);
-    border: 2px solid var(--galaxy-glass-border);
-    color: var(--galaxy-text-primary);
-    padding: 20px 28px;
-    border-radius: 28px 28px 28px 8px;
-    box-shadow: var(--galaxy-shadow-lg);
-    position: relative;
-    line-height: 1.7;
-    font-weight: 500;
-
-    &::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background: var(--galaxy-gradient-plasma);
-      border-radius: inherit;
-      opacity: 0;
-      transition: opacity var(--galaxy-transition-fast);
-      z-index: -1;
-      animation: galaxy-plasma 25s linear infinite;
-    }
-
-    &::after {
-      content: '';
-      position: absolute;
-      top: -2px;
-      left: -2px;
-      right: -2px;
-      bottom: -2px;
-      background: var(--galaxy-gradient-nebula);
-      border-radius: 30px 30px 30px 10px;
-      opacity: 0;
-      transition: opacity var(--galaxy-transition-fast);
-      z-index: -2;
-      animation: galaxy-nebula-flow 18s linear infinite;
-      background-size: 250% 250%;
-    }
-
-    &:hover {
-      transform: translateY(-4px) scale(1.02);
-      box-shadow: var(--galaxy-shadow-xl);
-
-      &::before {
-        opacity: 0.15;
-      }
-
-      &::after {
-        opacity: 0.4;
-      }
-    }
-  }
-}
-
-// ========================================
-// ENHANCED PROFILE IMAGES - ULTRA MODERN
-// ========================================
-
+// Profile images
 .profile, .ai_profile {
-  width: 48px;
-  height: 48px;
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
   overflow: hidden;
-  border: 3px solid var(--galaxy-star-blue);
-  box-shadow: var(--galaxy-shadow-cosmic);
-  position: relative;
   flex-shrink: 0;
-  display: inline-block;
-
+  background: var(--galaxy-nebula-gradient);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: var(--galaxy-glow);
+  
   img {
     width: 100%;
     height: 100%;
     object-fit: cover;
-    object-position: center;
-    display: block;
-    transition: transform var(--galaxy-transition-fast);
   }
-
-  &::before {
-    content: '';
-    position: absolute;
-    top: -3px;
-    left: -3px;
-    right: -3px;
-    bottom: -3px;
-    border-radius: 50%;
-    background: var(--galaxy-gradient-nebula);
-    z-index: -1;
-    animation: galaxy-nebula-flow 12s linear infinite;
-    background-size: 300% 300%;
-  }
-
-  &::after {
-    content: '';
-    position: absolute;
-    top: -6px;
-    left: -6px;
-    right: -6px;
-    bottom: -6px;
-    border-radius: 50%;
-    background: var(--galaxy-gradient-aurora);
-    z-index: -2;
-    opacity: 0.3;
-    animation: galaxy-aurora 20s ease-in-out infinite;
-    background-size: 400% 400%;
-  }
-
-  &:hover {
-    transform: scale(1.1) rotate(5deg);
-
-    img {
-      transform: scale(1.1);
-    }
+  
+  @media (max-width: var(--mobile-max)) {
+    width: 32px;
+    height: 32px;
   }
 }
 
-.ai_profile {
-  border-color: var(--galaxy-star-purple);
-  box-shadow: var(--galaxy-shadow-nebula);
-  animation: galaxy-glow 4s ease-in-out infinite;
-
-  &:hover {
-    transform: scale(1.1) rotate(-5deg);
-  }
-}
-
-// ========================================
-// REDESIGNED INPUT CONTAINER - ULTRA ENHANCED
-// ========================================
-
-.inputBox {
-  padding: 20px 24px;
-  background: var(--galaxy-glass);
-  backdrop-filter: blur(40px);
-  border-top: 2px solid var(--galaxy-glass-border);
-  display: flex;
-  gap: 16px;
-  align-items: flex-end;
+// Message bubbles
+.message, .ai_message {
+  background: var(--galaxy-secondary);
+  padding: 1rem 1.25rem;
+  border-radius: 1.25rem;
+  max-width: calc(100% - 60px);
+  word-wrap: break-word;
+  border: 1px solid var(--galaxy-border);
+  box-shadow: var(--galaxy-shadow);
   position: relative;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  z-index: 100;
-  box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.4);
-  margin-bottom: 0;
-
+  line-height: 1.6;
+  
   &::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 4px;
-    background: var(--galaxy-gradient-nebula);
-    opacity: 0.7;
-    animation: galaxy-nebula-flow 10s linear infinite;
-    background-size: 300% 300%;
-  }
-
-  &::after {
     content: '';
     position: absolute;
     top: 0;
     left: 0;
     right: 0;
     bottom: 0;
-    background: var(--galaxy-gradient-plasma);
-    opacity: 0.03;
+    background: var(--galaxy-nebula-gradient);
+    opacity: 0.05;
+    border-radius: inherit;
     pointer-events: none;
-    animation: galaxy-plasma 30s linear infinite;
+  }
+  
+  @media (max-width: var(--mobile-max)) {
+    padding: 0.875rem 1rem;
+    border-radius: 1rem;
+    max-width: calc(100% - 50px);
+    font-size: 0.9rem;
   }
 }
 
-// ========================================
-// ENHANCED CHAT TEXTAREA - ULTRA MODERN
-// ========================================
+.user_message {
+  background: var(--galaxy-accent);
+  border-color: var(--galaxy-star-blue);
+  margin-left: auto;
+}
+
+.ai_message {
+  background: var(--galaxy-secondary);
+  border-color: var(--galaxy-star-purple);
+  
+  // Code blocks inside AI messages
+  pre {
+    background: var(--galaxy-primary);
+    border: 1px solid var(--galaxy-border);
+    border-radius: 0.5rem;
+    overflow-x: auto;
+    margin: 0.75rem 0;
+    
+    code {
+      font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
+      font-size: 0.875rem;
+      line-height: 1.5;
+    }
+  }
+  
+  // Inline code
+  code:not(pre code) {
+    background: var(--galaxy-primary);
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.375rem;
+    font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
+    font-size: 0.875rem;
+    border: 1px solid var(--galaxy-border);
+  }
+}
+
+// Code blocks with copy functionality
+.codeBlock {
+  position: relative;
+  margin: 1rem 0;
+  border-radius: 0.75rem;
+  overflow: hidden;
+  background: var(--galaxy-primary);
+  border: 1px solid var(--galaxy-border);
+  box-shadow: var(--galaxy-shadow);
+  
+  .copy-button {
+    position: absolute;
+    top: 0.75rem;
+    right: 0.75rem;
+    background: var(--galaxy-star-blue);
+    color: var(--galaxy-primary);
+    border: none;
+    border-radius: 0.375rem;
+    padding: 0.5rem 0.75rem;
+    cursor: pointer;
+    font-size: 0.75rem;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    z-index: 10;
+    box-shadow: var(--galaxy-shadow);
+    
+    &:hover {
+      background: var(--galaxy-star-purple);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 20px rgba(0, 212, 255, 0.4);
+    }
+    
+    &:active {
+      transform: translateY(0);
+    }
+    
+    @media (max-width: var(--mobile-max)) {
+      padding: 0.375rem 0.5rem;
+      font-size: 0.7rem;
+    }
+  }
+  
+  .codesArea {
+    margin: 0;
+    padding: 1.25rem;
+    background: var(--galaxy-primary);
+    
+    code {
+      font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
+      font-size: 0.875rem;
+      line-height: 1.6;
+      color: var(--galaxy-text-primary);
+    }
+    
+    @media (max-width: var(--mobile-max)) {
+      padding: 1rem;
+      
+      code {
+        font-size: 0.8rem;
+      }
+    }
+  }
+}
+
+// Input area
+.inputBox {
+  padding: 1.25rem;
+  background: var(--galaxy-secondary);
+  border-top: 1px solid var(--galaxy-border);
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  position: relative;
+  
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: var(--galaxy-nebula-gradient);
+    opacity: 0.6;
+  }
+  
+  @media (max-width: var(--mobile-max)) {
+    padding: 1rem;
+    gap: 0.75rem;
+  }
+}
 
 .chatTextarea {
   flex: 1;
-  background: var(--galaxy-nebula);
-  border: 2px solid var(--galaxy-glass-border);
-  border-radius: 20px;
+  background: var(--galaxy-primary);
+  border: 1px solid var(--galaxy-border);
+  border-radius: 1.25rem;
+  padding: 1rem 1.25rem;
   color: var(--galaxy-text-primary);
-  padding: 16px 24px;
-  font-size: 16px;
-  line-height: 1.6;
-  resize: none;
-  min-height: 48px;
-  max-height: 140px;
-  transition: all var(--galaxy-transition-bounce);
   font-family: inherit;
-  font-weight: 500;
-  backdrop-filter: blur(15px);
-  box-sizing: border-box;
-  position: relative;
-
+  font-size: 1rem;
+  line-height: 1.5;
+  resize: none;
+  min-height: 50px;
+  max-height: 120px;
+  transition: all 0.3s ease;
+  
   &::placeholder {
     color: var(--galaxy-text-muted);
-    font-weight: 400;
   }
-
+  
   &:focus {
     outline: none;
     border-color: var(--galaxy-star-blue);
-    box-shadow: 
-      0 0 0 4px rgba(0, 212, 255, 0.3),
-      0 8px 32px rgba(0, 212, 255, 0.2);
-    background: var(--galaxy-cosmic);
-    transform: translateY(-4px) scale(1.02);
+    box-shadow: var(--galaxy-glow);
   }
-
-  &:hover {
-    border-color: var(--galaxy-star-purple);
-    box-shadow: var(--galaxy-shadow-md);
-    transform: translateY(-2px);
+  
+  @media (max-width: var(--mobile-max)) {
+    padding: 0.875rem 1rem;
+    font-size: 0.9rem;
+    border-radius: 1rem;
   }
 }
 
-// ========================================
-// ENHANCED ACTION BUTTONS - ULTRA MODERN
-// ========================================
-
+// Buttons
 .sendBtn, .stopGenerationBtn {
-  width: 56px;
-  height: 56px;
-  border: none;
+  width: 48px;
+  height: 48px;
   border-radius: 50%;
-  background: var(--galaxy-gradient-cosmic);
-  color: white;
+  border: none;
+  background: var(--galaxy-star-blue);
+  color: var(--galaxy-primary);
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all var(--galaxy-transition-bounce);
-  box-shadow: var(--galaxy-shadow-lg);
-  position: relative;
-  overflow: hidden;
-
-  &::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: var(--galaxy-gradient-nebula);
-    opacity: 0;
-    transition: opacity var(--galaxy-transition-fast);
-    border-radius: inherit;
-    animation: galaxy-nebula-flow 15s linear infinite;
-    background-size: 200% 200%;
-  }
-
-  &::after {
-    content: '';
-    position: absolute;
-    top: -3px;
-    left: -3px;
-    right: -3px;
-    bottom: -3px;
-    background: var(--galaxy-gradient-aurora);
-    border-radius: 50%;
-    opacity: 0;
-    transition: opacity var(--galaxy-transition-fast);
-    z-index: -1;
-    animation: galaxy-aurora 12s ease-in-out infinite;
-    background-size: 300% 300%;
-  }
-
+  transition: all 0.3s ease;
+  box-shadow: var(--galaxy-shadow);
+  
   svg {
-    width: 24px;
-    height: 24px;
-    z-index: 1;
-    transition: transform var(--galaxy-transition-fast);
+    width: 20px;
+    height: 20px;
+    fill: currentColor;
   }
-
+  
   &:hover {
-    transform: translateY(-6px) scale(1.15) rotate(10deg);
-    box-shadow: var(--galaxy-shadow-xl);
-    animation: galaxy-glow 1.5s ease-in-out;
-
-    &::before {
-      opacity: 0.4;
-    }
-
-    &::after {
-      opacity: 0.8;
-    }
-
-    svg {
-      transform: scale(1.2) rotate(-10deg);
-    }
+    background: var(--galaxy-star-purple);
+    transform: translateY(-2px) scale(1.05);
+    box-shadow: 0 8px 25px rgba(0, 212, 255, 0.4);
   }
-
+  
   &:active {
-    transform: translateY(-3px) scale(1.1) rotate(5deg);
+    transform: translateY(0) scale(1);
   }
-
+  
   &.hide {
-    opacity: 0;
-    pointer-events: none;
-    transform: scale(0.5) rotate(180deg);
+    display: none;
   }
-}
-
-.stopGenerationBtn {
-  background: linear-gradient(135deg, #ff4757, #ff3838, #ff6b7a);
-
-  &:hover {
-    background: linear-gradient(135deg, #ff3838, #ff2f2f, #ff5757);
-    box-shadow: 0 0 40px rgba(255, 71, 87, 0.6);
-  }
-
-  &::before {
-    background: linear-gradient(45deg, #ff0080, #ff4757, #ff6b7a);
-  }
-}
-
-// ========================================
-// ENHANCED CODE BLOCKS - ULTRA MODERN
-// ========================================
-
-.codeBlock {
-  position: relative;
-  margin: 24px 0;
-  border-radius: 20px;
-  overflow: hidden;
-  background: var(--galaxy-void);
-  border: 2px solid var(--galaxy-glass-border);
-  box-shadow: var(--galaxy-shadow-lg);
-
-  &::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: var(--galaxy-gradient-plasma);
-    opacity: 0.05;
-    pointer-events: none;
-    animation: galaxy-plasma 25s linear infinite;
-  }
-
-  .copy-button {
-    position: absolute;
-    top: 20px;
-    right: 20px;
-    background: var(--galaxy-glass);
-    border: 2px solid var(--galaxy-glass-border);
-    border-radius: 12px;
-    color: var(--galaxy-text-secondary);
-    padding: 10px 16px;
-    font-size: 13px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all var(--galaxy-transition-bounce);
-    z-index: 2;
-    backdrop-filter: blur(15px);
-    position: relative;
-    overflow: hidden;
-
-    &::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: -100%;
-      width: 100%;
-      height: 100%;
-      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
-      transition: left 0.6s ease;
-    }
-
-    &:hover {
-      background: var(--galaxy-star-blue);
-      color: var(--galaxy-deep-space);
-      transform: translateY(-3px) scale(1.05);
-      box-shadow: var(--galaxy-shadow-cosmic);
-
-      &::before {
-        left: 100%;
-      }
-    }
-
+  
+  @media (max-width: var(--mobile-max)) {
+    width: 42px;
+    height: 42px;
+    
     svg {
       width: 18px;
       height: 18px;
     }
   }
+}
 
-  .codesArea {
-    margin: 0;
-    padding: 28px;
-    background: transparent;
-    overflow-x: auto;
-    position: relative;
-
-    &::-webkit-scrollbar {
-      height: 8px;
-    }
-
-    &::-webkit-scrollbar-track {
-      background: var(--galaxy-glass);
-      border-radius: 4px;
-    }
-
-    &::-webkit-scrollbar-thumb {
-      background: var(--galaxy-gradient-cosmic);
-      border-radius: 4px;
-
-      &:hover {
-        background: var(--galaxy-star-purple);
-      }
-    }
-
-    code {
-      font-family: 'JetBrains Mono', 'Fira Code', 'SF Mono', Consolas, monospace;
-      font-size: 15px;
-      line-height: 1.7;
-      color: var(--galaxy-text-primary);
-      font-weight: 500;
-      text-shadow: 0 0 10px rgba(0, 212, 255, 0.1);
-    }
+.stopGenerationBtn {
+  background: var(--galaxy-error);
+  
+  &:hover {
+    background: #ff3742;
   }
 }
 
-// ========================================
-// AI EDIT POPUP - ULTRA ENHANCED FLOATING WINDOW
-// ========================================
-
-// Main popup container (floating window)
-.ai-edit-popup {
-  position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: 92%;
-  max-width: 520px;
-  background: var(--galaxy-nebula);
-  color: var(--galaxy-text-primary);
-  border-radius: 24px;
-  box-shadow: var(--galaxy-shadow-xl);
-  z-index: 9999;
-  border: 2px solid var(--galaxy-glass-border);
-  backdrop-filter: blur(40px);
-  animation: galaxy-slide-up 0.4s ease-out;
-  overflow: hidden;
-
-  // Enhanced Galaxy-themed overlay
-  &::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: var(--galaxy-gradient-cosmic);
-    opacity: 0.08;
-    pointer-events: none;
-    z-index: 0;
-    animation: galaxy-nebula-flow 20s linear infinite;
-    background-size: 300% 300%;
-  }
-
-  // Enhanced floating glow effect
-  &::after {
-    content: '';
-    position: absolute;
-    top: -4px;
-    left: -4px;
-    right: -4px;
-    bottom: -4px;
-    background: var(--galaxy-gradient-nebula);
-    border-radius: 28px;
-    z-index: -1;
-    opacity: 0.5;
-    animation: galaxy-nebula-flow 12s linear infinite;
-    background-size: 400% 400%;
-  }
-}
-
-// Enhanced popup header
-.ai-edit-popup-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 24px 28px;
-  border-bottom: 2px solid var(--galaxy-glass-border);
-  background: var(--galaxy-glass);
-  backdrop-filter: blur(20px);
-  position: relative;
-  z-index: 1;
-
-  &::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: var(--galaxy-gradient-aurora);
-    opacity: 0.05;
-    pointer-events: none;
-    animation: galaxy-aurora 25s ease-in-out infinite;
-    background-size: 300% 300%;
-  }
-
-  &::after {
-    content: '';
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    height: 2px;
-    background: var(--galaxy-gradient-nebula);
-    opacity: 0.6;
-    animation: galaxy-nebula-flow 15s linear infinite;
-    background-size: 200% 200%;
-  }
-}
-
-// Enhanced popup title
-.ai-edit-popup-title {
-  font-size: 20px;
-  font-weight: 700;
-  color: var(--galaxy-text-primary);
-  text-shadow: 
-    0 0 15px rgba(0, 212, 255, 0.4),
-    0 0 30px rgba(139, 92, 246, 0.2);
-  margin: 0;
-  background: var(--galaxy-gradient-nebula);
-  background-clip: text;
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  animation: galaxy-nebula-flow 18s linear infinite;
-  background-size: 250% 250%;
-}
-
-// Enhanced close button
-.ai-edit-popup-close {
-  background: var(--galaxy-glass);
-  border: 2px solid var(--galaxy-glass-border);
-  color: var(--galaxy-text-secondary);
-  border-radius: 50%;
-  width: 40px;
-  height: 40px;
-  display: flex;
+// Header elements
+.icon {
+  display: inline-flex;
   align-items: center;
   justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 0.75rem;
+  background: var(--galaxy-hover-bg);
+  color: var(--galaxy-star-blue);
   cursor: pointer;
-  font-size: 22px;
-  font-weight: bold;
-  transition: all var(--galaxy-transition-bounce);
-  backdrop-filter: blur(15px);
-  position: relative;
-  overflow: hidden;
-
-  &::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: var(--galaxy-gradient-cosmic);
-    opacity: 0;
-    transition: opacity var(--galaxy-transition-fast);
-    border-radius: inherit;
-  }
-
-  &::after {
-    content: '';
-    position: absolute;
-    top: -2px;
-    left: -2px;
-    right: -2px;
-    bottom: -2px;
-    background: var(--galaxy-gradient-aurora);
-    border-radius: 50%;
-    opacity: 0;
-    transition: opacity var(--galaxy-transition-fast);
-    z-index: -1;
-    animation: galaxy-aurora 10s ease-in-out infinite;
-    background-size: 200% 200%;
-  }
-
+  transition: all 0.3s ease;
+  border: 1px solid transparent;
+  font-size: 1.25rem;
+  
   &:hover {
     background: var(--galaxy-star-blue);
-    color: var(--galaxy-deep-space);
-    transform: scale(1.15) rotate(90deg);
-    box-shadow: var(--galaxy-shadow-cosmic);
-
-    &::before {
-      opacity: 0.3;
-    }
-
-    &::after {
-      opacity: 0.8;
-    }
+    color: var(--galaxy-primary);
+    border-color: var(--galaxy-star-blue);
+    transform: translateY(-2px);
+    box-shadow: var(--galaxy-glow);
   }
-
-  &:active {
-    transform: scale(1.05) rotate(45deg);
+  
+  @media (max-width: var(--mobile-max)) {
+    width: 36px;
+    height: 36px;
+    font-size: 1.1rem;
   }
 }
 
-// Enhanced popup body
-.ai-edit-popup-body {
-  padding: 28px;
-  position: relative;
-  z-index: 1;
-
-  &::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: var(--galaxy-gradient-plasma);
-    opacity: 0.02;
-    pointer-events: none;
-    animation: galaxy-plasma 30s linear infinite;
+// Token display
+.token-display {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background: var(--galaxy-accent);
+  border: 1px solid var(--galaxy-border);
+  border-radius: 1.5rem;
+  font-size: 0.875rem;
+  color: var(--galaxy-text-secondary);
+  
+  @media (max-width: var(--mobile-max)) {
+    padding: 0.375rem 0.75rem;
+    font-size: 0.8rem;
   }
 }
 
-// Enhanced textarea for AI prompt input
-.ai-edit-prompt {
-  width: 100%;
-  min-height: 140px;
-  max-height: 240px;
-  background: var(--galaxy-cosmic);
-  border: 2px solid var(--galaxy-glass-border);
-  border-radius: 16px;
+// Dialog and modal styles
+.dialog {
+  background: var(--galaxy-secondary);
+  border: 1px solid var(--galaxy-border);
+  border-radius: 1rem;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
   color: var(--galaxy-text-primary);
-  padding: 20px 24px;
-  font-size: 15px;
-  line-height: 1.7;
-  resize: vertical;
-  transition: all var(--galaxy-transition-bounce);
-  font-family: inherit;
-  font-weight: 500;
-  backdrop-filter: blur(15px);
-  box-sizing: border-box;
-  position: relative;
+  
+  .dialog-header {
+    background: var(--galaxy-nebula-gradient);
+    padding: 1.25rem;
+    border-radius: 1rem 1rem 0 0;
+    font-weight: 600;
+    font-size: 1.1rem;
+  }
+  
+  .dialog-content {
+    padding: 1.25rem;
+    
+    @media (max-width: var(--mobile-max)) {
+      padding: 1rem;
+    }
+  }
+}
 
+// List items in dialogs
+.dialog-item {
+  padding: 1rem;
+  margin-bottom: 0.75rem;
+  background: var(--galaxy-accent);
+  border: 1px solid var(--galaxy-border);
+  border-radius: 0.75rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  
+  &:hover {
+    background: var(--galaxy-hover-bg);
+    border-color: var(--galaxy-star-blue);
+    transform: translateX(4px);
+  }
+  
+  .delete-history-btn {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    border: none;
+    background: var(--galaxy-error);
+    color: white;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.875rem;
+    transition: all 0.3s ease;
+    
+    &:hover {
+      background: #ff3742;
+      transform: scale(1.1);
+    }
+  }
+}
+
+// Form elements
+input[type="text"], 
+input[type="password"], 
+select,
+textarea {
+  background: var(--galaxy-primary);
+  border: 1px solid var(--galaxy-border);
+  border-radius: 0.75rem;
+  padding: 0.875rem 1rem;
+  color: var(--galaxy-text-primary);
+  font-family: inherit;
+  font-size: 0.9rem;
+  transition: all 0.3s ease;
+  
   &::placeholder {
     color: var(--galaxy-text-muted);
-    opacity: 0.8;
-    font-weight: 400;
   }
-
+  
   &:focus {
     outline: none;
     border-color: var(--galaxy-star-blue);
-    box-shadow: 
-      0 0 0 4px rgba(0, 212, 255, 0.3),
-      0 8px 32px rgba(0, 212, 255, 0.2);
-    background: var(--galaxy-nebula);
-    transform: translateY(-3px) scale(1.02);
+    box-shadow: var(--galaxy-glow);
   }
-
-  &:hover {
-    border-color: var(--galaxy-star-purple);
-    box-shadow: var(--galaxy-shadow-md);
-    transform: translateY(-2px);
-  }
-
-  // Auto-expand behavior
-  &:focus {
-    min-height: 160px;
+  
+  @media (max-width: var(--mobile-max)) {
+    padding: 0.75rem;
+    font-size: 0.875rem;
   }
 }
 
-// Enhanced actions container
-.ai-edit-actions {
-  display: flex;
-  gap: 16px;
-  justify-content: flex-end;
-  margin-top: 24px;
-  align-items: center;
-}
-
-// Enhanced base button styles
-.ai-edit-btn {
-  padding: 14px 28px;
-  border: none;
-  border-radius: 14px;
-  font-size: 15px;
-  font-weight: 700;
-  cursor: pointer;
-  transition: all var(--galaxy-transition-bounce);
+// Provider dropdown
+.provider-dropdown {
   position: relative;
-  overflow: hidden;
-  backdrop-filter: blur(15px);
-
-  // Enhanced hover effect overlay
-  &::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: -100%;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
-    transition: left 0.6s ease;
+  
+  .provider-select {
+    background: var(--galaxy-accent);
+    border: 1px solid var(--galaxy-border);
+    border-radius: 0.75rem;
+    padding: 0.5rem 2rem 0.5rem 0.75rem;
+    color: var(--galaxy-text-primary);
+    font-size: 0.875rem;
+    cursor: pointer;
+    appearance: none;
+    
+    &:focus {
+      outline: none;
+      border-color: var(--galaxy-star-blue);
+    }
+    
+    @media (max-width: var(--mobile-max)) {
+      padding: 0.375rem 1.5rem 0.375rem 0.5rem;
+      font-size: 0.8rem;
+    }
   }
+}
 
-  &::after {
-    content: '';
-    position: absolute;
-    top: -2px;
-    left: -2px;
-    right: -2px;
-    bottom: -2px;
-    background: var(--galaxy-gradient-nebula);
-    border-radius: 16px;
+// Loading states
+.loading {
+  animation: pulse 2s infinite;
+}
+
+// Animations
+@keyframes fadeInUp {
+  from {
     opacity: 0;
-    transition: opacity var(--galaxy-transition-fast);
-    z-index: -1;
-    animation: galaxy-nebula-flow 12s linear infinite;
-    background-size: 200% 200%;
+    transform: translateY(20px);
   }
-
-  &:hover {
-    &::before {
-      left: 100%;
-    }
-
-    &::after {
-      opacity: 0.3;
-    }
-  }
-
-  &:active {
-    transform: translateY(2px) scale(0.98);
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 
-// Enhanced primary button
-.ai-edit-btn.primary {
-  background: var(--galaxy-gradient-cosmic);
-  color: white;
-  border: 2px solid var(--galaxy-star-blue);
-  box-shadow: var(--galaxy-shadow-lg);
-
-  &:hover {
-    background: var(--galaxy-star-blue);
-    color: var(--galaxy-deep-space);
-    transform: translateY(-4px) scale(1.08);
-    box-shadow: var(--galaxy-shadow-cosmic);
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
   }
-
-  &:focus {
-    outline: none;
-    box-shadow: 0 0 0 4px rgba(0, 212, 255, 0.4);
+  50% {
+    opacity: 0.7;
   }
 }
 
-// Enhanced secondary button
-.ai-edit-btn.secondary {
-  background: var(--galaxy-glass);
+@keyframes blink {
+  0%, 50% {
+    opacity: 1;
+  }
+  51%, 100% {
+    opacity: 0;
+  }
+}
+
+// Streaming cursor
+.streaming-cursor {
+  animation: blink 1s infinite;
+  color: var(--galaxy-star-blue);
+}
+
+// Responsive utility classes
+@media (max-width: var(--mobile-max)) {
+  .hide-mobile {
+    display: none !important;
+  }
+}
+
+@media (min-width: var(--tablet-min)) {
+  .hide-tablet {
+    display: none !important;
+  }
+}
+
+// High contrast mode support
+@media (prefers-contrast: high) {
+  :root {
+    --galaxy-border: #ffffff;
+    --galaxy-text-muted: #cccccc;
+  }
+}
+
+// System message styling
+.system_message {
+  background: var(--galaxy-accent);
+  border: 1px solid var(--galaxy-border);
+  border-radius: 1rem;
+  padding: 1rem;
+  margin: 1rem 0;
   color: var(--galaxy-text-secondary);
-  border: 2px solid var(--galaxy-glass-border);
-
-  &:hover {
-    background: var(--galaxy-text-muted);
-    color: var(--galaxy-deep-space);
-    transform: translateY(-3px) scale(1.05);
-    box-shadow: var(--galaxy-shadow-md);
-  }
-
-  &:focus {
-    outline: none;
-    box-shadow: 0 0 0 4px rgba(148, 163, 184, 0.3);
+  font-size: 0.9rem;
+  line-height: 1.5;
+  
+  @media (max-width: var(--mobile-max)) {
+    padding: 0.75rem;
+    font-size: 0.85rem;
   }
 }
 
-// Enhanced dark backdrop
+// AI Edit popup and backdrop
 .ai-edit-backdrop {
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.7);
+  background: rgba(15, 15, 30, 0.8);
   backdrop-filter: blur(8px);
-  z-index: 9998;
-  animation: galaxy-fade-in 0.4s ease-out;
-}
-
-// ========================================
-// UTILITY CLASSES & ENHANCEMENTS
-// ========================================
-
-.hide {
-  display: none !important;
-}
-
-.galaxy-glow {
-  animation: galaxy-glow 3s ease-in-out infinite;
-}
-
-.galaxy-float {
-  animation: galaxy-float 4s ease-in-out infinite;
-}
-
-.galaxy-pulse {
-  animation: galaxy-pulse 2s ease-in-out infinite;
-}
-
-// Theme-aware color classes
-.theme-adaptive-bg {
-  background: var(--galaxy-nebula);
-  color: var(--galaxy-text-primary);
-}
-
-.theme-adaptive-border {
-  border-color: var(--galaxy-glass-border);
-}
-
-.theme-adaptive-text {
-  color: var(--galaxy-text-primary);
-}
-
-// Token Usage Display
-.token-display {
-  background: var(--galaxy-glass);
-  border: 2px solid var(--galaxy-glass-border);
-  border-radius: 16px;
-  padding: 10px 16px;
+  z-index: 1000;
   display: flex;
   align-items: center;
-  gap: 8px;
-  cursor: pointer;
-  transition: all var(--galaxy-transition-bounce);
-  backdrop-filter: blur(15px);
-  font-size: 14px;
-  font-weight: 500;
-  position: relative;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.ai-edit-popup {
+  background: var(--galaxy-secondary);
+  border: 1px solid var(--galaxy-border);
+  border-radius: 1.25rem;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+  max-width: 90vw;
+  max-height: 80vh;
+  width: 600px;
   overflow: hidden;
+  animation: slideIn 0.3s ease-out;
   
-  &::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: -100%;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.15), transparent);
-    transition: left 0.6s;
+  @media (max-width: var(--mobile-max)) {
+    width: 95vw;
+    max-height: 90vh;
   }
+}
+
+.ai-edit-popup-header {
+  background: var(--galaxy-nebula-gradient);
+  padding: 1.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   
-  .token-icon {
-    font-size: 16px;
-    animation: galaxy-float 3s ease-in-out infinite;
-    filter: drop-shadow(0 0 5px rgba(0, 212, 255, 0.5));
+  @media (max-width: var(--mobile-max)) {
+    padding: 1rem;
   }
-  
-  .token-text {
-    color: var(--galaxy-text-primary);
-    font-weight: 600;
-    min-width: 24px;
-    text-align: center;
-    text-shadow: 0 0 8px rgba(0, 212, 255, 0.3);
-  }
+}
+
+.ai-edit-popup-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--galaxy-text-primary);
+  margin: 0;
+}
+
+.ai-edit-popup-close {
+  background: var(--galaxy-error);
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
   
   &:hover {
+    background: #ff3742;
+    transform: scale(1.1);
+  }
+}
+
+.ai-edit-popup-body {
+  padding: 1.25rem;
+  max-height: 50vh;
+  overflow-y: auto;
+  
+  @media (max-width: var(--mobile-max)) {
+    padding: 1rem;
+    max-height: 60vh;
+  }
+}
+
+.ai-edit-prompt {
+  background: var(--galaxy-primary);
+  border: 1px solid var(--galaxy-border);
+  border-radius: 0.75rem;
+  padding: 1rem;
+  width: 100%;
+  min-height: 120px;
+  color: var(--galaxy-text-primary);
+  font-family: inherit;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  resize: vertical;
+  
+  &:focus {
+    outline: none;
+    border-color: var(--galaxy-star-blue);
+    box-shadow: var(--galaxy-glow);
+  }
+  
+  @media (max-width: var(--mobile-max)) {
+    padding: 0.875rem;
+    font-size: 0.85rem;
+  }
+}
+
+.ai-edit-actions {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 1rem;
+  justify-content: flex-end;
+  
+  @media (max-width: var(--mobile-max)) {
+    flex-direction: column-reverse;
+  }
+}
+
+.ai-edit-btn {
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 0.75rem;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  
+  &.primary {
     background: var(--galaxy-star-blue);
-    color: var(--galaxy-deep-space);
-    transform: translateY(-3px) scale(1.02);
-    box-shadow: var(--galaxy-shadow-cosmic);
-    border-color: var(--galaxy-star-purple);
+    color: var(--galaxy-primary);
     
-    .token-text {
-      color: var(--galaxy-deep-space);
-      text-shadow: none;
-    }
-    
-    &::before {
-      left: 100%;
+    &:hover {
+      background: var(--galaxy-star-purple);
+      transform: translateY(-1px);
+      box-shadow: var(--galaxy-glow);
     }
   }
   
-  &:active {
-    transform: translateY(-1px) scale(0.98);
+  &.secondary {
+    background: var(--galaxy-accent);
+    color: var(--galaxy-text-secondary);
+    border: 1px solid var(--galaxy-border);
+    
+    &:hover {
+      background: var(--galaxy-hover-bg);
+      border-color: var(--galaxy-star-blue);
+    }
+  }
+  
+  @media (max-width: var(--mobile-max)) {
+    padding: 0.875rem 1.25rem;
   }
 }
 
-// ========================================
-// ENHANCED SELECTION & FOCUS STYLES
-// ========================================
+// AI suggestion and completion widgets
+.ai-suggestion-widget {
+  position: absolute;
+  background: var(--galaxy-secondary);
+  border: 1px solid var(--galaxy-border);
+  border-radius: 0.75rem;
+  box-shadow: var(--galaxy-shadow);
+  max-width: 400px;
+  max-height: 300px;
+  overflow-y: auto;
+  z-index: 100;
+  animation: fadeIn 0.2s ease-out;
+  
+  @media (max-width: var(--mobile-max)) {
+    max-width: 90vw;
+    max-height: 250px;
+  }
+}
 
-::selection {
+.suggestion-header, .autocomplete-header, .quickfix-header {
+  background: var(--galaxy-accent);
+  padding: 0.5rem 0.75rem;
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--galaxy-text-secondary);
+  border-bottom: 1px solid var(--galaxy-border);
+}
+
+.suggestion-item, .completion-item, .quickfix-item {
+  padding: 0.75rem;
+  cursor: pointer;
+  border-bottom: 1px solid rgba(0, 212, 255, 0.1);
+  transition: all 0.2s ease;
+  
+  &:hover {
+    background: var(--galaxy-hover-bg);
+    border-left: 3px solid var(--galaxy-star-blue);
+  }
+  
+  &:last-child {
+    border-bottom: none;
+  }
+}
+
+.suggestion-title, .completion-label, .fix-title {
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: var(--galaxy-text-primary);
+  margin-bottom: 0.25rem;
+}
+
+.suggestion-description, .completion-detail, .fix-description {
+  font-size: 0.8rem;
+  color: var(--galaxy-text-muted);
+  line-height: 1.4;
+}
+
+.completion-icon {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
   background: var(--galaxy-star-blue);
-  color: var(--galaxy-deep-space);
-  text-shadow: none;
-}
-
-::-moz-selection {
-  background: var(--galaxy-star-blue);
-  color: var(--galaxy-deep-space);
-  text-shadow: none;
-}
-
-// Enhanced focus styles for accessibility
-*:focus-visible {
-  outline: 3px solid var(--galaxy-star-blue);
-  outline-offset: 3px;
-  border-radius: 4px;
-}
-
-// ========================================
-// PERFORMANCE OPTIMIZATIONS
-// ========================================
-
-// Reduce motion for users who prefer it
-@media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-    scroll-behavior: auto !important;
-  }
-}
-
-// ========================================
-// ENHANCED THEME INTEGRATION
-// ========================================
-
-// Light theme adaptations
-#acode-ai-assistant {
-  &[data-theme="light"] {
-    --galaxy-deep-space: var(--app-background, #f8f9fa);
-    --galaxy-nebula: var(--popup-background, #ffffff);
-    --galaxy-cosmic: var(--secondary-background, #f1f3f4);
-    --galaxy-text-primary: var(--primary-text-color, #202124);
-    --galaxy-text-secondary: var(--secondary-text-color, #5f6368);
-    --galaxy-glass: var(--glass-background, rgba(0, 0, 0, 0.05));
-    --galaxy-glass-border: var(--border-color, rgba(0, 0, 0, 0.1));
-
-    &::before {
-      background: 
-        url('../assets/galaxy.png') center center / cover no-repeat,
-        radial-gradient(ellipse at 20% 30%, rgba(0, 123, 255, 0.1) 0%, transparent 60%),
-        radial-gradient(ellipse at 80% 70%, rgba(108, 99, 255, 0.1) 0%, transparent 60%),
-        linear-gradient(135deg, #f8f9fa 0%, #e9ecef 30%, #dee2e6 70%, #ced4da 100%);
-      opacity: 0.9;
-    }
-
-    &::after {
-      background: 
-        radial-gradient(circle at 25% 25%, rgba(0, 123, 255, 0.05) 0%, transparent 50%),
-        radial-gradient(circle at 75% 75%, rgba(108, 99, 255, 0.05) 0%, transparent 50%);
-      opacity: 0.4;
-    }
-  }
-
-  // Auto theme respects system preference
-  &[data-theme="auto"] {
-    @media (prefers-color-scheme: light) {
-      --galaxy-deep-space: var(--app-background, #f8f9fa);
-      --galaxy-nebula: var(--popup-background, #ffffff);
-      --galaxy-cosmic: var(--secondary-background, #f1f3f4);
-      --galaxy-text-primary: var(--primary-text-color, #202124);
-      --galaxy-text-secondary: var(--secondary-text-color, #5f6368);
-    }
-  }
-}
-
-// Dynamic font integration
-#acode-ai-assistant {
-  font-family: var(--font-family, 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif);
-  font-size: var(--font-size, 16px);
-}
-
-// ========================================
-// LOADING STATES & MICRO-INTERACTIONS
-// ========================================
-
-.loading {
-  position: relative;
-
-  &::after {
-    content: '';
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    width: 20px;
-    height: 20px;
-    margin: -10px 0 0 -10px;
-    border: 2px solid var(--galaxy-glass-border);
-    border-top: 2px solid var(--galaxy-star-blue);
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-  }
-}
-
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
-
-// Typing indicator
-.typing-indicator {
+  color: var(--galaxy-primary);
+  font-size: 0.7rem;
   display: flex;
-  gap: 4px;
-  padding: 16px 20px;
+  align-items: center;
+  justify-content: center;
+  margin-right: 0.75rem;
+  flex-shrink: 0;
+}
 
-  .dot {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
+.completion-content {
+  flex: 1;
+}
+
+.quickfix-item-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.fix-severity {
+  padding: 0.25rem 0.5rem;
+  border-radius: 1rem;
+  font-size: 0.7rem;
+  font-weight: 600;
+  
+  &.error {
+    background: var(--galaxy-error);
+    color: white;
+  }
+  
+  &.warning {
+    background: var(--galaxy-warning);
+    color: var(--galaxy-primary);
+  }
+  
+  &.info {
     background: var(--galaxy-star-blue);
-    animation: typing-dot 1.4s ease-in-out infinite;
-
-    &:nth-child(2) {
-      animation-delay: 0.2s;
-    }
-
-    &:nth-child(3) {
-      animation-delay: 0.4s;
-    }
+    color: var(--galaxy-primary);
   }
 }
 
-@keyframes typing-dot {
-  0%, 60%, 100% {
-    transform: translateY(0);
-    opacity: 0.4;
+.fix-action {
+  margin-top: 0.5rem;
+  padding: 0.5rem;
+  background: var(--galaxy-primary);
+  border-radius: 0.5rem;
+  border: 1px solid var(--galaxy-border);
+  font-size: 0.8rem;
+  color: var(--galaxy-text-secondary);
+}
+
+// Real-time AI status
+.realtime-ai-status {
+  position: fixed;
+  top: 1rem;
+  right: 1rem;
+  background: var(--galaxy-secondary);
+  border: 1px solid var(--galaxy-border);
+  border-radius: 2rem;
+  padding: 0.5rem 1rem;
+  font-size: 0.8rem;
+  color: var(--galaxy-text-secondary);
+  box-shadow: var(--galaxy-shadow);
+  z-index: 50;
+  
+  &.active {
+    border-color: var(--galaxy-star-blue);
+    box-shadow: var(--galaxy-glow);
   }
-  30% {
-    transform: translateY(-10px);
+}
+
+// Error handling
+.error-box {
+  background: rgba(255, 71, 87, 0.1);
+  border: 1px solid var(--galaxy-error);
+  border-radius: 0.75rem;
+  padding: 1rem;
+  margin: 1rem 0;
+  color: var(--galaxy-error);
+  font-size: 0.9rem;
+  
+  @media (max-width: var(--mobile-max)) {
+    padding: 0.75rem;
+    font-size: 0.85rem;
+  }
+}
+
+// Import suggestions
+.ai-import-suggestion {
+  background: var(--galaxy-accent);
+  border: 1px solid var(--galaxy-star-purple);
+  border-radius: 0.75rem;
+  padding: 0.75rem;
+  margin: 0.5rem 0;
+  font-size: 0.85rem;
+  color: var(--galaxy-text-secondary);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  
+  &:hover {
+    background: var(--galaxy-hover-bg);
+    border-color: var(--galaxy-star-blue);
+    transform: translateX(4px);
+  }
+}
+
+// Animations
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
     opacity: 1;
   }
 }
 
-// Success/Error states
-.success {
-  border-color: var(--galaxy-star-green) !important;
-  box-shadow: 0 0 0 3px rgba(0, 255, 136, 0.3) !important;
-}
-
-.error {
-  border-color: var(--galaxy-star-pink) !important;
-  box-shadow: 0 0 0 3px rgba(255, 0, 128, 0.3) !important;
-}
-
-// Smooth transitions for all interactive elements
-button, input, textarea, select {
-  transition: all var(--galaxy-transition-fast);
-}
-
-// Enhanced hover states for better UX
-.interactive {
-  cursor: pointer;
-  transition: all var(--galaxy-transition-fast);
-
-  &:hover {
-    transform: translateY(-2px);
+// Reduced motion support
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
   }
+}
 
-  &:active {
-    transform: translateY(0);
+// Dark mode override (in case system theme changes)
+@media (prefers-color-scheme: light) {
+  :root {
+    --galaxy-primary: #f8f9fa;
+    --galaxy-secondary: #e9ecef;
+    --galaxy-accent: #dee2e6;
+    --galaxy-text-primary: #212529;
+    --galaxy-text-secondary: #495057;
+    --galaxy-text-muted: #6c757d;
   }
 }
