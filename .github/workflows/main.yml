@@ -51,14 +51,21 @@ jobs:
         run: |
           mkdir -p .artifacts
           
-          # Copy existing AI.zip
+          # Kalau AI.zip sudah ada di repo, pakai itu
           if [ -f "AI.zip" ]; then
             cp AI.zip .artifacts/
             echo "✅ Copied AI.zip to artifacts"
           else
             echo "❌ AI.zip not found, creating from dist"
             if [ -d "dist" ]; then
-              zip -r .artifacts/AI.zip dist plugin.json
+              # Bikin zip clean → isi dist/* langsung di root zip
+              if [ -f "README.md" ]; then
+                zip -r .artifacts/AI.zip dist/* plugin.json icon.png README.md
+              elif [ -f "readme.md" ]; then
+                zip -r .artifacts/AI.zip dist/* plugin.json icon.png readme.md
+              else
+                zip -r .artifacts/AI.zip dist/* plugin.json icon.png
+              fi
             else
               echo "❌ No dist folder found"
               exit 1
