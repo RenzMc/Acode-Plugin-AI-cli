@@ -5045,7 +5045,7 @@ Make cleaner, more efficient. Same functionality.`;
     if (this.realTimeEnabled) {
       window.toast("Real-time Renz Ai enabled âœ¨", 3000);
       this.showRealTimeStatus(true);
-      this.analyzeCurrentFile();
+      this.analyzeCurrentCode();
     } else {
       window.toast("Real-time Renz Ai disabled", 2000);
       this.showRealTimeStatus(false);
@@ -5208,37 +5208,6 @@ Focus cursor area only.`;
     }
   }
 
-  applySuggestions(analysis) {
-    // Clear previous suggestions
-    this.clearSuggestions();
-    this.clearErrorMarkers();
-
-    // Apply syntax error markers
-    if (analysis.syntax_errors && analysis.syntax_errors.length > 0) {
-      this.showSyntaxErrors(analysis.syntax_errors);
-    }
-
-    // Show missing imports
-    if (analysis.missing_imports && analysis.missing_imports.length > 0) {
-      this.showMissingImports(analysis.missing_imports);
-    }
-
-    // Show code suggestions
-    if (analysis.code_suggestions && analysis.code_suggestions.length > 0) {
-      this.showCodeSuggestions(analysis.code_suggestions);
-    }
-
-    // Show auto-complete
-    if (analysis.auto_complete && analysis.auto_complete.length > 0) {
-      this.showAutoComplete(analysis.auto_complete);
-    }
-
-    // Show quick fixes
-    if (analysis.quick_fixes && analysis.quick_fixes.length > 0) {
-      this.showQuickFixes(analysis.quick_fixes);
-    }
-  }
-
   showSyntaxErrors(errors) {
     errors.forEach(error => {
       const marker = editor.session.addMarker(
@@ -5392,46 +5361,49 @@ Focus cursor area only.`;
       const cursorPos = editor.getCursorPosition();
       const screenPos = editor.renderer.textToScreenCoordinates(cursorPos.row, cursorPos.column);
 
-    if (this.currentSuggestions.length > 0) {
-      this.suggestionWidget.innerHTML = '';
+      if (this.currentSuggestions.length > 0) {
+        this.suggestionWidget.innerHTML = '';
 
-      this.currentSuggestions.forEach(suggestion => {
-        const suggestionItem = tag("div", {
-          textContent: suggestion.text || suggestion,
-          style: `
-          padding: 4px 8px;
-          cursor: pointer;
-          border-radius: 2px;
-          margin: 2px 0;
-        `,
-          className: "suggestion-item"
+        this.currentSuggestions.forEach(suggestion => {
+          const suggestionItem = tag("div", {
+            textContent: suggestion.text || suggestion,
+            style: `
+            padding: 4px 8px;
+            cursor: pointer;
+            border-radius: 2px;
+            margin: 2px 0;
+          `,
+            className: "suggestion-item"
+          });
+
+          suggestionItem.onmouseenter = () => {
+            suggestionItem.style.background = '#333';
+          };
+
+          suggestionItem.onmouseleave = () => {
+            suggestionItem.style.background = 'transparent';
+          };
+
+          suggestionItem.onclick = () => {
+            this.applySuggestions(suggestion);
+            this.hideSuggestionWidget();
+          };
+
+          this.suggestionWidget.appendChild(suggestionItem);
         });
 
-        suggestionItem.onmouseenter = () => {
-          suggestionItem.style.background = '#333';
-        };
+        // Position widget
+        this.suggestionWidget.style.left = screenPos.pageX + 'px';
+        this.suggestionWidget.style.top = (screenPos.pageY + 20) + 'px';
+        this.suggestionWidget.style.display = 'block';
 
-        suggestionItem.onmouseleave = () => {
-          suggestionItem.style.background = 'transparent';
-        };
-
-        suggestionItem.onclick = () => {
-          this.applySuggestion(suggestion);
+        // Auto hide after 5 seconds
+        setTimeout(() => {
           this.hideSuggestionWidget();
-        };
-
-        this.suggestionWidget.appendChild(suggestionItem);
-      });
-
-      // Position widget
-      this.suggestionWidget.style.left = screenPos.pageX + 'px';
-      this.suggestionWidget.style.top = (screenPos.pageY + 20) + 'px';
-      this.suggestionWidget.style.display = 'block';
-
-      // Auto hide after 5 seconds
-      setTimeout(() => {
-        this.hideSuggestionWidget();
-      }, 5000);
+        }, 5000);
+      }
+    } catch (error) {
+      window.toast('Error showing contextual suggestions', 3000);
     }
   }
 
@@ -5447,11 +5419,15 @@ Focus cursor area only.`;
   }
 
   clearErrorMarkers() {
-    this.errorMarkers.forEach(marker => {
-      editor.session.removeMarker(marker);
-    });
-    this.errorMarkers = [];
-    editor.session.clearAnnotations();
+    if (this.errorMarkers) {
+      this.errorMarkers.forEach(marker => {
+        editor.session.removeMarker(marker);
+      });
+      this.errorMarkers = [];
+    }
+    if (editor && editor.session) {
+      editor.session.clearAnnotations();
+    }
   }
 
   createSuggestionWidget() {
@@ -5517,7 +5493,7 @@ Focus cursor area only.`;
 
         // Add click handler
         item.addEventListener('click', () => {
-          this.applySuggestion(suggestion);
+          this.applySuggestions(suggestion);
           this.suggestionWidget.style.display = 'none';
         });
 
@@ -5752,7 +5728,7 @@ Focus cursor area only.`;
     return icons[severity] || '❌';
   }
 
-  applySuggestion(suggestion) {
+  applySuggestions(suggestion) {
     try {
       if (!editor || !suggestion) return;
 
@@ -5778,7 +5754,6 @@ Focus cursor area only.`;
       window.toast('Suggestion applied', 2000);
 
     } catch (error) {
-      window.toast('Error applying suggestion', 3000);
       window.toast('Error applying suggestion', 3000);
     }
   }
@@ -5875,29 +5850,6 @@ Focus cursor area only.`;
 
     } catch (error) {
       window.toast(`Error applying quick fix: ${error.message}`, 3000);
-    }
-  }
-
-  async analyzeCurrentFile() {
-    if (!this.realTimeEnabled) return;
-
-    const activeFile = editorManager.activeFile;
-    if (!activeFile) return;
-
-    const content = editor.getValue();
-    if (content.trim().length === 0) return;
-
-    try {
-      const analysis = await this.performRealTimeAnalysis(
-        content,
-        editor.session.getLine(editor.getCursorPosition().row),
-        editor.getCursorPosition(),
-        activeFile
-      );
-
-      this.applySuggestions(analysis);
-    } catch (error) {
-      window.toast('File analysis error', 3000);
     }
   }
 
@@ -6105,7 +6057,6 @@ Focus cursor area only.`;
       window.toast("Error during plugin destruction", 3000);
     }
   }
-
 }
 
 if (window.acode) {
@@ -6118,7 +6069,7 @@ if (window.acode) {
       }
       acodePlugin.baseUrl = baseUrl;
       acodePlugin.init($page, cacheFile, cacheFileUrl);
-    },
+    }
   );
   acode.setPluginUnmount(plugin.id, () => {
     acodePlugin.destroy();
