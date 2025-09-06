@@ -184,18 +184,6 @@ Create reusable prompts for common tasks:
 - Choose **"Ask AI"** for instant analysis
 - Get context-aware suggestions
 
-### **Keyboard Shortcuts**
-- `Ctrl/Cmd + Shift + A`: Toggle AI assistant
-- `Ctrl/Cmd + Shift + R`: Analyze current file
-- `Ctrl/Cmd + Shift + B`: Open bulk operations
-- `Ctrl/Cmd + Shift + P`: See all available features
-- `Ctrl/Cmd + Shift + E`: Edit current file with AI
-- `Ctrl/Cmd + Shift + G`: Generate code with AI
-- `Ctrl/Cmd + Shift + D`: Generate documentation
-- `Ctrl/Cmd + Shift + C`: Add comments to code
-- `Ctrl/Cmd + Shift + O`: Optimize selected function
-- `Ctrl/Cmd + E`: Explain selected code or entire file
-
 ## 🎨 Customization
 
 ### **Theme Customization**
