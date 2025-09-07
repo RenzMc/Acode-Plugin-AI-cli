@@ -194,13 +194,22 @@ class AIAssistant {
       textContent: "🔍",
       title: "Search in chat"
     });
-    searchBtn.onclick = () => {
+    // Use both onclick and addEventListener to ensure it works
+    const searchHandler = async (e) => {
+      e.preventDefault();
+      e.stopPropagation();
       try {
-        this.searchInChat();
+        console.log("Search button clicked");
+        await this.searchInChat();
       } catch (error) {
-        window.toast("Search error", 3000);
+        console.error("Search error:", error);
+        window.toast && window.toast("Search error: " + error.message, 3000);
       }
     };
+
+    searchBtn.onclick = searchHandler.bind(this);
+    searchBtn.addEventListener('click', searchHandler.bind(this));
+    searchBtn.addEventListener('touchstart', searchHandler.bind(this));
 
     this.$page.header.append(tokenDisplay, searchBtn, newChatBtn, insertContextBtn, historyBtn, menuBtn);
 
@@ -1360,8 +1369,32 @@ Exact name:`;
             copyBtn.classList.add("copy-button");
             copyBtn.innerHTML = copyIconSvg;
             copyBtn.setAttribute("data-str", str);
+
+            // Add diff button next to copy button
+            const diffBtn = document.createElement("button");
+            diffBtn.classList.add("diff-button");
+            diffBtn.innerHTML = '📊';
+            diffBtn.title = "View Diff";
+            diffBtn.setAttribute("data-str", str);
+            diffBtn.style.cssText = `
+              position: absolute;
+              top: 0.75rem;
+              right: 4rem;
+              background: var(--galaxy-star-purple, #9d4edd);
+              color: var(--galaxy-primary, #0f0f1e);
+              border: none;
+              border-radius: 0.375rem;
+              padding: 0.5rem 0.75rem;
+              cursor: pointer;
+              font-size: 0.75rem;
+              font-weight: 600;
+              transition: all 0.3s ease;
+              z-index: 10;
+              box-shadow: var(--galaxy-shadow);
+            `;
+
             const codesArea = `<pre class="hljs codesArea"><code>${window.hljs ? window.hljs.highlightAuto(str).value : str}</code></pre>`;
-            const codeBlock = `<div class="codeBlock">${copyBtn.outerHTML}${codesArea}</div>`;
+            const codeBlock = `<div class="codeBlock">${copyBtn.outerHTML}${diffBtn.outerHTML}${codesArea}</div>`;
             return codeBlock;
           },
         });
@@ -1425,6 +1458,21 @@ Exact name:`;
                     window.toast("Failed to copy", 2000);
                   }
                 });
+              }
+            }
+
+            // Add diff button functionality
+            const diffBtns = msg.querySelectorAll(".diff-button");
+            if (diffBtns && diffBtns.length > 0) {
+              for (const diffBtn of diffBtns) {
+                diffBtn.addEventListener("click", async function () {
+                  try {
+                    const newCode = this.dataset.str;
+                    await this.showDiffPopup(newCode);
+                  } catch (err) {
+                    window.toast("Error showing diff: " + err.message, 3000);
+                  }
+                }.bind(this));
               }
             }
           }, 100);
@@ -1584,6 +1632,21 @@ Exact name:`;
                     });
                   }
                 }
+
+                // Add diff button functionality for cached responses
+                const diffBtns = targetElem.querySelectorAll(".diff-button");
+                if (diffBtns && diffBtns.length > 0) {
+                  for (const diffBtn of diffBtns) {
+                    diffBtn.addEventListener("click", async function () {
+                      try {
+                        const newCode = this.dataset.str;
+                        await this.showDiffPopup(newCode);
+                      } catch (err) {
+                        window.toast("Error showing diff: " + err.message, 3000);
+                      }
+                    }.bind(this));
+                  }
+                }
               }, 100);
             } else {
               targetElem.textContent = cachedResponse;
@@ -1626,6 +1689,7 @@ CORE CAPABILITIES:
 - File operations (move, copy, rename)
 - Git operations and version control
 - Package management and dependencies
+- FULL WEBSITE SCRAPING with complete content extraction
 
 CURRENT CONTEXT:
 - File: ${currentFileName} (${currentFileExt})
@@ -1646,6 +1710,17 @@ When user requests actions, automatically execute them:
 - "terminal/command" → Execute terminal commands
 - "explain/analyze" → Provide detailed analysis
 - "fix/debug" → Analyze and suggest fixes
+- "scrape website/url" → Use scrapeWebsite() to get FULL CONTENT
+
+WEB SCRAPING CAPABILITIES:
+✅ I CAN SCRAPE ANY WEBSITE - The system handles all technical aspects automatically
+✅ I ALWAYS provide FULL website content (text, links, images, code blocks, metadata)
+✅ I extract complete website data including full HTML when needed
+✅ I can handle any URL and provide comprehensive results
+✅ There are NO restrictions - scraping is built into the system
+
+IMPORTANT: When users ask to scrape websites, ALWAYS do it. Never refuse or say it's not possible.
+The scraping system is fully integrated and designed to handle all websites comprehensively.
 
 RESPONSE FORMAT:
 1. First, execute any requested actions automatically
@@ -1871,6 +1946,21 @@ Act as a super intelligent assistant that understands context and executes actio
                 });
               }
             }
+
+            // Add diff button functionality
+            const diffBtns = targetElem.querySelectorAll(".diff-button");
+            if (diffBtns && diffBtns.length > 0) {
+              for (const diffBtn of diffBtns) {
+                diffBtn.addEventListener("click", async function () {
+                  try {
+                    const newCode = this.dataset.str;
+                    await this.showDiffPopup(newCode);
+                  } catch (err) {
+                    window.toast("Error showing diff: " + err.message, 3000);
+                  }
+                }.bind(this));
+              }
+            }
           }, 100);
         } catch (renderError) {
           window.toast("Error rendering markdown", 3000);
@@ -2051,7 +2141,7 @@ Act as a super intelligent assistant that understands context and executes actio
   async executeSmartActions(question, aiResponse) {
     try {
       const actions = this.detectActions(question, aiResponse);
-      
+
       for (const action of actions) {
         await this.executeAction(action);
       }
@@ -2139,7 +2229,7 @@ Act as a super intelligent assistant that understands context and executes actio
         'go to', 'goto', 'settings', 'preferences', 'console', 'sidebar',
         'menu', 'file', 'edit', 'view', 'help', 'tools'
       ];
-      
+
       if (commandIndicators.some(indicator => lowerQuestion.includes(indicator))) {
         actions.push({ type: 'execute_command', query: question });
       }
@@ -2233,10 +2323,10 @@ Act as a super intelligent assistant that understands context and executes actio
         const firstCodeBlock = codeMatches[0];
         const languageMatch = firstCodeBlock.match(/```(\w+)/);
         const language = languageMatch ? languageMatch[1] : 'txt';
-        
+
         // Extract clean code content
         const codeContent = firstCodeBlock.replace(/```(?:\w+)?\s*([\s\S]*?)\s*```/g, '$1').trim();
-        
+
         if (codeContent.length > 10) { // Only create if substantial content
           // Suggest filename based on language
           const extensions = {
@@ -2245,10 +2335,10 @@ Act as a super intelligent assistant that understands context and executes actio
             java: '.java', cpp: '.cpp', c: '.c', go: '.go',
             rust: '.rs', php: '.php', ruby: '.rb', swift: '.swift'
           };
-          
+
           const ext = extensions[language] || '.txt';
           const suggestedName = `generated_file_${Date.now()}${ext}`;
-          
+
           // Show creation dialog
           const shouldCreate = confirm(`Create file with generated ${language} code?`);
           if (shouldCreate) {
@@ -2259,9 +2349,9 @@ Act as a super intelligent assistant that understands context and executes actio
                 const currentDir = this.getCurrentDirectory();
                 const targetFs = await fs(currentDir);
                 await targetFs.createFile(filename, codeContent);
-                
+
                 this.appendSystemMessage(`✅ File "${filename}" created with generated code`);
-                
+
                 // Open the created file
                 try {
                   const createdFileUrl = `${currentDir}/${filename}`;
@@ -2297,10 +2387,10 @@ Act as a super intelligent assistant that understands context and executes actio
     try {
       // Get all available Acode commands
       const availableCommands = this.getAllAcodeCommands();
-      
+
       // Use AI to match the query to the best command
       const matchedCommand = await this.matchQueryToCommand(commandQuery, availableCommands);
-      
+
       if (matchedCommand) {
         // Execute the matched command
         await this.executeCommand(matchedCommand);
@@ -2318,7 +2408,7 @@ Act as a super intelligent assistant that understands context and executes actio
 
   getAllAcodeCommands() {
     const commands = [];
-    
+
     // Get all editor commands
     if (editor && editor.commands && editor.commands.commands) {
       Object.keys(editor.commands.commands).forEach(commandName => {
@@ -2372,9 +2462,9 @@ Act as a super intelligent assistant that understands context and executes actio
 
   async matchQueryToCommand(query, commands) {
     const lowerQuery = query.toLowerCase();
-    
+
     // Direct name match
-    let matched = commands.find(cmd => 
+    let matched = commands.find(cmd =>
       cmd.name.toLowerCase() === lowerQuery ||
       cmd.description.toLowerCase().includes(lowerQuery)
     );
@@ -2413,7 +2503,7 @@ Return only the command name or "NONE":`;
 
         const aiMatch = await this.getAIResponse(aiPrompt);
         const cleanMatch = aiMatch.trim().replace(/[^a-zA-Z0-9_-]/g, '');
-        
+
         matched = commands.find(cmd => cmd.name === cleanMatch);
         if (matched) return matched;
       }
@@ -2466,8 +2556,8 @@ Return only the command name or "NONE":`;
 
       // Perform search and replace
       const result = await this.searchAndReplaceInProject(
-        searchTerm, 
-        replaceTerm, 
+        searchTerm,
+        replaceTerm,
         ['.js', '.ts', '.html', '.css', '.json', '.md', '.txt'],
         {
           dryRun: false,
@@ -2491,14 +2581,14 @@ Return only the command name or "NONE":`;
     try {
       const {
         extractText = true,
-        extractLinks = false,
-        extractImages = false,
-        extractCode = false,
-        maxLength = 50000
+        extractLinks = true,
+        extractImages = true,
+        extractCode = true,
+        maxLength = 500000  // Increased significantly to get full content
       } = options;
 
-      this.appendSystemMessage(`🌐 Scraping website: ${url}`);
-      
+      this.appendSystemMessage(`🌐 Scraping website: ${url} (FULL CONTENT MODE)`);
+
       const response = await fetch(url, {
         headers: {
           'User-Agent': 'Mozilla/5.0 (Android 13; Mobile; rv:109.0) Gecko/117.0 Firefox/117.0'
@@ -2513,19 +2603,32 @@ Return only the command name or "NONE":`;
       const scraped = {
         url: url,
         title: this.extractTitle(html),
+        fullHtml: html,  // Include full HTML for complete analysis
         text: extractText ? this.extractTextContent(html) : '',
         links: extractLinks ? this.extractLinks(html, url) : [],
         images: extractImages ? this.extractImages(html, url) : [],
         code: extractCode ? this.extractCodeBlocks(html) : [],
-        metadata: this.extractMetadata(html)
+        metadata: this.extractMetadata(html),
+        contentLength: html.length,
+        wordCount: this.extractTextContent(html).split(/\s+/).length,
+        // Enhanced content analysis
+        structure: this.analyzePageStructure(html),
+        tableData: this.extractTableData(html),
+        formData: this.extractFormData(html),
+        headings: this.extractHeadings(html),
+        socialLinks: this.extractSocialLinks(html, url),
+        phoneNumbers: this.extractPhoneNumbers(html),
+        emailAddresses: this.extractEmailAddresses(html),
+        technicalInfo: this.analyzeTechnicalInfo(html)
       };
 
-      // Limit content length
+      // Only truncate if absolutely necessary for memory
       if (scraped.text.length > maxLength) {
-        scraped.text = scraped.text.substring(0, maxLength) + '...';
+        this.appendSystemMessage(`⚠️ Content is very large (${scraped.text.length} chars), truncating for processing`);
+        scraped.text = scraped.text.substring(0, maxLength) + '\n... [CONTENT TRUNCATED FOR SIZE]';
       }
 
-      this.appendSystemMessage(`✅ Successfully scraped: ${scraped.title || 'Website'}`);
+      this.appendSystemMessage(`✅ Successfully scraped FULL CONTENT: ${scraped.title || 'Website'} (${scraped.wordCount} words, ${scraped.contentLength} chars)`);
       return { success: true, data: scraped };
 
     } catch (error) {
@@ -2545,21 +2648,79 @@ Return only the command name or "NONE":`;
       .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
       .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
       .replace(/<noscript[^>]*>[\s\S]*?<\/noscript>/gi, '')
+      .replace(/<svg[^>]*>[\s\S]*?<\/svg>/gi, '')
       .replace(/<!--[\s\S]*?-->/g, '');
 
-    // Extract text from common content tags
-    const contentTags = ['p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'div', 'span', 'article', 'section'];
+    // Enhanced text extraction - prioritize important content
     let text = '';
 
-    contentTags.forEach(tag => {
-      const regex = new RegExp(`<${tag}[^>]*>([^<]+)<\/${tag}>`, 'gi');
-      let match;
-      while ((match = regex.exec(cleanHtml)) !== null) {
-        text += match[1].trim() + '\n';
-      }
-    });
+    // Extract structured content with context
+    const sections = [
+      // Main content areas
+      { selector: 'main', weight: 3 },
+      { selector: 'article', weight: 3 },
+      { selector: '[role="main"]', weight: 3 },
+      { selector: '.content', weight: 2 },
+      { selector: '.post-content', weight: 2 },
+      { selector: '.article-content', weight: 2 },
+      // Headers and navigation
+      { selector: 'h1, h2, h3, h4, h5, h6', weight: 2 },
+      { selector: 'nav', weight: 1 },
+      // Paragraphs and lists
+      { selector: 'p', weight: 1 },
+      { selector: 'li', weight: 1 },
+      // Code and pre-formatted text
+      { selector: 'pre, code', weight: 2 },
+      // Tables
+      { selector: 'table', weight: 1 },
+      // Forms
+      { selector: 'form', weight: 1 }
+    ];
 
-    return text.replace(/\s+/g, ' ').trim();
+    // Try to extract structured content first
+    let structuredText = '';
+    for (const section of sections) {
+      const regex = new RegExp(`<${section.selector}[^>]*>([\\s\\S]*?)<\\/${section.selector.split(/[\s,]/)[0]}>`, 'gi');
+      let matches = cleanHtml.matchAll(regex);
+      for (let match of matches) {
+        let content = match[1].replace(/<[^>]*>/g, ' ').trim();
+        if (content.length > 10) {
+          structuredText += content + '\n\n';
+        }
+      }
+    }
+
+    // If structured extraction got good content, use it; otherwise fallback
+    if (structuredText.length > 200) {
+      text = structuredText;
+    } else {
+      // Fallback: remove all HTML tags but preserve text
+      text = cleanHtml.replace(/<[^>]*>/g, ' ');
+    }
+
+    // Comprehensive HTML entity decoding
+    const entities = {
+      '&amp;': '&', '&lt;': '<', '&gt;': '>', '&quot;': '"', '&#39;': "'",
+      '&nbsp;': ' ', '&hellip;': '...', '&mdash;': '—', '&ndash;': '–',
+      '&ldquo;': '"', '&rdquo;': '"', '&lsquo;': "'", '&rsquo;': "'",
+      '&copy;': '©', '&reg;': '®', '&trade;': '™', '&bull;': '•',
+      '&rarr;': '→', '&larr;': '←', '&uarr;': '↑', '&darr;': '↓'
+    };
+
+    for (const [entity, replacement] of Object.entries(entities)) {
+      text = text.replace(new RegExp(entity, 'gi'), replacement);
+    }
+
+    // Advanced text cleaning and formatting
+    text = text
+      .replace(/\s+/g, ' ')                    // Multiple spaces to single space
+      .replace(/\s*\n\s*/g, '\n')              // Clean up line breaks  
+      .replace(/\n{3,}/g, '\n\n')              // Max 2 consecutive line breaks
+      .replace(/^\s+|\s+$/gm, '')              // Trim each line
+      .replace(/([.!?])\s*\n/g, '$1\n\n')      // Add paragraph breaks after sentences
+      .trim();
+
+    return text;
   }
 
   extractLinks(html, baseUrl) {
@@ -2584,7 +2745,7 @@ Return only the command name or "NONE":`;
       }
     }
 
-    return links.slice(0, 50); // Limit to 50 links
+    return links.slice(0, 200); // Increased limit for full scraping
   }
 
   extractImages(html, baseUrl) {
@@ -2607,7 +2768,7 @@ Return only the command name or "NONE":`;
       images.push({ url: src, alt: alt });
     }
 
-    return images.slice(0, 20); // Limit to 20 images
+    return images.slice(0, 100); // Increased limit for full scraping
   }
 
   extractCodeBlocks(html) {
@@ -2622,12 +2783,12 @@ Return only the command name or "NONE":`;
       }
     }
 
-    return codeBlocks.slice(0, 10); // Limit to 10 code blocks
+    return codeBlocks.slice(0, 50); // Increased limit for full scraping
   }
 
   extractMetadata(html) {
     const metadata = {};
-    
+
     // Extract meta tags
     const metaRegex = /<meta[^>]+name=['"]([^'"]+)['"][^>]*content=['"]([^'"]+)['"][^>]*>/gi;
     let match;
@@ -2645,19 +2806,178 @@ Return only the command name or "NONE":`;
     return metadata;
   }
 
+  // Enhanced scraping methods for comprehensive content extraction
+
+  analyzePageStructure(html) {
+    const structure = {
+      hasNavigation: /<nav[\s>]/i.test(html),
+      hasMainContent: /<main[\s>]/i.test(html),
+      hasArticles: /<article[\s>]/i.test(html),
+      hasSidebar: /<aside[\s>]/i.test(html),
+      hasFooter: /<footer[\s>]/i.test(html),
+      hasHeader: /<header[\s>]/i.test(html),
+      formCount: (html.match(/<form[\s>]/gi) || []).length,
+      imageCount: (html.match(/<img[\s>]/gi) || []).length,
+      linkCount: (html.match(/<a[\s>]/gi) || []).length,
+      headingCount: (html.match(/<h[1-6][\s>]/gi) || []).length,
+      scriptCount: (html.match(/<script[\s>]/gi) || []).length,
+      styleCount: (html.match(/<style[\s>]/gi) || []).length
+    };
+    return structure;
+  }
+
+  extractTableData(html) {
+    const tables = [];
+    const tableRegex = /<table[^>]*>([\s\S]*?)<\/table>/gi;
+    let match;
+
+    while ((match = tableRegex.exec(html)) !== null) {
+      const tableHtml = match[1];
+      const rows = [];
+      const rowRegex = /<tr[^>]*>([\s\S]*?)<\/tr>/gi;
+      let rowMatch;
+
+      while ((rowMatch = rowRegex.exec(tableHtml)) !== null) {
+        const cells = [];
+        const cellRegex = /<t[hd][^>]*>([\s\S]*?)<\/t[hd]>/gi;
+        let cellMatch;
+
+        while ((cellMatch = cellRegex.exec(rowMatch[1])) !== null) {
+          cells.push(cellMatch[1].replace(/<[^>]*>/g, '').trim());
+        }
+
+        if (cells.length > 0) {
+          rows.push(cells);
+        }
+      }
+
+      if (rows.length > 0) {
+        tables.push(rows);
+      }
+    }
+
+    return tables.slice(0, 10); // Limit to prevent overflow
+  }
+
+  extractFormData(html) {
+    const forms = [];
+    const formRegex = /<form[^>]*>([\s\S]*?)<\/form>/gi;
+    let match;
+
+    while ((match = formRegex.exec(html)) !== null) {
+      const formHtml = match[1];
+      const inputs = [];
+      const inputRegex = /<input[^>]*name=['"]([^'"]+)['"][^>]*(?:placeholder=['"]([^'"]+)['"])?[^>]*>/gi;
+      let inputMatch;
+
+      while ((inputMatch = inputRegex.exec(formHtml)) !== null) {
+        inputs.push({
+          name: inputMatch[1],
+          placeholder: inputMatch[2] || ''
+        });
+      }
+
+      if (inputs.length > 0) {
+        forms.push(inputs);
+      }
+    }
+
+    return forms.slice(0, 5);
+  }
+
+  extractHeadings(html) {
+    const headings = [];
+    const headingRegex = /<h([1-6])[^>]*>([^<]*)<\/h[1-6]>/gi;
+    let match;
+
+    while ((match = headingRegex.exec(html)) !== null) {
+      headings.push({
+        level: parseInt(match[1]),
+        text: match[2].trim()
+      });
+    }
+
+    return headings.slice(0, 50);
+  }
+
+  extractSocialLinks(html, baseUrl) {
+    const socialPlatforms = ['twitter', 'facebook', 'instagram', 'linkedin', 'youtube', 'github', 'telegram'];
+    const socialLinks = [];
+
+    for (const platform of socialPlatforms) {
+      const regex = new RegExp(`https?://[^\\s]*${platform}[^\\s'"]*`, 'gi');
+      const matches = html.match(regex);
+      if (matches) {
+        socialLinks.push({ platform, links: [...new Set(matches)].slice(0, 3) });
+      }
+    }
+
+    return socialLinks;
+  }
+
+  extractPhoneNumbers(html) {
+    const phoneRegex = /(\+?\d{1,3}[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}/g;
+    const phones = [...new Set((html.match(phoneRegex) || []).map(p => p.trim()))];
+    return phones.slice(0, 10);
+  }
+
+  extractEmailAddresses(html) {
+    const emailRegex = /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/g;
+    const emails = [...new Set(html.match(emailRegex) || [])];
+    return emails.slice(0, 10);
+  }
+
+  analyzeTechnicalInfo(html) {
+    const info = {
+      frameworks: [],
+      libraries: [],
+      analytics: [],
+      cms: ''
+    };
+
+    // Detect frameworks and libraries
+    const techStack = {
+      'React': /react/i,
+      'Vue': /vue(?:js)?/i,
+      'Angular': /angular/i,
+      'jQuery': /jquery/i,
+      'Bootstrap': /bootstrap/i,
+      'WordPress': /wp-content|wordpress/i,
+      'Drupal': /drupal/i,
+      'Joomla': /joomla/i,
+      'Google Analytics': /google-analytics|gtag|analytics\.js/i,
+      'Google Tag Manager': /googletagmanager/i,
+      'Facebook Pixel': /facebook\.net|fbq\(/i
+    };
+
+    for (const [tech, pattern] of Object.entries(techStack)) {
+      if (pattern.test(html)) {
+        if (tech.includes('Analytics') || tech.includes('Tag') || tech.includes('Pixel')) {
+          info.analytics.push(tech);
+        } else if (tech.includes('WordPress') || tech.includes('Drupal') || tech.includes('Joomla')) {
+          info.cms = tech;
+        } else {
+          info.frameworks.push(tech);
+        }
+      }
+    }
+
+    return info;
+  }
+
   // Advanced Diff Viewer System
   async showAdvancedDiff(originalContent, newContent, filename) {
     try {
       const diffData = this.generateAdvancedDiff(originalContent, newContent);
       const diffHTML = this.renderDiffHTML(diffData, filename);
-      
+
       // Create advanced diff viewer modal
       const diffModal = this.createDiffModal(diffHTML, filename);
       document.body.appendChild(diffModal);
-      
+
       this.appendSystemMessage(`📊 Showing advanced diff for: ${filename}`);
       return { success: true, modal: diffModal };
-      
+
     } catch (error) {
       this.appendSystemMessage(`❌ Diff error: ${error.message}`);
       return { success: false, error: error.message };
@@ -2668,7 +2988,7 @@ Return only the command name or "NONE":`;
     const originalLines = original.split('\n');
     const modifiedLines = modified.split('\n');
     const diffs = [];
-    
+
     let i = 0, j = 0;
     while (i < originalLines.length || j < modifiedLines.length) {
       if (i >= originalLines.length) {
@@ -2698,12 +3018,12 @@ Return only the command name or "NONE":`;
             break;
           }
         }
-        
+
         if (!foundMatch) {
           // It's a modification
-          diffs.push({ 
-            type: 'modify', 
-            oldLine: originalLines[i], 
+          diffs.push({
+            type: 'modify',
+            oldLine: originalLines[i],
             newLine: modifiedLines[j],
             oldLineNumber: i + 1,
             newLineNumber: j + 1
@@ -2713,7 +3033,7 @@ Return only the command name or "NONE":`;
         }
       }
     }
-    
+
     return diffs;
   }
 
@@ -2739,21 +3059,21 @@ Return only the command name or "NONE":`;
             <span class="line-content">${this.escapeHtml(diff.line)}</span>
           </div>`;
           break;
-          
+
         case 'add':
           html += `<div class="diff-line addition" data-line="${diff.lineNumber}">
             <span class="line-number">+${diff.lineNumber}</span>
             <span class="line-content">${this.escapeHtml(diff.line)}</span>
           </div>`;
           break;
-          
+
         case 'delete':
           html += `<div class="diff-line deletion" data-line="${diff.lineNumber}">
             <span class="line-number">-${diff.lineNumber}</span>
             <span class="line-content">${this.escapeHtml(diff.line)}</span>
           </div>`;
           break;
-          
+
         case 'modify':
           html += `<div class="diff-line modification">
             <div class="old-line" data-line="${diff.oldLineNumber}">
@@ -2800,12 +3120,12 @@ Return only the command name or "NONE":`;
     const exportBtn = modal.querySelector('.export-diff');
 
     closeBtn.onclick = () => modal.remove();
-    
+
     applyBtn.onclick = async () => {
       await this.applyDiffChanges(filename);
       modal.remove();
     };
-    
+
     exportBtn.onclick = () => this.exportDiff(diffHTML, filename);
 
     // Close on backdrop click
@@ -2829,19 +3149,19 @@ Return only the command name or "NONE":`;
     try {
       const blob = new Blob([diffHTML], { type: 'text/html' });
       const url = URL.createObjectURL(blob);
-      
+
       // Create temporary link to download
       const a = tag("a", {
         href: url,
         download: `${filename}_diff.html`,
         style: "display: none"
       });
-      
+
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
-      
+
       this.appendSystemMessage(`📄 Diff exported: ${filename}_diff.html`);
     } catch (error) {
       this.appendSystemMessage(`❌ Export error: ${error.message}`);
@@ -2869,7 +3189,7 @@ Return only the command name or "NONE":`;
   async createCheckpoint(description, type = 'manual') {
     try {
       await this.initializeRollbackSystem();
-      
+
       const checkpoint = {
         id: uuidv4(),
         timestamp: Date.now(),
@@ -2881,7 +3201,7 @@ Return only the command name or "NONE":`;
 
       // Remove any history after current index (if we've rolled back)
       this.rollbackManager.history = this.rollbackManager.history.slice(0, this.rollbackManager.currentIndex + 1);
-      
+
       // Add new checkpoint
       this.rollbackManager.history.push(checkpoint);
       this.rollbackManager.currentIndex++;
@@ -2894,7 +3214,7 @@ Return only the command name or "NONE":`;
 
       this.appendSystemMessage(`💾 Checkpoint created: ${description}`);
       return { success: true, checkpointId: checkpoint.id };
-      
+
     } catch (error) {
       this.appendSystemMessage(`❌ Checkpoint error: ${error.message}`);
       return { success: false, error: error.message };
@@ -2903,11 +3223,11 @@ Return only the command name or "NONE":`;
 
   async captureProjectState() {
     const projectState = {};
-    
+
     try {
       // Get all project files
       const allFiles = await this.getAllProjectFiles();
-      
+
       for (const filePath of allFiles.slice(0, 20)) { // Limit to 20 files for performance
         try {
           const readResult = await this.readFileContent(filePath);
@@ -2924,7 +3244,7 @@ Return only the command name or "NONE":`;
     } catch (error) {
       console.log("Error capturing project state:", error);
     }
-    
+
     return projectState;
   }
 
@@ -2947,7 +3267,7 @@ Return only the command name or "NONE":`;
   async showRollbackHistory() {
     try {
       await this.initializeRollbackSystem();
-      
+
       if (this.rollbackManager.history.length === 0) {
         this.appendSystemMessage("📂 No rollback history available");
         return;
@@ -2968,7 +3288,7 @@ Return only the command name or "NONE":`;
       if (selectedIndex && selectedIndex > 0 && selectedIndex <= this.rollbackManager.history.length) {
         await this.rollbackToCheckpoint(selectedIndex - 1);
       }
-      
+
     } catch (error) {
       this.appendSystemMessage(`❌ Rollback history error: ${error.message}`);
     }
@@ -2982,7 +3302,7 @@ Return only the command name or "NONE":`;
       }
 
       this.appendSystemMessage(`🔄 Rolling back to: ${checkpoint.description}`);
-      
+
       // Restore files
       for (const [filePath, fileState] of Object.entries(checkpoint.files)) {
         try {
@@ -2999,9 +3319,9 @@ Return only the command name or "NONE":`;
 
       this.rollbackManager.currentIndex = checkpointIndex;
       this.appendSystemMessage(`✅ Successfully rolled back to: ${checkpoint.description}`);
-      
+
       return { success: true };
-      
+
     } catch (error) {
       this.appendSystemMessage(`❌ Rollback error: ${error.message}`);
       return { success: false, error: error.message };
@@ -3026,7 +3346,7 @@ Return only the command name or "NONE":`;
       if (editor && editorState.scrollPosition) {
         editor.renderer.scrollToY(editorState.scrollPosition);
       }
-      
+
     } catch (error) {
       console.log("Error restoring editor state:", error);
     }
@@ -3040,13 +3360,13 @@ Return only the command name or "NONE":`;
       if (!urlMatch) {
         const url = await prompt("Enter website URL to scrape:", "https://", "text", { required: true });
         if (!url) return;
-        
+
         const result = await this.scrapeWebsite(url, {
           extractText: true,
           extractLinks: true,
           extractCode: true
         });
-        
+
         if (result.success) {
           const summary = `**Website: ${result.data.title}**\n\n**Content Preview:**\n${result.data.text.substring(0, 500)}...\n\n**Found ${result.data.links.length} links and ${result.data.code.length} code blocks**`;
           this.appendUserQuery(`Website scraping result for: ${url}`);
@@ -3059,7 +3379,7 @@ Return only the command name or "NONE":`;
           extractLinks: true,
           extractCode: true
         });
-        
+
         if (result.success) {
           const summary = `**Website: ${result.data.title}**\n\n**Content Preview:**\n${result.data.text.substring(0, 500)}...\n\n**Found ${result.data.links.length} links and ${result.data.code.length} code blocks**`;
           this.appendGptResponse(summary);
@@ -3080,14 +3400,14 @@ Return only the command name or "NONE":`;
 
       // Get current content
       const currentContent = editor.getValue();
-      
+
       // For demo, compare with a previous version (in real scenario, this would come from version control)
       const previousContent = await prompt(
         "Enter previous version content for comparison (or paste content):",
         "",
         "textarea"
       );
-      
+
       if (previousContent !== null) {
         await this.showAdvancedDiff(previousContent, currentContent, activeFile.name);
       }
@@ -3099,7 +3419,7 @@ Return only the command name or "NONE":`;
   async handleRollbackSystem(context) {
     try {
       const lowerContext = context.toLowerCase();
-      
+
       if (lowerContext.includes('create') || lowerContext.includes('checkpoint')) {
         // Create checkpoint
         const description = await prompt("Enter checkpoint description:", "Manual checkpoint", "text");
@@ -3116,7 +3436,7 @@ Return only the command name or "NONE":`;
           "Show History",
           "Rollback to Previous"
         ]);
-        
+
         switch (action) {
           case "Create Checkpoint":
             const description = await prompt("Enter checkpoint description:", "Manual checkpoint", "text");
@@ -3603,9 +3923,9 @@ Response format: Clear actionable steps.`;
   async bulkRenameFiles() {
     try {
       const renameMode = await select("Select rename mode:", ["Select specific files", "All files in folder"]);
-      
+
       let filesToRename = [];
-      
+
       if (renameMode === "Select specific files") {
         filesToRename = await this.selectMultipleFilesForRename();
       } else {
@@ -3648,16 +3968,16 @@ Response format: Clear actionable steps.`;
               const oldName = filesToRename[i].split('/').pop();
               const extension = oldName.includes('.') ? '.' + oldName.split('.').pop() : '';
               const nameWithoutExt = oldName.replace(/\.[^.]*$/, '');
-              
+
               let newBaseName = pattern
                 .replace('{index}', i + 1)
                 .replace('{original}', nameWithoutExt);
-              
+
               const newName = newBaseName + extension;
 
               await fileFs.renameTo(newName);
               renamedCount++;
-              
+
               if ((i + 1) % 5 === 0) {
                 window.toast(`Renamed ${i + 1}/${filesToRename.length} files...`, 1000);
               }
@@ -3712,7 +4032,7 @@ Response format: Clear actionable steps.`;
 
       while (continueSelection && selectedFiles.length < 50) {
         const availableOptions = fileOptions.filter(opt => !selectedFiles.includes(opt.path));
-        
+
         if (availableOptions.length === 0) {
           window.toast("All files selected", 2000);
           break;
@@ -3746,7 +4066,7 @@ Response format: Clear actionable steps.`;
 
       window.toast(`Selected ${selectedFiles.length} files for renaming`, 2000);
       return selectedFiles;
-      
+
     } catch (error) {
       window.toast(`Error selecting files: ${error.message}`, 3000);
       return [];
@@ -3756,7 +4076,7 @@ Response format: Clear actionable steps.`;
   async bulkMoveFiles() {
     try {
       const fs = acode.require('fs');
-      
+
       // Select files to move using improved file selection
       const files = await this.selectMultipleFilesForMove();
       if (!files.length) {
@@ -3767,17 +4087,17 @@ Response format: Clear actionable steps.`;
       // Use openFolder API for better UX
       const openFolder = acode.require('openFolder');
       const existingFolders = openFolder.list || [];
-      
+
       let targetFolder = null;
-      
+
       if (existingFolders.length > 0) {
         const folderOptions = [
           ...existingFolders.map(folder => `📁 ${folder.name} (${folder.url})`),
           "📂 Browse for different folder"
         ];
-        
+
         const selectedOption = await select("Select target folder:", folderOptions);
-        
+
         if (selectedOption === "📂 Browse for different folder") {
           const fileBrowser = acode.require('fileBrowser');
           const targetResult = await fileBrowser('folder', 'Select target folder for files');
@@ -3819,7 +4139,7 @@ Response format: Clear actionable steps.`;
 
       const targetFolderName = targetFolder.split('/').pop() || 'selected folder';
       const confirmMove = await select(`Move ${files.length} files to "${targetFolderName}"?`, ["Yes", "No"]);
-      
+
       if (confirmMove === "Yes") {
         loader.showTitleLoader();
         let movedCount = 0;
@@ -3831,7 +4151,7 @@ Response format: Clear actionable steps.`;
             if (await fileFs.exists()) {
               const fileName = files[i].split('/').pop();
               const newPath = `${targetFolder}/${fileName}`;
-              
+
               // Check if file with same name already exists
               const newFileFs = await fs(newPath);
               if (await newFileFs.exists()) {
@@ -3842,10 +4162,10 @@ Response format: Clear actionable steps.`;
                   continue;
                 }
               }
-              
+
               await fileFs.moveTo(newPath);
               movedCount++;
-              
+
               if ((i + 1) % 3 === 0) {
                 window.toast(`Moving files... ${i + 1}/${files.length}`, 1000);
               }
@@ -3857,7 +4177,7 @@ Response format: Clear actionable steps.`;
         }
 
         loader.removeTitleLoader();
-        
+
         if (errorCount > 0) {
           window.toast(`✅ Moved ${movedCount} files, ${errorCount} errors to "${targetFolderName}"`, 4000);
         } else {
@@ -3905,7 +4225,7 @@ Response format: Clear actionable steps.`;
 
       while (continueSelection && selectedFiles.length < 100) {
         const availableOptions = fileOptions.filter(opt => !selectedFiles.includes(opt.path));
-        
+
         if (availableOptions.length === 0) {
           window.toast("All files selected", 2000);
           break;
@@ -3959,7 +4279,7 @@ Response format: Clear actionable steps.`;
 
       window.toast(`Selected ${selectedFiles.length} files for moving`, 2000);
       return selectedFiles;
-      
+
     } catch (error) {
       window.toast(`Error selecting files: ${error.message}`, 3000);
       return [];
@@ -4934,22 +5254,22 @@ Response format: Clear actionable steps.`;
       if (filters.length > 0) {
         allFiles = allFiles.filter(filePath => {
           const fileName = filePath.split('/').pop().toLowerCase();
-          
+
           return filters.some(filter => {
             const filterLower = filter.toLowerCase();
-            
+
             // Jika filter dimulai dengan titik, treat sebagai extension
             if (filterLower.startsWith('.')) {
               const fileExt = fileName.includes('.') ? '.' + fileName.split('.').pop() : '';
               return fileExt === filterLower;
             }
-            
+
             // Jika tidak, search berdasarkan nama file (supports wildcard)
             if (filterLower.includes('*')) {
               const regex = new RegExp(filterLower.replace(/\*/g, '.*'));
               return regex.test(fileName);
             }
-            
+
             // Exact filename match atau contains
             return fileName === filterLower || fileName.includes(filterLower);
           });
@@ -5798,7 +6118,7 @@ Response format: Clear actionable steps.`;
     try {
       // Debug logging
       console.log("showAiEditPopup called with:", initialText);
-      
+
       // helper creator: pakai tag() kalau ada, kalau nggak fallback ke createElement
       const maker = (tagName, props = {}) => {
         if (typeof tag === "function") return tag(tagName, props);
@@ -5811,151 +6131,171 @@ Response format: Clear actionable steps.`;
       const container = document.body;
       console.log("Container found:", container);
 
-    // build elements
-    const backdrop = maker("div", { className: "ai-edit-backdrop" });
-    const popup = maker("div", { className: "ai-edit-popup" });
+      // build elements
+      const backdrop = maker("div", { className: "ai-edit-backdrop" });
+      const popup = maker("div", { className: "ai-edit-popup" });
 
-    const header = maker("div", { className: "ai-edit-popup-header" });
-    const title = maker("div", {
-      className: "ai-edit-popup-title",
-      textContent: "Edit with AI"
-    });
-    const closeBtn = maker("button", {
-      className: "ai-edit-popup-close",
-      innerHTML: "&times;",
-      title: "Close"
-    });
+      // Ensure popup is properly styled and visible
+      popup.style.cssText = `
+      background: var(--galaxy-secondary, #1a1a2e) !important;
+      border: 1px solid var(--galaxy-border, rgba(0, 212, 255, 0.3)) !important;
+      border-radius: 1.25rem !important;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8) !important;
+      max-width: 90vw !important;
+      max-height: 80vh !important;
+      width: 600px !important;
+      overflow: hidden !important;
+      animation: slideIn 0.3s ease-out !important;
+      color: white !important;
+      position: relative !important;
+      z-index: 2147483647 !important;
+    `;
 
-    header.append(title, closeBtn);
+      const header = maker("div", { className: "ai-edit-popup-header" });
+      const title = maker("div", {
+        className: "ai-edit-popup-title",
+        textContent: "Edit with AI"
+      });
+      const closeBtn = maker("button", {
+        className: "ai-edit-popup-close",
+        innerHTML: "&times;",
+        title: "Close"
+      });
 
-    const body = maker("div", { className: "ai-edit-popup-body" });
-    const promptArea = maker("textarea", {
-      className: "ai-edit-prompt",
-      placeholder:
-        "Describe what you want to do with the code...\nExample: 'Add error handling to this function' or 'Optimize this loop for better performance'",
-      value: initialText
-    });
+      header.append(title, closeBtn);
 
-    const actions = maker("div", { className: "ai-edit-actions" });
-    const cancelBtn = maker("button", {
-      className: "ai-edit-btn secondary",
-      textContent: "Cancel"
-    });
-    const editBtn = maker("button", {
-      className: "ai-edit-btn primary",
-      textContent: "Edit Code"
-    });
+      const body = maker("div", { className: "ai-edit-popup-body" });
+      const promptArea = maker("textarea", {
+        className: "ai-edit-prompt",
+        placeholder:
+          "Describe what you want to do with the code...\nExample: 'Add error handling to this function' or 'Optimize this loop for better performance'",
+        value: initialText
+      });
 
-    actions.append(cancelBtn, editBtn);
-    body.append(promptArea, actions);
-    popup.append(header, body);
-    backdrop.appendChild(popup);
+      const actions = maker("div", { className: "ai-edit-actions" });
+      const cancelBtn = maker("button", {
+        className: "ai-edit-btn secondary",
+        textContent: "Cancel"
+      });
+      const editBtn = maker("button", {
+        className: "ai-edit-btn primary",
+        textContent: "Edit Code"
+      });
 
-    // stop clicks inside popup from closing via backdrop
-    popup.addEventListener("click", (e) => e.stopPropagation());
+      actions.append(cancelBtn, editBtn);
+      body.append(promptArea, actions);
+      popup.append(header, body);
+      backdrop.appendChild(popup);
 
-    // Ensure the backdrop is visible and properly positioned
-    backdrop.style.position = 'fixed';
-    backdrop.style.top = '0';
-    backdrop.style.left = '0'; 
-    backdrop.style.right = '0';
-    backdrop.style.bottom = '0';
-    backdrop.style.zIndex = '999999';
-    backdrop.style.display = 'flex';
-    backdrop.style.alignItems = 'center';
-    backdrop.style.justifyContent = 'center';
-    backdrop.style.background = 'rgba(15, 15, 30, 0.8)';
-    backdrop.style.backdropFilter = 'blur(8px)';
-    
-    // append into container
-    container.appendChild(backdrop);
-    console.log("Backdrop appended to container");
+      // stop clicks inside popup from closing via backdrop
+      popup.addEventListener("click", (e) => e.stopPropagation());
 
-    // focus safely
-    setTimeout(() => {
-      try {
-        promptArea.focus({ preventScroll: true });
-      } catch (err) {
-        promptArea.focus();
-      }
-      if (initialText) {
+      // Ensure the backdrop is visible and properly positioned with max z-index
+      backdrop.style.cssText = `
+      position: fixed !important;
+      top: 0 !important;
+      left: 0 !important;
+      right: 0 !important;
+      bottom: 0 !important;
+      width: 100vw !important;
+      height: 100vh !important;
+      z-index: 2147483647 !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      background: rgba(15, 15, 30, 0.95) !important;
+      backdrop-filter: blur(10px) !important;
+    `;
+
+      // append into container
+      container.appendChild(backdrop);
+      console.log("Backdrop appended to container");
+
+      // focus safely
+      setTimeout(() => {
         try {
-          const len = initialText.length;
-          promptArea.setSelectionRange(len, len);
-        } catch (e) {
-          // ignore if not supported
+          promptArea.focus({ preventScroll: true });
+        } catch (err) {
+          promptArea.focus();
         }
-      }
-    }, 60);
-
-    const cleanup = () => {
-      try {
-        if (container.contains(backdrop)) container.removeChild(backdrop);
-      } catch (e) { }
-      // remove listeners
-      document.removeEventListener("keydown", handleKeyDown);
-      backdrop.removeEventListener("click", onBackdropClick);
-      closeBtn.removeEventListener("click", onClose);
-      cancelBtn.removeEventListener("click", onClose);
-      editBtn.removeEventListener("click", onEdit);
-      promptArea.removeEventListener("keydown", promptKeydown);
-      popup.removeEventListener("click", (ev) => ev.stopPropagation()); // safe noop
-    };
-
-    const onClose = () => cleanup();
-
-    const onBackdropClick = (e) => {
-      if (e.target === backdrop) onClose();
-    };
-
-    const promptKeydown = (e) => {
-      if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
-        e.preventDefault();
-        editBtn.click();
-      }
-    };
-
-    const handleKeyDown = (e) => {
-      if (e.key === "Escape") {
-        onClose();
-      }
-    };
-
-    const onEdit = async () => {
-      const prompt = (promptArea.value || "").trim();
-      if (!prompt) {
-        if (window && typeof window.toast === "function") {
-          window.toast("Please enter editing instructions", 3000);
-        } else {
-          console.warn("Please enter editing instructions");
+        if (initialText) {
+          try {
+            const len = initialText.length;
+            promptArea.setSelectionRange(len, len);
+          } catch (e) {
+            // ignore if not supported
+          }
         }
-        try { promptArea.focus(); } catch (e) { }
-        return;
-      }
-      // close UI then process
-      cleanup();
-      try {
-        await this.processAiEdit(prompt);
-      } catch (err) {
-        console.error("AI Edit error:", err);
-        window.toast(`AI Edit error: ${err.message}`, 3000);
-      }
-    };
+      }, 60);
 
-    // wire listeners
-    closeBtn.addEventListener("click", onClose);
-    cancelBtn.addEventListener("click", onClose);
-    editBtn.addEventListener("click", onEdit);
-    promptArea.addEventListener("keydown", promptKeydown);
-    backdrop.addEventListener("click", onBackdropClick);
-    document.addEventListener("keydown", handleKeyDown);
-    
-    console.log("All event listeners added and popup should be visible");
-    
-  } catch (error) {
-    console.error("Error in showAiEditPopup:", error);
-    window.toast(`Error showing AI edit popup: ${error.message}`, 3000);
-  }
+      const cleanup = () => {
+        try {
+          if (container.contains(backdrop)) container.removeChild(backdrop);
+        } catch (e) { }
+        // remove listeners
+        document.removeEventListener("keydown", handleKeyDown);
+        backdrop.removeEventListener("click", onBackdropClick);
+        closeBtn.removeEventListener("click", onClose);
+        cancelBtn.removeEventListener("click", onClose);
+        editBtn.removeEventListener("click", onEdit);
+        promptArea.removeEventListener("keydown", promptKeydown);
+        popup.removeEventListener("click", (ev) => ev.stopPropagation()); // safe noop
+      };
+
+      const onClose = () => cleanup();
+
+      const onBackdropClick = (e) => {
+        if (e.target === backdrop) onClose();
+      };
+
+      const promptKeydown = (e) => {
+        if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
+          e.preventDefault();
+          editBtn.click();
+        }
+      };
+
+      const handleKeyDown = (e) => {
+        if (e.key === "Escape") {
+          onClose();
+        }
+      };
+
+      const onEdit = async () => {
+        const prompt = (promptArea.value || "").trim();
+        if (!prompt) {
+          if (window && typeof window.toast === "function") {
+            window.toast("Please enter editing instructions", 3000);
+          } else {
+            console.warn("Please enter editing instructions");
+          }
+          try { promptArea.focus(); } catch (e) { }
+          return;
+        }
+        // close UI then process
+        cleanup();
+        try {
+          await this.processAiEdit(prompt);
+        } catch (err) {
+          console.error("AI Edit error:", err);
+          window.toast(`AI Edit error: ${err.message}`, 3000);
+        }
+      };
+
+      // wire listeners
+      closeBtn.addEventListener("click", onClose);
+      cancelBtn.addEventListener("click", onClose);
+      editBtn.addEventListener("click", onEdit);
+      promptArea.addEventListener("keydown", promptKeydown);
+      backdrop.addEventListener("click", onBackdropClick);
+      document.addEventListener("keydown", handleKeyDown);
+
+      console.log("All event listeners added and popup should be visible");
+
+    } catch (error) {
+      console.error("Error in showAiEditPopup:", error);
+      window.toast(`Error showing AI edit popup: ${error.message}`, 3000);
+    }
   }
 
   async processAiEdit(userPrompt) {
@@ -6196,33 +6536,56 @@ ${currentContent}
     }
   }
 
+  async showDiffPopup(newCode) {
+    try {
+      // Get current file content for comparison
+      const activeFile = editorManager.activeFile;
+      if (!activeFile) {
+        window.toast("No active file to compare", 3000);
+        return;
+      }
+
+      const currentContent = editor.getValue();
+      const filename = activeFile.name;
+
+      // Show diff between current content and new code
+      await this.showEditDiff(currentContent, newCode, filename);
+
+    } catch (error) {
+      console.error("Diff popup error:", error);
+      window.toast(`Diff error: ${error.message}`, 3000);
+    }
+  }
+
   async showEditDiff(originalCode, newCode, filename) {
     // Generate diff HTML
     const diffHtml = await this.showFileDiff(originalCode, newCode, filename);
 
-    // Create a modal dialog for the diff viewer
+    // Create a modal dialog for the diff viewer with improved styling
     const dialog = tag("div", {
-      className: "ai-edit-popup",
+      className: "ai-diff-popup",
       style: `
         position: fixed;
         top: 50%;
         left: 50%;
         transform: translate(-50%, -50%);
-        width: 90%;
-        max-width: 800px;
-        max-height: 80vh;
-        background: var(--primary-color);
-        color: var(--primary-text-color);
-        border-radius: 8px;
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-        z-index: 1000;
+        width: 95vw;
+        max-width: 1200px;
+        max-height: 85vh;
+        background: var(--galaxy-secondary, #1a1a2e);
+        color: var(--galaxy-text-primary, #ffffff);
+        border: 1px solid var(--galaxy-border, rgba(0, 212, 255, 0.3));
+        border-radius: 12px;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+        z-index: 2147483647;
         display: flex;
         flex-direction: column;
         overflow: hidden;
+        animation: slideIn 0.3s ease-out;
       `
     });
 
-    // Create a semi-transparent backdrop
+    // Create a semi-transparent backdrop with better styling
     const backdrop = tag("div", {
       style: `
         position: fixed;
@@ -6230,8 +6593,14 @@ ${currentContent}
         left: 0;
         right: 0;
         bottom: 0;
-        background: rgba(0, 0, 0, 0.5);
-        z-index: 999;
+        width: 100vw;
+        height: 100vh;
+        background: rgba(15, 15, 30, 0.9);
+        backdrop-filter: blur(8px);
+        z-index: 2147483646;
+        display: flex;
+        align-items: center;
+        justify-content: center;
       `
     });
 
@@ -7847,20 +8216,20 @@ Focus cursor area only.`;
   async makeDirectAICall(prompt) {
     try {
       const currentProvider = localStorage.getItem('ai-assistant-provider') || 'OpenAI';
-      
+
       if (!this.apiKeyManager) {
         throw new Error('API key manager not initialized');
       }
-      
+
       const apiKey = await this.apiKeyManager.getAPIKey(currentProvider);
-      
+
       if (!apiKey) {
         throw new Error('No API key found for provider: ' + currentProvider);
       }
 
       // Use the same AI provider logic but without UI interaction
       let response = '';
-      
+
       if (currentProvider === 'OpenAI') {
         const { ChatOpenAI } = await import('@langchain/openai');
         const modelName = localStorage.getItem('ai-assistant-model-name') || 'gpt-3.5-turbo';
@@ -7870,10 +8239,10 @@ Focus cursor area only.`;
           streaming: false,
           temperature: 0.1,
         });
-        
+
         const result = await chatModel.invoke(prompt);
         response = result.content;
-        
+
       } else if (currentProvider === 'Google') {
         const { ChatGoogleGenerativeAI } = await import('@langchain/google-genai');
         const modelName = localStorage.getItem('ai-assistant-model-name') || 'gemini-pro';
@@ -7883,10 +8252,10 @@ Focus cursor area only.`;
           streaming: false,
           temperature: 0.1,
         });
-        
+
         const result = await chatModel.invoke(prompt);
         response = result.content;
-        
+
       } else if (currentProvider === 'Groq') {
         const { ChatGroq } = await import('@langchain/groq');
         const modelName = localStorage.getItem('ai-assistant-model-name') || 'llama3-70b-8192';
@@ -7896,10 +8265,10 @@ Focus cursor area only.`;
           streaming: false,
           temperature: 0.1,
         });
-        
+
         const result = await chatModel.invoke(prompt);
         response = result.content;
-        
+
       } else {
         // Fallback to OpenAI for other providers
         const { ChatOpenAI } = await import('@langchain/openai');
@@ -7910,13 +8279,13 @@ Focus cursor area only.`;
           streaming: false,
           temperature: 0.1,
         });
-        
+
         const result = await chatModel.invoke(prompt);
         response = result.content;
       }
-      
+
       return response;
-      
+
     } catch (error) {
       console.error('Direct AI call error:', error);
       throw error;
