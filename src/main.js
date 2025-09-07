@@ -3602,47 +3602,65 @@ Response format: Clear actionable steps.`;
 
   async bulkRenameFiles() {
     try {
-      const fileBrowser = acode.require('fileBrowser');
-      const fs = acode.require('fs');
+      const renameMode = await select("Select rename mode:", ["Select specific files", "All files in folder"]);
+      
+      let filesToRename = [];
+      
+      if (renameMode === "Select specific files") {
+        filesToRename = await this.selectMultipleFilesForRename();
+      } else {
+        const fileBrowser = acode.require('fileBrowser');
+        const fs = acode.require('fs');
 
-      const folderResult = await fileBrowser('folder', 'Select folder containing files to rename');
-      if (!folderResult) {
-        window.toast("No folder selected", 3000);
+        const folderResult = await fileBrowser('folder', 'Select folder containing files to rename');
+        if (!folderResult) {
+          window.toast("No folder selected", 3000);
+          return;
+        }
+
+        const folderPath = folderResult.url;
+        const folderFs = await fs(folderPath);
+        const entries = await folderFs.lsDir();
+
+        filesToRename = entries.filter(entry => !entry.isDirectory).map(entry => `${folderPath}/${entry.name}`);
+      }
+
+      if (!filesToRename.length) {
+        window.toast("No files selected for renaming", 3000);
         return;
       }
 
-      const folderPath = folderResult.url;
-      const folderFs = await fs(folderPath);
-      const entries = await folderFs.lsDir();
+      window.toast(`Found ${filesToRename.length} files to rename`, 2000);
 
-      const files = entries.filter(entry => !entry.isDirectory).map(entry => `${folderPath}/${entry.name}`);
-
-      if (!files.length) {
-        window.toast("No files found in selected folder", 3000);
-        return;
-      }
-
-      window.toast(`Found ${files.length} files in folder`, 2000);
-
-      const pattern = await prompt("Enter naming pattern (use {index} for numbers):", "file_{index}.js", "text");
+      const pattern = await prompt("Enter naming pattern (use {index} for numbers, {original} for original name):", "renamed_{index}_{original}", "text");
       if (!pattern) return;
 
-      const confirmRename = await select(`Rename ${files.length} files using pattern: ${pattern}?`, ["Yes", "No"]);
+      const confirmRename = await select(`Rename ${filesToRename.length} files using pattern: ${pattern}?`, ["Yes", "No"]);
       if (confirmRename === "Yes") {
         loader.showTitleLoader();
         let renamedCount = 0;
 
-        for (let i = 0; i < files.length; i++) {
+        for (let i = 0; i < filesToRename.length; i++) {
           try {
-            const fileFs = await fs(files[i]);
+            const fs = acode.require('fs');
+            const fileFs = await fs(filesToRename[i]);
             if (await fileFs.exists()) {
-              const oldName = files[i].split('/').pop();
+              const oldName = filesToRename[i].split('/').pop();
               const extension = oldName.includes('.') ? '.' + oldName.split('.').pop() : '';
-              const baseName = pattern.replace('{index}', i + 1);
-              const newName = baseName.replace(/\.[^.]*$/, '') + extension;
+              const nameWithoutExt = oldName.replace(/\.[^.]*$/, '');
+              
+              let newBaseName = pattern
+                .replace('{index}', i + 1)
+                .replace('{original}', nameWithoutExt);
+              
+              const newName = newBaseName + extension;
 
               await fileFs.renameTo(newName);
               renamedCount++;
+              
+              if ((i + 1) % 5 === 0) {
+                window.toast(`Renamed ${i + 1}/${filesToRename.length} files...`, 1000);
+              }
             }
           } catch (err) {
             window.toast(`Error renaming file ${i + 1}: ${err.message}`, 3000);
@@ -3654,6 +3672,7 @@ Response format: Clear actionable steps.`;
 
         try {
           const openFolder = acode.require('openFolder');
+          const folderPath = filesToRename[0].split('/').slice(0, -1).join('/');
           if (openFolder.find && openFolder.find(folderPath)) {
             openFolder.find(folderPath).reload();
           }
@@ -3667,25 +3686,126 @@ Response format: Clear actionable steps.`;
     }
   }
 
+  async selectMultipleFilesForRename() {
+    try {
+      const fs = acode.require('fs');
+      const selectedFiles = [];
+      let continueSelection = true;
+
+      // Get all project files
+      const allFiles = await this.getAllProjectFiles();
+
+      if (allFiles.length === 0) {
+        window.toast("No files found in project", 3000);
+        return [];
+      }
+
+      // Create file options with better display
+      const fileOptions = allFiles.map(filePath => {
+        const fileName = filePath.split('/').pop();
+        const dirPath = filePath.split('/').slice(0, -1).join('/').split('/').pop() || 'root';
+        return {
+          display: `📄 ${fileName} (${dirPath})`,
+          path: filePath
+        };
+      });
+
+      while (continueSelection && selectedFiles.length < 50) {
+        const availableOptions = fileOptions.filter(opt => !selectedFiles.includes(opt.path));
+        
+        if (availableOptions.length === 0) {
+          window.toast("All files selected", 2000);
+          break;
+        }
+
+        const options = [
+          ...availableOptions.map(opt => opt.display),
+          "✅ Done selecting",
+          "🔍 Select by pattern"
+        ];
+
+        const selected = await select(`Select files to rename (${selectedFiles.length} selected)`, options);
+
+        if (selected === "✅ Done selecting" || !selected) {
+          continueSelection = false;
+        } else if (selected === "🔍 Select by pattern") {
+          const pattern = await prompt("Enter file pattern (e.g., *.js, main.*, config):", "*.js", "text");
+          if (pattern) {
+            const matchingFiles = await this.getAllProjectFiles([pattern]);
+            selectedFiles.push(...matchingFiles.filter(f => !selectedFiles.includes(f)));
+            window.toast(`Added ${matchingFiles.length} files matching "${pattern}"`, 2000);
+          }
+        } else {
+          // Find the file path from display name
+          const fileOption = fileOptions.find(opt => opt.display === selected);
+          if (fileOption && !selectedFiles.includes(fileOption.path)) {
+            selectedFiles.push(fileOption.path);
+          }
+        }
+      }
+
+      window.toast(`Selected ${selectedFiles.length} files for renaming`, 2000);
+      return selectedFiles;
+      
+    } catch (error) {
+      window.toast(`Error selecting files: ${error.message}`, 3000);
+      return [];
+    }
+  }
+
   async bulkMoveFiles() {
     try {
-      const fileBrowser = acode.require('fileBrowser');
       const fs = acode.require('fs');
-
-      const files = await this.selectMultipleFiles();
+      
+      // Select files to move using improved file selection
+      const files = await this.selectMultipleFilesForMove();
       if (!files.length) {
         window.toast("No files selected", 3000);
         return;
       }
 
-      const targetResult = await fileBrowser('folder', 'Select target folder for files');
-      if (!targetResult) {
+      // Use openFolder API for better UX
+      const openFolder = acode.require('openFolder');
+      const existingFolders = openFolder.list || [];
+      
+      let targetFolder = null;
+      
+      if (existingFolders.length > 0) {
+        const folderOptions = [
+          ...existingFolders.map(folder => `📁 ${folder.name} (${folder.url})`),
+          "📂 Browse for different folder"
+        ];
+        
+        const selectedOption = await select("Select target folder:", folderOptions);
+        
+        if (selectedOption === "📂 Browse for different folder") {
+          const fileBrowser = acode.require('fileBrowser');
+          const targetResult = await fileBrowser('folder', 'Select target folder for files');
+          if (targetResult) {
+            targetFolder = targetResult.url;
+          }
+        } else if (selectedOption) {
+          // Extract folder URL from selected option
+          const folderMatch = selectedOption.match(/\((.+)\)$/);
+          if (folderMatch) {
+            targetFolder = folderMatch[1];
+          }
+        }
+      } else {
+        // No open folders, use file browser
+        const fileBrowser = acode.require('fileBrowser');
+        const targetResult = await fileBrowser('folder', 'Select target folder for files');
+        if (targetResult) {
+          targetFolder = targetResult.url;
+        }
+      }
+
+      if (!targetFolder) {
         window.toast("No target folder selected", 3000);
         return;
       }
 
-      const targetFolder = targetResult.url;
-
+      // Verify target folder accessibility
       try {
         const targetFs = await fs(targetFolder);
         if (!await targetFs.exists()) {
@@ -3697,31 +3817,161 @@ Response format: Clear actionable steps.`;
         return;
       }
 
-      const confirmMove = await select(`Move ${files.length} files to ${targetResult.name}?`, ["Yes", "No"]);
+      const targetFolderName = targetFolder.split('/').pop() || 'selected folder';
+      const confirmMove = await select(`Move ${files.length} files to "${targetFolderName}"?`, ["Yes", "No"]);
+      
       if (confirmMove === "Yes") {
         loader.showTitleLoader();
         let movedCount = 0;
+        let errorCount = 0;
 
-        for (const filePath of files) {
+        for (let i = 0; i < files.length; i++) {
           try {
-            const fileFs = await fs(filePath);
+            const fileFs = await fs(files[i]);
             if (await fileFs.exists()) {
-              const fileName = filePath.split('/').pop();
+              const fileName = files[i].split('/').pop();
               const newPath = `${targetFolder}/${fileName}`;
+              
+              // Check if file with same name already exists
+              const newFileFs = await fs(newPath);
+              if (await newFileFs.exists()) {
+                const overwrite = await select(`File "${fileName}" already exists. Overwrite?`, ["Yes", "No", "Skip"]);
+                if (overwrite === "No") {
+                  continue;
+                } else if (overwrite === "Skip") {
+                  continue;
+                }
+              }
+              
               await fileFs.moveTo(newPath);
               movedCount++;
+              
+              if ((i + 1) % 3 === 0) {
+                window.toast(`Moving files... ${i + 1}/${files.length}`, 1000);
+              }
             }
           } catch (err) {
-            window.toast('Error moving file', 3000);
+            errorCount++;
+            window.toast(`Error moving file: ${err.message}`, 2000);
           }
         }
 
         loader.removeTitleLoader();
-        window.toast(`✅ Moved ${movedCount} files to ${targetResult.name}`, 4000);
+        
+        if (errorCount > 0) {
+          window.toast(`✅ Moved ${movedCount} files, ${errorCount} errors to "${targetFolderName}"`, 4000);
+        } else {
+          window.toast(`✅ Moved ${movedCount} files to "${targetFolderName}"`, 4000);
+        }
+
+        // Refresh folder view if possible
+        try {
+          if (openFolder.find && openFolder.find(targetFolder)) {
+            openFolder.find(targetFolder).reload();
+          }
+        } catch (e) {
+          // Silent fail - folder refresh is optional
+        }
       }
     } catch (error) {
       loader.removeTitleLoader();
       window.toast(`❌ Bulk move error: ${error.message}`, 3000);
+    }
+  }
+
+  async selectMultipleFilesForMove() {
+    try {
+      const selectedFiles = [];
+      let continueSelection = true;
+
+      // Get all project files
+      const allFiles = await this.getAllProjectFiles();
+
+      if (allFiles.length === 0) {
+        window.toast("No files found in project", 3000);
+        return [];
+      }
+
+      // Create file options with better display
+      const fileOptions = allFiles.map(filePath => {
+        const fileName = filePath.split('/').pop();
+        const dirPath = filePath.split('/').slice(0, -1).join('/').split('/').pop() || 'root';
+        const fileSize = this.getFileSizeDisplay(filePath);
+        return {
+          display: `📄 ${fileName} (${dirPath}) ${fileSize}`,
+          path: filePath
+        };
+      });
+
+      while (continueSelection && selectedFiles.length < 100) {
+        const availableOptions = fileOptions.filter(opt => !selectedFiles.includes(opt.path));
+        
+        if (availableOptions.length === 0) {
+          window.toast("All files selected", 2000);
+          break;
+        }
+
+        const options = [
+          ...availableOptions.slice(0, 20).map(opt => opt.display),
+          ...(availableOptions.length > 20 ? ["📋 Show more files..."] : []),
+          "✅ Done selecting",
+          "🔍 Select by pattern",
+          "📁 Select all files in folder"
+        ];
+
+        const selected = await select(`Select files to move (${selectedFiles.length} selected)`, options);
+
+        if (selected === "✅ Done selecting" || !selected) {
+          continueSelection = false;
+        } else if (selected === "🔍 Select by pattern") {
+          const pattern = await prompt("Enter file pattern (e.g., *.js, main.*, *.png):", "*.js", "text");
+          if (pattern) {
+            const matchingFiles = await this.getAllProjectFiles([pattern]);
+            const newFiles = matchingFiles.filter(f => !selectedFiles.includes(f));
+            selectedFiles.push(...newFiles);
+            window.toast(`Added ${newFiles.length} files matching "${pattern}"`, 2000);
+          }
+        } else if (selected === "📁 Select all files in folder") {
+          const fileBrowser = acode.require('fileBrowser');
+          const folderResult = await fileBrowser('folder', 'Select folder to add all files from');
+          if (folderResult) {
+            const fs = acode.require('fs');
+            const folderFs = await fs(folderResult.url);
+            const entries = await folderFs.lsDir();
+            const folderFiles = entries
+              .filter(entry => !entry.isDirectory)
+              .map(entry => `${folderResult.url}/${entry.name}`)
+              .filter(f => !selectedFiles.includes(f));
+            selectedFiles.push(...folderFiles);
+            window.toast(`Added ${folderFiles.length} files from folder`, 2000);
+          }
+        } else if (selected === "📋 Show more files...") {
+          // Continue to show more files in next iteration
+          continue;
+        } else {
+          // Find the file path from display name
+          const fileOption = fileOptions.find(opt => opt.display === selected);
+          if (fileOption && !selectedFiles.includes(fileOption.path)) {
+            selectedFiles.push(fileOption.path);
+          }
+        }
+      }
+
+      window.toast(`Selected ${selectedFiles.length} files for moving`, 2000);
+      return selectedFiles;
+      
+    } catch (error) {
+      window.toast(`Error selecting files: ${error.message}`, 3000);
+      return [];
+    }
+  }
+
+  getFileSizeDisplay(filePath) {
+    try {
+      // This is a placeholder - actual file size would need fs stat
+      return "[?KB]";
+    } catch (error) {
+      return "";
     }
   }
 
@@ -3887,9 +4137,9 @@ Response format: Clear actionable steps.`;
           required: true
         },
         { id: "author", placeholder: "Author name", value: "Developer", type: "text" },
-        { id: "extensions", placeholder: "File extensions (e.g., .js,.css,.html)", value: ".js,.css,.html", type: "text", required: true },
-        { id: "include", placeholder: "Include glob (comma separated, optional)", value: "", type: "text" },
-        { id: "exclude", placeholder: "Exclude glob (comma separated, optional)", value: "node_modules,.git", type: "text" },
+        { id: "filePattern", placeholder: "File pattern (e.g., main.js, *.js, *.css)", value: "*.js", type: "text", required: true },
+        { id: "include", placeholder: "Include additional patterns (comma separated, optional)", value: "", type: "text" },
+        { id: "exclude", placeholder: "Exclude patterns (comma separated, optional)", value: "node_modules,.git", type: "text" },
         { id: "maxSizeKB", placeholder: "Max file size (KB) to process (0 = no limit)", value: "0", type: "text" },
       ]);
 
@@ -3906,7 +4156,7 @@ Response format: Clear actionable steps.`;
       }
 
       const author = cfg.author || "Developer";
-      const extList = cfg.extensions.split(',').map(s => s.trim().toLowerCase()).filter(Boolean).map(e => e.startsWith('.') ? e : '.' + e);
+      const filePatterns = cfg.filePattern.split(',').map(s => s.trim()).filter(Boolean);
       const includeGlobs = cfg.include ? cfg.include.split(',').map(s => s.trim()).filter(Boolean) : [];
       const excludeGlobs = cfg.exclude ? cfg.exclude.split(',').map(s => s.trim()).filter(Boolean) : [];
       const maxSizeKB = Number(cfg.maxSizeKB || 0);
@@ -3938,7 +4188,7 @@ Response format: Clear actionable steps.`;
       let files = [];
       if (typeof this.getAllProjectFiles === 'function') {
         try {
-          files = await this.getAllProjectFiles(extList);
+          files = await this.getAllProjectFiles(filePatterns);
         } catch (e) {
           console.warn('getAllProjectFiles failed, falling back to internal walker', e);
         }
@@ -4132,9 +4382,9 @@ Response format: Clear actionable steps.`;
     try {
       const conversion = await multiPrompt("File Format Conversion", [
         {
-          id: "fromExt",
-          placeholder: "From extension (e.g., .txt)",
-          value: ".txt",
+          id: "filePattern",
+          placeholder: "File pattern to convert (e.g., *.txt, main.js, config.*)",
+          value: "*.txt",
           type: "text",
           required: true
         },
@@ -4149,14 +4399,14 @@ Response format: Clear actionable steps.`;
 
       if (!conversion) return;
 
-      const files = await this.getAllProjectFiles([conversion.fromExt]);
+      const files = await this.getAllProjectFiles([conversion.filePattern]);
 
       if (!files.length) {
-        window.toast(`No ${conversion.fromExt} files found`, 3000);
+        window.toast(`No files matching "${conversion.filePattern}" found`, 3000);
         return;
       }
 
-      const confirmConvert = await select(`Convert ${files.length} files from ${conversion.fromExt} to ${conversion.toExt}?`, ["Yes", "No"]);
+      const confirmConvert = await select(`Convert ${files.length} files matching "${conversion.filePattern}" to ${conversion.toExt}?`, ["Yes", "No"]);
       if (confirmConvert === "Yes") {
         let convertedCount = 0;
         for (const filePath of files) {
@@ -4164,7 +4414,9 @@ Response format: Clear actionable steps.`;
             // Baca file menggunakan API acodeplugin
             const readResult = await this.readFileContent(filePath);
             if (readResult.success) {
-              const baseName = filePath.replace(conversion.fromExt, '');
+              // Get file path without extension
+              const pathParts = filePath.split('.');
+              const baseName = pathParts.length > 1 ? pathParts.slice(0, -1).join('.') : filePath;
               const newPath = baseName + conversion.toExt;
 
               // Buat file baru dengan ekstensi yang dikonversi
@@ -4660,7 +4912,7 @@ Response format: Clear actionable steps.`;
     }
   }
 
-  async getAllProjectFiles(extensions = []) {
+  async getAllProjectFiles(filters = []) {
     try {
       const fileList = acode.require('fileList');
       const openFolders = await fileList();
@@ -4678,16 +4930,29 @@ Response format: Clear actionable steps.`;
         allFiles = await this.getAllFilesRecursive(defaultPath);
       }
 
-      // Filter berdasarkan ekstensi jika disediakan
-      if (extensions.length > 0) {
-        const normalizedExts = extensions.map(ext =>
-          ext.startsWith('.') ? ext.toLowerCase() : '.' + ext.toLowerCase()
-        );
-
+      // Filter berdasarkan nama file atau ekstensi
+      if (filters.length > 0) {
         allFiles = allFiles.filter(filePath => {
-          const fileName = filePath.split('/').pop();
-          const fileExt = fileName.includes('.') ? '.' + fileName.split('.').pop().toLowerCase() : '';
-          return normalizedExts.includes(fileExt);
+          const fileName = filePath.split('/').pop().toLowerCase();
+          
+          return filters.some(filter => {
+            const filterLower = filter.toLowerCase();
+            
+            // Jika filter dimulai dengan titik, treat sebagai extension
+            if (filterLower.startsWith('.')) {
+              const fileExt = fileName.includes('.') ? '.' + fileName.split('.').pop() : '';
+              return fileExt === filterLower;
+            }
+            
+            // Jika tidak, search berdasarkan nama file (supports wildcard)
+            if (filterLower.includes('*')) {
+              const regex = new RegExp(filterLower.replace(/\*/g, '.*'));
+              return regex.test(fileName);
+            }
+            
+            // Exact filename match atau contains
+            return fileName === filterLower || fileName.includes(filterLower);
+          });
         });
       }
 
@@ -5530,15 +5795,21 @@ Response format: Clear actionable steps.`;
   }
 
   showAiEditPopup(initialText = "") {
-    // helper creator: pakai tag() kalau ada, kalau nggak fallback ke createElement
-    const maker = (tagName, props = {}) => {
-      if (typeof tag === "function") return tag(tagName, props);
-      const el = document.createElement(tagName);
-      Object.assign(el, props);
-      return el;
-    };
+    try {
+      // Debug logging
+      console.log("showAiEditPopup called with:", initialText);
+      
+      // helper creator: pakai tag() kalau ada, kalau nggak fallback ke createElement
+      const maker = (tagName, props = {}) => {
+        if (typeof tag === "function") return tag(tagName, props);
+        const el = document.createElement(tagName);
+        Object.assign(el, props);
+        return el;
+      };
 
-    const container = document.getElementById("acode-ai-assistant") || document.body;
+      // Force use document.body as container to ensure visibility
+      const container = document.body;
+      console.log("Container found:", container);
 
     // build elements
     const backdrop = maker("div", { className: "ai-edit-backdrop" });
@@ -5583,8 +5854,22 @@ Response format: Clear actionable steps.`;
     // stop clicks inside popup from closing via backdrop
     popup.addEventListener("click", (e) => e.stopPropagation());
 
-    // append into scoped container (so SCSS under #acode-ai-assistant apply)
+    // Ensure the backdrop is visible and properly positioned
+    backdrop.style.position = 'fixed';
+    backdrop.style.top = '0';
+    backdrop.style.left = '0'; 
+    backdrop.style.right = '0';
+    backdrop.style.bottom = '0';
+    backdrop.style.zIndex = '999999';
+    backdrop.style.display = 'flex';
+    backdrop.style.alignItems = 'center';
+    backdrop.style.justifyContent = 'center';
+    backdrop.style.background = 'rgba(15, 15, 30, 0.8)';
+    backdrop.style.backdropFilter = 'blur(8px)';
+    
+    // append into container
     container.appendChild(backdrop);
+    console.log("Backdrop appended to container");
 
     // focus safely
     setTimeout(() => {
@@ -5652,8 +5937,8 @@ Response format: Clear actionable steps.`;
       try {
         await this.processAiEdit(prompt);
       } catch (err) {
-        console.error("processAiEdit error:", err);
-        window && typeof window.toast === "function" && window.toast("Error processing edit", 3000);
+        console.error("AI Edit error:", err);
+        window.toast(`AI Edit error: ${err.message}`, 3000);
       }
     };
 
@@ -5664,6 +5949,13 @@ Response format: Clear actionable steps.`;
     promptArea.addEventListener("keydown", promptKeydown);
     backdrop.addEventListener("click", onBackdropClick);
     document.addEventListener("keydown", handleKeyDown);
+    
+    console.log("All event listeners added and popup should be visible");
+    
+  } catch (error) {
+    console.error("Error in showAiEditPopup:", error);
+    window.toast(`Error showing AI edit popup: ${error.message}`, 3000);
+  }
   }
 
   async processAiEdit(userPrompt) {
@@ -7526,7 +7818,8 @@ RESPONSE JSON:
 Focus cursor area only.`;
 
     try {
-      const response = await this.appendGptResponse(prompt);
+      // Use direct AI API call instead of appendGptResponse which shows in chat
+      const response = await this.makeDirectAICall(prompt);
 
       // Clean the response - remove markdown wrappers if present
       let cleanResponse = response.trim();
@@ -7547,6 +7840,86 @@ Focus cursor area only.`;
         auto_complete: [],
         quick_fixes: []
       };
+    }
+  }
+
+  // New method for direct AI API calls without affecting chat
+  async makeDirectAICall(prompt) {
+    try {
+      const currentProvider = localStorage.getItem('ai-assistant-provider') || 'OpenAI';
+      
+      if (!this.apiKeyManager) {
+        throw new Error('API key manager not initialized');
+      }
+      
+      const apiKey = await this.apiKeyManager.getAPIKey(currentProvider);
+      
+      if (!apiKey) {
+        throw new Error('No API key found for provider: ' + currentProvider);
+      }
+
+      // Use the same AI provider logic but without UI interaction
+      let response = '';
+      
+      if (currentProvider === 'OpenAI') {
+        const { ChatOpenAI } = await import('@langchain/openai');
+        const modelName = localStorage.getItem('ai-assistant-model-name') || 'gpt-3.5-turbo';
+        const chatModel = new ChatOpenAI({
+          openAIApiKey: apiKey,
+          modelName: modelName,
+          streaming: false,
+          temperature: 0.1,
+        });
+        
+        const result = await chatModel.invoke(prompt);
+        response = result.content;
+        
+      } else if (currentProvider === 'Google') {
+        const { ChatGoogleGenerativeAI } = await import('@langchain/google-genai');
+        const modelName = localStorage.getItem('ai-assistant-model-name') || 'gemini-pro';
+        const chatModel = new ChatGoogleGenerativeAI({
+          apiKey: apiKey,
+          modelName: modelName,
+          streaming: false,
+          temperature: 0.1,
+        });
+        
+        const result = await chatModel.invoke(prompt);
+        response = result.content;
+        
+      } else if (currentProvider === 'Groq') {
+        const { ChatGroq } = await import('@langchain/groq');
+        const modelName = localStorage.getItem('ai-assistant-model-name') || 'llama3-70b-8192';
+        const chatModel = new ChatGroq({
+          apiKey: apiKey,
+          modelName: modelName,
+          streaming: false,
+          temperature: 0.1,
+        });
+        
+        const result = await chatModel.invoke(prompt);
+        response = result.content;
+        
+      } else {
+        // Fallback to OpenAI for other providers
+        const { ChatOpenAI } = await import('@langchain/openai');
+        const modelName = localStorage.getItem('ai-assistant-model-name') || 'gpt-3.5-turbo';
+        const chatModel = new ChatOpenAI({
+          openAIApiKey: apiKey,
+          modelName: modelName,
+          streaming: false,
+          temperature: 0.1,
+        });
+        
+        const result = await chatModel.invoke(prompt);
+        response = result.content;
+      }
+      
+      return response;
+      
+    } catch (error) {
+      console.error('Direct AI call error:', error);
+      throw error;
     }
   }
 
