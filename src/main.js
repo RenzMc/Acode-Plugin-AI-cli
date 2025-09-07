@@ -761,16 +761,16 @@ Exact name:`;
         if (secretKeyFs && await secretKeyFs.exists()) {
           passPhrase = await secretKeyFs.readFile("utf-8");
         } else {
-        let secretPassphrase = await prompt(
-          "Enter a secret pass phrase to save the API key",
-          "",
-          "text",
-          {
-            required: true,
-          },
-        );
-        if (!secretPassphrase) return;
-        passPhrase = secretPassphrase;
+          let secretPassphrase = await prompt(
+            "Enter a secret pass phrase to save the API key",
+            "",
+            "text",
+            {
+              required: true,
+            },
+          );
+          if (!secretPassphrase) return;
+          passPhrase = secretPassphrase;
         }
       } catch (fsError) {
         window.toast("Error accessing storage", 3000);
@@ -1082,16 +1082,16 @@ Exact name:`;
       const historyFs = fs(AI_HISTORY_PATH);
       if (historyFs && await historyFs.exists()) {
         const allFiles = await historyFs.lsDir();
-      let elems = "";
-      for (let i = 0; i < allFiles.length; i++) {
-        elems += `<li class="dialog-item" style="background: var(--secondary-color);color: var(--secondary-text-color);padding: 5px;margin-bottom: 5px;border-radius: 8px;font-size:15px;display:flex;flex-direction:row;justify-content:space-between;gap:5px;" data-path="${JSON.parse(JSON.stringify(allFiles[i])).url
-          }">
+        let elems = "";
+        for (let i = 0; i < allFiles.length; i++) {
+          elems += `<li class="dialog-item" style="background: var(--secondary-color);color: var(--secondary-text-color);padding: 5px;margin-bottom: 5px;border-radius: 8px;font-size:15px;display:flex;flex-direction:row;justify-content:space-between;gap:5px;" data-path="${JSON.parse(JSON.stringify(allFiles[i])).url
+            }">
                   <p class="history-item">${allFiles[i].name
-            .split("__")[0]
-            .substring(
-              0,
-              25,
-            )}...</p><div><button class="delete-history-btn" style="height:25px;width:25px;border:none;padding:5px;outline:none;border-radius:50%;background:var(--error-text-color);text-align:center;">✗</button></div>
+              .split("__")[0]
+              .substring(
+                0,
+                25,
+              )}...</p><div><button class="delete-history-btn" style="height:25px;width:25px;border:none;padding:5px;outline:none;border-radius:50%;background:var(--error-text-color);text-align:center;">✗</button></div>
                 </li>`;
         }
         return elems;
@@ -1155,15 +1155,15 @@ Exact name:`;
       const fileData = await fileFs.readFile();
       const responses = JSON.parse(await helpers.decodeText(fileData));
       this.messageHistories = {};
-      
+
       // Make sure we have the required classes available
-      if (typeof InMemoryChatMessageHistory === 'undefined' || 
-          typeof HumanMessage === 'undefined' || 
-          typeof AIMessage === 'undefined') {
+      if (typeof InMemoryChatMessageHistory === 'undefined' ||
+        typeof HumanMessage === 'undefined' ||
+        typeof AIMessage === 'undefined') {
         // Use a simple array-based history fallback
         this.messageHistories[sessionId] = {
           messages: [],
-          addMessages: async function(msgs) {
+          addMessages: async function (msgs) {
             this.messages.push(...msgs);
           }
         };
@@ -1210,10 +1210,10 @@ Exact name:`;
         if (!dialogItem) {
           return;
         }
-        
+
         const deleteButton = dialogItem.querySelector(".delete-history-btn");
         const historyItem = dialogItem.querySelector(".history-item");
-        
+
         if (dialogItem.getAttribute("data-path") == "#not-available") {
           return;
         }
@@ -1464,7 +1464,6 @@ Exact name:`;
     }
   }
 
-
   showError(error) {
     // Show detailed error information
     const responseBoxes = Array.from(document.querySelectorAll(".ai_message"));
@@ -1613,7 +1612,48 @@ Exact name:`;
       const editorContent = activeFile && editor ? editor.getValue() : '';
       const cursorPos = editor ? editor.getCursorPosition() : { row: 0, column: 0 };
 
-      const systemPromptWithContext = `AI assistant for Acode editor. Current: ${currentFileName} (${currentFileExt}) at line ${cursorPos.row + 1}. Can edit/create/delete files, run terminal commands. Use context in responses.`;
+      // Enhanced AI Agent System Prompt - Making it super advanced
+      const systemPromptWithContext = `You are an ADVANCED AI AGENT for Acode mobile code editor, similar to Replit's AI Agent.
+
+CORE CAPABILITIES:
+- Execute ALL Acode commands directly from chat
+- Create, edit, delete, and manage files
+- Run terminal commands and scripts
+- Format code, add comments, generate documentation
+- Analyze project structure and dependencies
+- Search and replace across entire project
+- Real-time code analysis and suggestions
+- File operations (move, copy, rename)
+- Git operations and version control
+- Package management and dependencies
+
+CURRENT CONTEXT:
+- File: ${currentFileName} (${currentFileExt})
+- Location: ${currentFilePath}
+- Directory: ${currentFileDir}
+- Project: ${projectName}
+- Cursor: Line ${cursorPos.row + 1}, Column ${cursorPos.column + 1}
+- Content Length: ${editorContent.length} characters
+
+SMART ACTION DETECTION:
+When user requests actions, automatically execute them:
+- "create file" → Use createFileWithAI()
+- "edit/modify/change" → Use editFileContent()
+- "format code" → Execute format command
+- "run file" → Execute run command
+- "search/find" → Use project search
+- "replace" → Use search and replace
+- "terminal/command" → Execute terminal commands
+- "explain/analyze" → Provide detailed analysis
+- "fix/debug" → Analyze and suggest fixes
+
+RESPONSE FORMAT:
+1. First, execute any requested actions automatically
+2. Then provide explanation of what was done
+3. Include relevant code examples when helpful
+4. Always be proactive and suggest improvements
+
+Act as a super intelligent assistant that understands context and executes actions seamlessly.`;
 
       const prompt = ChatPromptTemplate.fromMessages([
         [
@@ -1729,6 +1769,9 @@ Exact name:`;
 
       // Cache the response
       this.setCachedResponse(question, result);
+
+      // Enhanced AI Agent - Auto-execute detected actions
+      await this.executeSmartActions(question, result);
 
       // Enhanced markdown rendering with animations
       if (this.$mdIt && typeof this.$mdIt.render === 'function') {
@@ -2004,6 +2047,1101 @@ Exact name:`;
     }
   }
 
+  // Enhanced AI Agent Methods - Smart Action Detection and Execution
+  async executeSmartActions(question, aiResponse) {
+    try {
+      const actions = this.detectActions(question, aiResponse);
+      
+      for (const action of actions) {
+        await this.executeAction(action);
+      }
+    } catch (error) {
+      console.log("Smart action execution error:", error);
+      // Don't show error to user as this is background enhancement
+    }
+  }
+
+  detectActions(question, response) {
+    const actions = [];
+    const lowerQuestion = question.toLowerCase();
+    const lowerResponse = response.toLowerCase();
+
+    // File creation detection
+    if (lowerQuestion.includes('create') && (lowerQuestion.includes('file') || lowerQuestion.includes('new'))) {
+      actions.push({ type: 'create_file', context: question });
+    }
+
+    // Code formatting detection
+    if (lowerQuestion.includes('format') || lowerQuestion.includes('beautify') || lowerQuestion.includes('pretty')) {
+      actions.push({ type: 'format_code' });
+    }
+
+    // File running detection
+    if (lowerQuestion.includes('run') || lowerQuestion.includes('execute') || lowerQuestion.includes('start')) {
+      actions.push({ type: 'run_file' });
+    }
+
+    // Terminal command detection
+    if (lowerQuestion.includes('terminal') || lowerQuestion.includes('command') || lowerQuestion.includes('shell')) {
+      actions.push({ type: 'terminal_command', context: question });
+    }
+
+    // Search detection
+    if (lowerQuestion.includes('search') || lowerQuestion.includes('find')) {
+      actions.push({ type: 'search_project', context: question });
+    }
+
+    // Replace detection
+    if (lowerQuestion.includes('replace') || lowerQuestion.includes('substitute')) {
+      actions.push({ type: 'search_replace', context: question });
+    }
+
+    // Code explanation detection
+    if (lowerQuestion.includes('explain') || lowerQuestion.includes('analyze') || lowerQuestion.includes('what does')) {
+      actions.push({ type: 'explain_code' });
+    }
+
+    // Auto-detect code in response for file creation
+    if (response.includes('```') && (lowerQuestion.includes('create') || lowerQuestion.includes('generate'))) {
+      actions.push({ type: 'auto_create_file', content: response });
+    }
+
+    // Website scraping detection
+    if (lowerQuestion.includes('scrape') || lowerQuestion.includes('fetch') || lowerQuestion.includes('get data from')) {
+      actions.push({ type: 'scrape_website', context: question });
+    }
+
+    // Diff viewing detection
+    if (lowerQuestion.includes('diff') || lowerQuestion.includes('compare') || lowerQuestion.includes('changes')) {
+      actions.push({ type: 'show_diff', context: question });
+    }
+
+    // Rollback/checkpoint detection
+    if (lowerQuestion.includes('rollback') || lowerQuestion.includes('undo') || lowerQuestion.includes('checkpoint') || lowerQuestion.includes('revert')) {
+      actions.push({ type: 'rollback_system', context: question });
+    }
+
+    // Bulk operations detection
+    if (lowerQuestion.includes('bulk') || lowerQuestion.includes('multiple files') || lowerQuestion.includes('batch')) {
+      actions.push({ type: 'bulk_operations', context: question });
+    }
+
+    // Project organization detection
+    if (lowerQuestion.includes('organize') || lowerQuestion.includes('structure') || lowerQuestion.includes('clean up')) {
+      actions.push({ type: 'organize_project', context: question });
+    }
+
+    // General command execution detection - catch all other commands
+    if (!actions.length) {
+      // Look for general command keywords
+      const commandIndicators = [
+        'open', 'close', 'save', 'reload', 'toggle', 'show', 'hide',
+        'go to', 'goto', 'settings', 'preferences', 'console', 'sidebar',
+        'menu', 'file', 'edit', 'view', 'help', 'tools'
+      ];
+      
+      if (commandIndicators.some(indicator => lowerQuestion.includes(indicator))) {
+        actions.push({ type: 'execute_command', query: question });
+      }
+    }
+
+    return actions;
+  }
+
+  async executeAction(action) {
+    try {
+      switch (action.type) {
+        case 'create_file':
+          await this.createFileWithAI();
+          break;
+
+        case 'format_code':
+          if (editor && editor.session) {
+            acode.exec('format');
+            this.appendSystemMessage('✅ Code formatted successfully');
+          }
+          break;
+
+        case 'run_file':
+          await this.runCurrentFile();
+          break;
+
+        case 'terminal_command':
+          await this.showAiTerminal();
+          break;
+
+        case 'search_project':
+          await this.searchInChat();
+          break;
+
+        case 'search_replace':
+          await this.showSearchReplaceDialog();
+          break;
+
+        case 'explain_code':
+          const selectedText = editor.getSelectedText();
+          const activeFile = editorManager.activeFile;
+          if (selectedText) {
+            this.explainCodeWithChat(selectedText, activeFile);
+          } else if (activeFile) {
+            const fullContent = editor.getValue();
+            this.explainCodeWithChat(fullContent, activeFile);
+          }
+          break;
+
+        case 'auto_create_file':
+          await this.autoCreateFileFromResponse(action.content);
+          break;
+
+        case 'execute_command':
+          await this.executeAcodeCommand(action.query);
+          break;
+
+        case 'scrape_website':
+          await this.handleWebscraping(action.context);
+          break;
+
+        case 'show_diff':
+          await this.handleDiffViewing(action.context);
+          break;
+
+        case 'rollback_system':
+          await this.handleRollbackSystem(action.context);
+          break;
+
+        case 'bulk_operations':
+          await this.bulkFileOperations();
+          break;
+
+        case 'organize_project':
+          await this.organizeProjectStructure();
+          break;
+
+        default:
+          break;
+      }
+    } catch (error) {
+      console.log(`Error executing ${action.type}:`, error);
+    }
+  }
+
+  async autoCreateFileFromResponse(responseContent) {
+    try {
+      // Extract code blocks from response
+      const codeMatches = responseContent.match(/```(\w+)?\s*([\s\S]*?)\s*```/g);
+      if (codeMatches && codeMatches.length > 0) {
+        const firstCodeBlock = codeMatches[0];
+        const languageMatch = firstCodeBlock.match(/```(\w+)/);
+        const language = languageMatch ? languageMatch[1] : 'txt';
+        
+        // Extract clean code content
+        const codeContent = firstCodeBlock.replace(/```(?:\w+)?\s*([\s\S]*?)\s*```/g, '$1').trim();
+        
+        if (codeContent.length > 10) { // Only create if substantial content
+          // Suggest filename based on language
+          const extensions = {
+            javascript: '.js', js: '.js', typescript: '.ts', ts: '.ts',
+            python: '.py', py: '.py', html: '.html', css: '.css',
+            java: '.java', cpp: '.cpp', c: '.c', go: '.go',
+            rust: '.rs', php: '.php', ruby: '.rb', swift: '.swift'
+          };
+          
+          const ext = extensions[language] || '.txt';
+          const suggestedName = `generated_file_${Date.now()}${ext}`;
+          
+          // Show creation dialog
+          const shouldCreate = confirm(`Create file with generated ${language} code?`);
+          if (shouldCreate) {
+            const filename = prompt("Enter filename:", suggestedName);
+            if (filename) {
+              try {
+                const fs = acode.require('fs');
+                const currentDir = this.getCurrentDirectory();
+                const targetFs = await fs(currentDir);
+                await targetFs.createFile(filename, codeContent);
+                
+                this.appendSystemMessage(`✅ File "${filename}" created with generated code`);
+                
+                // Open the created file
+                try {
+                  const createdFileUrl = `${currentDir}/${filename}`;
+                  await editorManager.openFile(createdFileUrl);
+                } catch (openError) {
+                  console.log("Could not open created file:", openError);
+                }
+              } catch (error) {
+                this.appendSystemMessage(`❌ Error creating file: ${error.message}`);
+              }
+            }
+          }
+        }
+      }
+    } catch (error) {
+      console.log("Auto create file error:", error);
+    }
+  }
+
+  getCurrentDirectory() {
+    const activeFile = editorManager.activeFile;
+    if (activeFile && activeFile.location) {
+      return activeFile.location;
+    } else if (activeFile && activeFile.uri) {
+      return activeFile.uri.split('/').slice(0, -1).join('/');
+    }
+    return '/sdcard';
+  }
+
+
+  // Advanced Command Execution System - Execute ALL Acode commands
+  async executeAcodeCommand(commandQuery) {
+    try {
+      // Get all available Acode commands
+      const availableCommands = this.getAllAcodeCommands();
+      
+      // Use AI to match the query to the best command
+      const matchedCommand = await this.matchQueryToCommand(commandQuery, availableCommands);
+      
+      if (matchedCommand) {
+        // Execute the matched command
+        await this.executeCommand(matchedCommand);
+        this.appendSystemMessage(`✅ Executed: ${matchedCommand.name} - ${matchedCommand.description}`);
+        return true;
+      } else {
+        this.appendSystemMessage(`❌ Could not find command for: ${commandQuery}`);
+        return false;
+      }
+    } catch (error) {
+      this.appendSystemMessage(`❌ Error executing command: ${error.message}`);
+      return false;
+    }
+  }
+
+  getAllAcodeCommands() {
+    const commands = [];
+    
+    // Get all editor commands
+    if (editor && editor.commands && editor.commands.commands) {
+      Object.keys(editor.commands.commands).forEach(commandName => {
+        const command = editor.commands.commands[commandName];
+        commands.push({
+          name: commandName,
+          description: command.description || commandName,
+          type: 'editor',
+          command: command
+        });
+      });
+    }
+
+    // Add custom plugin commands
+    const customCommands = [
+      { name: 'ai_assistant', description: 'Open AI Assistant', type: 'custom' },
+      { name: 'ai_edit_current_file', description: 'Edit Current File with AI', type: 'custom' },
+      { name: 'ai_explain_code', description: 'Explain Selected Code', type: 'custom' },
+      { name: 'ai_generate_code', description: 'Generate Code with AI', type: 'custom' },
+      { name: 'ai_run_file', description: 'Run Current File', type: 'custom' },
+      { name: 'ai_optimize_function', description: 'Optimize Selected Function', type: 'custom' },
+      { name: 'ai_add_comments', description: 'Add Comments to Code', type: 'custom' },
+      { name: 'ai_generate_docs', description: 'Generate Documentation', type: 'custom' },
+      { name: 'ai_rewrite_code', description: 'Rewrite Selected Code', type: 'custom' },
+      { name: 'ai_terminal_execute', description: 'AI Terminal Command Execution', type: 'custom' },
+      { name: 'ai_command_palette', description: 'AI Command Palette Control', type: 'custom' }
+    ];
+
+    commands.push(...customCommands);
+
+    // Add common Acode commands
+    const commonAcodeCommands = [
+      { name: 'format', description: 'Format current file', type: 'acode' },
+      { name: 'save', description: 'Save current file', type: 'acode' },
+      { name: 'open', description: 'Open file', type: 'acode' },
+      { name: 'new-file', description: 'Create new file', type: 'acode' },
+      { name: 'console', description: 'Open console', type: 'acode' },
+      { name: 'find', description: 'Find in file', type: 'acode' },
+      { name: 'replace', description: 'Replace in file', type: 'acode' },
+      { name: 'goto', description: 'Go to line', type: 'acode' },
+      { name: 'toggle-sidebar', description: 'Toggle sidebar', type: 'acode' },
+      { name: 'toggle-menu', description: 'Toggle menu', type: 'acode' },
+      { name: 'reload', description: 'Reload app', type: 'acode' },
+      { name: 'settings', description: 'Open settings', type: 'acode' }
+    ];
+
+    commands.push(...commonAcodeCommands);
+
+    return commands;
+  }
+
+  async matchQueryToCommand(query, commands) {
+    const lowerQuery = query.toLowerCase();
+    
+    // Direct name match
+    let matched = commands.find(cmd => 
+      cmd.name.toLowerCase() === lowerQuery ||
+      cmd.description.toLowerCase().includes(lowerQuery)
+    );
+
+    if (matched) return matched;
+
+    // Keyword matching
+    const keywords = {
+      'format': ['format', 'beautify', 'pretty', 'indent'],
+      'save': ['save', 'write', 'store'],
+      'open': ['open', 'load', 'file'],
+      'find': ['find', 'search', 'locate'],
+      'replace': ['replace', 'substitute', 'change'],
+      'console': ['console', 'log', 'debug', 'terminal'],
+      'new-file': ['new', 'create', 'file'],
+      'goto': ['goto', 'go to', 'line', 'jump'],
+      'toggle-sidebar': ['sidebar', 'side panel', 'navigation'],
+      'settings': ['settings', 'preferences', 'config']
+    };
+
+    for (const [commandName, aliases] of Object.entries(keywords)) {
+      if (aliases.some(alias => lowerQuery.includes(alias))) {
+        matched = commands.find(cmd => cmd.name === commandName);
+        if (matched) return matched;
+      }
+    }
+
+    // AI-based matching for complex queries
+    try {
+      if (this.modelInstance) {
+        const commandList = commands.map(cmd => `${cmd.name}: ${cmd.description}`).slice(0, 50).join('\n');
+        const aiPrompt = `Match "${query}" to the best command:
+${commandList}
+
+Return only the command name or "NONE":`;
+
+        const aiMatch = await this.getAIResponse(aiPrompt);
+        const cleanMatch = aiMatch.trim().replace(/[^a-zA-Z0-9_-]/g, '');
+        
+        matched = commands.find(cmd => cmd.name === cleanMatch);
+        if (matched) return matched;
+      }
+    } catch (error) {
+      console.log("AI matching failed:", error);
+    }
+
+    return null;
+  }
+
+  async executeCommand(commandInfo) {
+    try {
+      switch (commandInfo.type) {
+        case 'editor':
+          if (commandInfo.command && typeof commandInfo.command.exec === 'function') {
+            commandInfo.command.exec();
+          }
+          break;
+
+        case 'acode':
+          acode.exec(commandInfo.name);
+          break;
+
+        case 'custom':
+          // Execute custom AI commands
+          if (editor.commands.commands[commandInfo.name]) {
+            editor.commands.commands[commandInfo.name].exec();
+          }
+          break;
+
+        default:
+          throw new Error(`Unknown command type: ${commandInfo.type}`);
+      }
+    } catch (error) {
+      throw new Error(`Failed to execute ${commandInfo.name}: ${error.message}`);
+    }
+  }
+
+  // Enhanced Search and Replace Dialog
+  async showSearchReplaceDialog() {
+    try {
+      const searchTerm = await prompt("Search for:", "", "text", { required: true });
+      if (!searchTerm) return;
+
+      const replaceTerm = await prompt("Replace with:", "", "text");
+      if (replaceTerm === null) return;
+
+      // Show loading
+      window.toast("🔍 Searching project files...", 2000);
+
+      // Perform search and replace
+      const result = await this.searchAndReplaceInProject(
+        searchTerm, 
+        replaceTerm, 
+        ['.js', '.ts', '.html', '.css', '.json', '.md', '.txt'],
+        {
+          dryRun: false,
+          caseSensitive: false
+        }
+      );
+
+      if (result.success) {
+        this.appendSystemMessage(`✅ ${result.message}`);
+      } else {
+        this.appendSystemMessage(`❌ ${result.error}`);
+      }
+    } catch (error) {
+      this.appendSystemMessage(`❌ Search/Replace error: ${error.message}`);
+    }
+  }
+
+  // ===== SUPER ADVANCED AI AGENT FEATURES =====
+  // Website Scraping Capabilities
+  async scrapeWebsite(url, options = {}) {
+    try {
+      const {
+        extractText = true,
+        extractLinks = false,
+        extractImages = false,
+        extractCode = false,
+        maxLength = 50000
+      } = options;
+
+      this.appendSystemMessage(`🌐 Scraping website: ${url}`);
+      
+      const response = await fetch(url, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Android 13; Mobile; rv:109.0) Gecko/117.0 Firefox/117.0'
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      const html = await response.text();
+      const scraped = {
+        url: url,
+        title: this.extractTitle(html),
+        text: extractText ? this.extractTextContent(html) : '',
+        links: extractLinks ? this.extractLinks(html, url) : [],
+        images: extractImages ? this.extractImages(html, url) : [],
+        code: extractCode ? this.extractCodeBlocks(html) : [],
+        metadata: this.extractMetadata(html)
+      };
+
+      // Limit content length
+      if (scraped.text.length > maxLength) {
+        scraped.text = scraped.text.substring(0, maxLength) + '...';
+      }
+
+      this.appendSystemMessage(`✅ Successfully scraped: ${scraped.title || 'Website'}`);
+      return { success: true, data: scraped };
+
+    } catch (error) {
+      this.appendSystemMessage(`❌ Scraping failed: ${error.message}`);
+      return { success: false, error: error.message };
+    }
+  }
+
+  extractTitle(html) {
+    const titleMatch = html.match(/<title[^>]*>([^<]+)<\/title>/i);
+    return titleMatch ? titleMatch[1].trim() : 'Unknown';
+  }
+
+  extractTextContent(html) {
+    // Remove scripts, styles, and other non-content elements
+    let cleanHtml = html
+      .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
+      .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
+      .replace(/<noscript[^>]*>[\s\S]*?<\/noscript>/gi, '')
+      .replace(/<!--[\s\S]*?-->/g, '');
+
+    // Extract text from common content tags
+    const contentTags = ['p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'div', 'span', 'article', 'section'];
+    let text = '';
+
+    contentTags.forEach(tag => {
+      const regex = new RegExp(`<${tag}[^>]*>([^<]+)<\/${tag}>`, 'gi');
+      let match;
+      while ((match = regex.exec(cleanHtml)) !== null) {
+        text += match[1].trim() + '\n';
+      }
+    });
+
+    return text.replace(/\s+/g, ' ').trim();
+  }
+
+  extractLinks(html, baseUrl) {
+    const linkRegex = /<a[^>]+href=['"]([^'"]+)['"][^>]*>([^<]*)<\/a>/gi;
+    const links = [];
+    let match;
+
+    while ((match = linkRegex.exec(html)) !== null) {
+      let href = match[1];
+      const text = match[2].trim();
+
+      // Convert relative URLs to absolute
+      if (href.startsWith('/')) {
+        const base = new URL(baseUrl);
+        href = base.origin + href;
+      } else if (!href.startsWith('http')) {
+        href = new URL(href, baseUrl).href;
+      }
+
+      if (text && !href.startsWith('javascript:') && !href.startsWith('mailto:')) {
+        links.push({ url: href, text: text });
+      }
+    }
+
+    return links.slice(0, 50); // Limit to 50 links
+  }
+
+  extractImages(html, baseUrl) {
+    const imgRegex = /<img[^>]+src=['"]([^'"]+)['"][^>]*(?:alt=['"]([^'"]*?)['"])?[^>]*>/gi;
+    const images = [];
+    let match;
+
+    while ((match = imgRegex.exec(html)) !== null) {
+      let src = match[1];
+      const alt = match[2] || '';
+
+      // Convert relative URLs to absolute
+      if (src.startsWith('/')) {
+        const base = new URL(baseUrl);
+        src = base.origin + src;
+      } else if (!src.startsWith('http') && !src.startsWith('data:')) {
+        src = new URL(src, baseUrl).href;
+      }
+
+      images.push({ url: src, alt: alt });
+    }
+
+    return images.slice(0, 20); // Limit to 20 images
+  }
+
+  extractCodeBlocks(html) {
+    const codeRegex = /<(?:code|pre)[^>]*>([^<]+)<\/(?:code|pre)>/gi;
+    const codeBlocks = [];
+    let match;
+
+    while ((match = codeRegex.exec(html)) !== null) {
+      const code = match[1].trim();
+      if (code.length > 10) {
+        codeBlocks.push(code);
+      }
+    }
+
+    return codeBlocks.slice(0, 10); // Limit to 10 code blocks
+  }
+
+  extractMetadata(html) {
+    const metadata = {};
+    
+    // Extract meta tags
+    const metaRegex = /<meta[^>]+name=['"]([^'"]+)['"][^>]*content=['"]([^'"]+)['"][^>]*>/gi;
+    let match;
+
+    while ((match = metaRegex.exec(html)) !== null) {
+      metadata[match[1]] = match[2];
+    }
+
+    // Extract Open Graph tags
+    const ogRegex = /<meta[^>]+property=['"]og:([^'"]+)['"][^>]*content=['"]([^'"]+)['"][^>]*>/gi;
+    while ((match = ogRegex.exec(html)) !== null) {
+      metadata[`og:${match[1]}`] = match[2];
+    }
+
+    return metadata;
+  }
+
+  // Advanced Diff Viewer System
+  async showAdvancedDiff(originalContent, newContent, filename) {
+    try {
+      const diffData = this.generateAdvancedDiff(originalContent, newContent);
+      const diffHTML = this.renderDiffHTML(diffData, filename);
+      
+      // Create advanced diff viewer modal
+      const diffModal = this.createDiffModal(diffHTML, filename);
+      document.body.appendChild(diffModal);
+      
+      this.appendSystemMessage(`📊 Showing advanced diff for: ${filename}`);
+      return { success: true, modal: diffModal };
+      
+    } catch (error) {
+      this.appendSystemMessage(`❌ Diff error: ${error.message}`);
+      return { success: false, error: error.message };
+    }
+  }
+
+  generateAdvancedDiff(original, modified) {
+    const originalLines = original.split('\n');
+    const modifiedLines = modified.split('\n');
+    const diffs = [];
+    
+    let i = 0, j = 0;
+    while (i < originalLines.length || j < modifiedLines.length) {
+      if (i >= originalLines.length) {
+        // Remaining lines are additions
+        diffs.push({ type: 'add', line: modifiedLines[j], lineNumber: j + 1 });
+        j++;
+      } else if (j >= modifiedLines.length) {
+        // Remaining lines are deletions
+        diffs.push({ type: 'delete', line: originalLines[i], lineNumber: i + 1 });
+        i++;
+      } else if (originalLines[i] === modifiedLines[j]) {
+        // Lines are the same
+        diffs.push({ type: 'unchanged', line: originalLines[i], lineNumber: i + 1 });
+        i++;
+        j++;
+      } else {
+        // Check if it's a modification or separate add/delete
+        let foundMatch = false;
+        for (let k = j + 1; k < Math.min(j + 5, modifiedLines.length); k++) {
+          if (originalLines[i] === modifiedLines[k]) {
+            // Lines between j and k are additions
+            for (let l = j; l < k; l++) {
+              diffs.push({ type: 'add', line: modifiedLines[l], lineNumber: l + 1 });
+            }
+            j = k;
+            foundMatch = true;
+            break;
+          }
+        }
+        
+        if (!foundMatch) {
+          // It's a modification
+          diffs.push({ 
+            type: 'modify', 
+            oldLine: originalLines[i], 
+            newLine: modifiedLines[j],
+            oldLineNumber: i + 1,
+            newLineNumber: j + 1
+          });
+          i++;
+          j++;
+        }
+      }
+    }
+    
+    return diffs;
+  }
+
+  renderDiffHTML(diffData, filename) {
+    let html = `
+      <div class="advanced-diff-container">
+        <div class="diff-header">
+          <h3>🔍 Advanced Diff: ${filename}</h3>
+          <div class="diff-stats">
+            <span class="stat-additions">+${diffData.filter(d => d.type === 'add').length}</span>
+            <span class="stat-deletions">-${diffData.filter(d => d.type === 'delete').length}</span>
+            <span class="stat-modifications">~${diffData.filter(d => d.type === 'modify').length}</span>
+          </div>
+        </div>
+        <div class="diff-content">
+    `;
+
+    diffData.forEach((diff, index) => {
+      switch (diff.type) {
+        case 'unchanged':
+          html += `<div class="diff-line unchanged" data-line="${diff.lineNumber}">
+            <span class="line-number">${diff.lineNumber}</span>
+            <span class="line-content">${this.escapeHtml(diff.line)}</span>
+          </div>`;
+          break;
+          
+        case 'add':
+          html += `<div class="diff-line addition" data-line="${diff.lineNumber}">
+            <span class="line-number">+${diff.lineNumber}</span>
+            <span class="line-content">${this.escapeHtml(diff.line)}</span>
+          </div>`;
+          break;
+          
+        case 'delete':
+          html += `<div class="diff-line deletion" data-line="${diff.lineNumber}">
+            <span class="line-number">-${diff.lineNumber}</span>
+            <span class="line-content">${this.escapeHtml(diff.line)}</span>
+          </div>`;
+          break;
+          
+        case 'modify':
+          html += `<div class="diff-line modification">
+            <div class="old-line" data-line="${diff.oldLineNumber}">
+              <span class="line-number">-${diff.oldLineNumber}</span>
+              <span class="line-content">${this.escapeHtml(diff.oldLine)}</span>
+            </div>
+            <div class="new-line" data-line="${diff.newLineNumber}">
+              <span class="line-number">+${diff.newLineNumber}</span>
+              <span class="line-content">${this.escapeHtml(diff.newLine)}</span>
+            </div>
+          </div>`;
+          break;
+      }
+    });
+
+    html += `
+        </div>
+        <div class="diff-actions">
+          <button class="diff-btn apply-changes">Apply Changes</button>
+          <button class="diff-btn export-diff">Export Diff</button>
+          <button class="diff-btn close-diff">Close</button>
+        </div>
+      </div>
+    `;
+
+    return html;
+  }
+
+  createDiffModal(diffHTML, filename) {
+    const modal = tag("div", {
+      className: "advanced-diff-modal",
+      innerHTML: `
+        <div class="diff-backdrop">
+          <div class="diff-modal-content">
+            ${diffHTML}
+          </div>
+        </div>
+      `
+    });
+
+    // Add event listeners
+    const closeBtn = modal.querySelector('.close-diff');
+    const applyBtn = modal.querySelector('.apply-changes');
+    const exportBtn = modal.querySelector('.export-diff');
+
+    closeBtn.onclick = () => modal.remove();
+    
+    applyBtn.onclick = async () => {
+      await this.applyDiffChanges(filename);
+      modal.remove();
+    };
+    
+    exportBtn.onclick = () => this.exportDiff(diffHTML, filename);
+
+    // Close on backdrop click
+    modal.querySelector('.diff-backdrop').onclick = (e) => {
+      if (e.target === e.currentTarget) modal.remove();
+    };
+
+    return modal;
+  }
+
+  async applyDiffChanges(filename) {
+    try {
+      this.appendSystemMessage(`✅ Applied changes to: ${filename}`);
+      window.toast(`Changes applied to ${filename}`, 3000);
+    } catch (error) {
+      this.appendSystemMessage(`❌ Error applying changes: ${error.message}`);
+    }
+  }
+
+  exportDiff(diffHTML, filename) {
+    try {
+      const blob = new Blob([diffHTML], { type: 'text/html' });
+      const url = URL.createObjectURL(blob);
+      
+      // Create temporary link to download
+      const a = tag("a", {
+        href: url,
+        download: `${filename}_diff.html`,
+        style: "display: none"
+      });
+      
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      
+      this.appendSystemMessage(`📄 Diff exported: ${filename}_diff.html`);
+    } catch (error) {
+      this.appendSystemMessage(`❌ Export error: ${error.message}`);
+    }
+  }
+
+  escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+  }
+
+  // Comprehensive Rollback/Undo System
+  async initializeRollbackSystem() {
+    if (!this.rollbackManager) {
+      this.rollbackManager = {
+        history: [],
+        currentIndex: -1,
+        maxHistory: 50,
+        enabled: true
+      };
+    }
+  }
+
+  async createCheckpoint(description, type = 'manual') {
+    try {
+      await this.initializeRollbackSystem();
+      
+      const checkpoint = {
+        id: uuidv4(),
+        timestamp: Date.now(),
+        description: description,
+        type: type,
+        files: await this.captureProjectState(),
+        editorState: this.captureEditorState()
+      };
+
+      // Remove any history after current index (if we've rolled back)
+      this.rollbackManager.history = this.rollbackManager.history.slice(0, this.rollbackManager.currentIndex + 1);
+      
+      // Add new checkpoint
+      this.rollbackManager.history.push(checkpoint);
+      this.rollbackManager.currentIndex++;
+
+      // Limit history size
+      if (this.rollbackManager.history.length > this.rollbackManager.maxHistory) {
+        this.rollbackManager.history.shift();
+        this.rollbackManager.currentIndex--;
+      }
+
+      this.appendSystemMessage(`💾 Checkpoint created: ${description}`);
+      return { success: true, checkpointId: checkpoint.id };
+      
+    } catch (error) {
+      this.appendSystemMessage(`❌ Checkpoint error: ${error.message}`);
+      return { success: false, error: error.message };
+    }
+  }
+
+  async captureProjectState() {
+    const projectState = {};
+    
+    try {
+      // Get all project files
+      const allFiles = await this.getAllProjectFiles();
+      
+      for (const filePath of allFiles.slice(0, 20)) { // Limit to 20 files for performance
+        try {
+          const readResult = await this.readFileContent(filePath);
+          if (readResult.success) {
+            projectState[filePath] = {
+              content: readResult.content,
+              lastModified: Date.now()
+            };
+          }
+        } catch (error) {
+          // Skip files that can't be read
+        }
+      }
+    } catch (error) {
+      console.log("Error capturing project state:", error);
+    }
+    
+    return projectState;
+  }
+
+  captureEditorState() {
+    try {
+      const activeFile = editorManager.activeFile;
+      if (!activeFile || !editor) return null;
+
+      return {
+        activeFile: activeFile.uri || activeFile.name,
+        cursorPosition: editor.getCursorPosition(),
+        selection: editor.getSelectedText(),
+        scrollPosition: editor.renderer.getScrollTop()
+      };
+    } catch (error) {
+      return null;
+    }
+  }
+
+  async showRollbackHistory() {
+    try {
+      await this.initializeRollbackSystem();
+      
+      if (this.rollbackManager.history.length === 0) {
+        this.appendSystemMessage("📂 No rollback history available");
+        return;
+      }
+
+      const historyItems = this.rollbackManager.history.map((checkpoint, index) => {
+        const date = new Date(checkpoint.timestamp).toLocaleString();
+        const isCurrent = index === this.rollbackManager.currentIndex;
+        return `${isCurrent ? '➤ ' : '  '}${index + 1}. ${checkpoint.description} (${date})`;
+      }).join('\n');
+
+      const selectedIndex = await prompt(
+        `Rollback History:\n\n${historyItems}\n\nEnter checkpoint number to rollback to:`,
+        '',
+        'number'
+      );
+
+      if (selectedIndex && selectedIndex > 0 && selectedIndex <= this.rollbackManager.history.length) {
+        await this.rollbackToCheckpoint(selectedIndex - 1);
+      }
+      
+    } catch (error) {
+      this.appendSystemMessage(`❌ Rollback history error: ${error.message}`);
+    }
+  }
+
+  async rollbackToCheckpoint(checkpointIndex) {
+    try {
+      const checkpoint = this.rollbackManager.history[checkpointIndex];
+      if (!checkpoint) {
+        throw new Error('Checkpoint not found');
+      }
+
+      this.appendSystemMessage(`🔄 Rolling back to: ${checkpoint.description}`);
+      
+      // Restore files
+      for (const [filePath, fileState] of Object.entries(checkpoint.files)) {
+        try {
+          await this.editFileContent(filePath, fileState.content);
+        } catch (error) {
+          console.log(`Error restoring file ${filePath}:`, error);
+        }
+      }
+
+      // Restore editor state
+      if (checkpoint.editorState) {
+        await this.restoreEditorState(checkpoint.editorState);
+      }
+
+      this.rollbackManager.currentIndex = checkpointIndex;
+      this.appendSystemMessage(`✅ Successfully rolled back to: ${checkpoint.description}`);
+      
+      return { success: true };
+      
+    } catch (error) {
+      this.appendSystemMessage(`❌ Rollback error: ${error.message}`);
+      return { success: false, error: error.message };
+    }
+  }
+
+  async restoreEditorState(editorState) {
+    try {
+      if (editorState.activeFile) {
+        // Try to open the file that was active
+        try {
+          await editorManager.openFile(editorState.activeFile);
+        } catch (error) {
+          // File might not exist anymore
+        }
+      }
+
+      if (editor && editorState.cursorPosition) {
+        editor.moveCursorToPosition(editorState.cursorPosition);
+      }
+
+      if (editor && editorState.scrollPosition) {
+        editor.renderer.scrollToY(editorState.scrollPosition);
+      }
+      
+    } catch (error) {
+      console.log("Error restoring editor state:", error);
+    }
+  }
+
+  // Handler methods for advanced AI actions
+  async handleWebscraping(context) {
+    try {
+      // Extract URL from context
+      const urlMatch = context.match(/https?:\/\/[^\s]+/i);
+      if (!urlMatch) {
+        const url = await prompt("Enter website URL to scrape:", "https://", "text", { required: true });
+        if (!url) return;
+        
+        const result = await this.scrapeWebsite(url, {
+          extractText: true,
+          extractLinks: true,
+          extractCode: true
+        });
+        
+        if (result.success) {
+          const summary = `**Website: ${result.data.title}**\n\n**Content Preview:**\n${result.data.text.substring(0, 500)}...\n\n**Found ${result.data.links.length} links and ${result.data.code.length} code blocks**`;
+          this.appendUserQuery(`Website scraping result for: ${url}`);
+          this.appendGptResponse(summary);
+        }
+      } else {
+        const url = urlMatch[0];
+        const result = await this.scrapeWebsite(url, {
+          extractText: true,
+          extractLinks: true,
+          extractCode: true
+        });
+        
+        if (result.success) {
+          const summary = `**Website: ${result.data.title}**\n\n**Content Preview:**\n${result.data.text.substring(0, 500)}...\n\n**Found ${result.data.links.length} links and ${result.data.code.length} code blocks**`;
+          this.appendGptResponse(summary);
+        }
+      }
+    } catch (error) {
+      this.appendSystemMessage(`❌ Webscraping error: ${error.message}`);
+    }
+  }
+
+  async handleDiffViewing(context) {
+    try {
+      const activeFile = editorManager.activeFile;
+      if (!activeFile) {
+        this.appendSystemMessage("❌ No active file to show diff");
+        return;
+      }
+
+      // Get current content
+      const currentContent = editor.getValue();
+      
+      // For demo, compare with a previous version (in real scenario, this would come from version control)
+      const previousContent = await prompt(
+        "Enter previous version content for comparison (or paste content):",
+        "",
+        "textarea"
+      );
+      
+      if (previousContent !== null) {
+        await this.showAdvancedDiff(previousContent, currentContent, activeFile.name);
+      }
+    } catch (error) {
+      this.appendSystemMessage(`❌ Diff viewing error: ${error.message}`);
+    }
+  }
+
+  async handleRollbackSystem(context) {
+    try {
+      const lowerContext = context.toLowerCase();
+      
+      if (lowerContext.includes('create') || lowerContext.includes('checkpoint')) {
+        // Create checkpoint
+        const description = await prompt("Enter checkpoint description:", "Manual checkpoint", "text");
+        if (description) {
+          await this.createCheckpoint(description, 'manual');
+        }
+      } else if (lowerContext.includes('show') || lowerContext.includes('list') || lowerContext.includes('history')) {
+        // Show rollback history
+        await this.showRollbackHistory();
+      } else {
+        // Default to showing options
+        const action = await select("Rollback System", [
+          "Create Checkpoint",
+          "Show History",
+          "Rollback to Previous"
+        ]);
+        
+        switch (action) {
+          case "Create Checkpoint":
+            const description = await prompt("Enter checkpoint description:", "Manual checkpoint", "text");
+            if (description) {
+              await this.createCheckpoint(description, 'manual');
+            }
+            break;
+          case "Show History":
+            await this.showRollbackHistory();
+            break;
+          case "Rollback to Previous":
+            await this.initializeRollbackSystem();
+            if (this.rollbackManager.currentIndex > 0) {
+              await this.rollbackToCheckpoint(this.rollbackManager.currentIndex - 1);
+            } else {
+              this.appendSystemMessage("❌ No previous checkpoint available");
+            }
+            break;
+        }
+      }
+    } catch (error) {
+      this.appendSystemMessage(`❌ Rollback system error: ${error.message}`);
+    }
+  }
+
   // File Operations Methods
 
   async createFileWithAI(basePath = "") {
@@ -2056,7 +3194,7 @@ Exact name:`;
         const suggestion = JSON.parse(jsonStr);
 
         // Validate required fields
-        if (!suggestion.filename || !suggestion.content) {
+        if (!suggestion.filename || suggestion.content === undefined) {
           throw new Error('AI response missing required fields (filename or content)');
         }
 
@@ -2085,7 +3223,7 @@ Exact name:`;
 
         if (confirmCreate) {
           const fileName = confirmCreate.filename;
-          const content = confirmCreate.content;
+          const content = confirmCreate.content || suggestion.content;
           let targetDir = confirmCreate.targetPath || workingDir;
 
           try {
@@ -2107,96 +3245,167 @@ Exact name:`;
                 }
               } catch (browserError) {
                 // User cancelled browser, use the provided path
-                // Silent handling - no need to log user cancellation
               }
             }
 
-            // Ensure the target directory exists and create the file
-            const targetFs = await fs(finalTargetDir);
-            const createdFileUrl = await targetFs.createFile(fileName, content);
+            // **PERBAIKAN UTAMA: Gunakan fs API yang benar**
+            const fs = acode.require('fs'); // Import fs module
+            const targetFs = await fs(finalTargetDir); // Create filesystem object
+
+            // Ensure content is not empty
+            const finalContent = content || suggestion.content || '';
+
+            // Create file using the correct API
+            const createdFileUrl = await targetFs.createFile(fileName, finalContent);
 
             // Show success message with full path information
-            const relativePath = createdFileUrl.replace(/^.*\//, '');
-            window.toast(`✅ File created successfully!\n📁 ${finalTargetDir}/${relativePath}`, 4000);
+            window.toast(`✅ File created successfully!\n📁 ${createdFileUrl}`, 4000);
 
             // Close the AI assistant page if it's open
             if (this.$page && this.$page.isVisible) {
               this.$page.hide();
             }
 
-            // Open the created file in the editor
+            // **PERBAIKAN: Gunakan EditorFile API yang benar**
             try {
+              // Method 1: Try to open existing file
               await editorManager.openFile(createdFileUrl);
             } catch (error) {
-              // Fallback: create new editor file
+              // Method 2: Create new EditorFile using the correct API
               const EditorFile = acode.require('editorFile');
-              new EditorFile(fileName, {
-                text: content,
-                render: true
+              const newFile = new EditorFile(fileName, {
+                text: finalContent,
+                uri: createdFileUrl,
+                render: true,
+                isUnsaved: false
               });
+
+              // Make the file active
+              newFile.makeActive();
             }
+
           } catch (error) {
-            // Better error handling without logging to ACODE.log
             const errorMessage = error && error.message ? error.message : 'Unknown error occurred';
             window.toast(`❌ Error creating file: ${errorMessage}`, 4000);
+
+            const EditorFile = acode.require('editorFile');
+            const newFile = new EditorFile(fileName, {
+              text: content || suggestion.content || '',
+              render: true,
+              isUnsaved: true // Mark as unsaved since it's only in memory
+            });
+
+            newFile.makeActive();
+            window.toast(`📝 File created in memory: ${fileName}`, 3000);
           }
         }
+
       } catch (parseError) {
-        // Handle parsing error without console logging
+        // Handle parsing error - create file with raw content
+        console.warn('JSON parsing failed, using raw content:', parseError);
 
         // Extract code blocks if JSON parsing fails
         const codeMatch = response.match(/```(?:\w+)?\s*([\s\S]*?)\s*```/);
         const extractedContent = codeMatch ? codeMatch[1] : response;
 
         // Fallback to manual filename input
-        const filename = await prompt("Enter filename for the generated content:", "", "text", { required: true });
+        const filename = await prompt("Enter filename for the generated content:", "", "text", {
+          required: true
+        });
+
         if (filename) {
-          const fullPath = basePath ? `${basePath}/${filename}` : filename;
-          await fs(fullPath).writeFile(extractedContent);
-          window.toast(`File created: ${filename}`, 3000);
+          try {
+            const fs = acode.require('fs');
 
-          // Close the AI assistant page if it's open
-          if (this.$page && this.$page.isVisible) {
-            this.$page.hide();
-          }
+            // Try to use basePath or current working directory
+            let targetDirectory = basePath || workingDir;
 
-          // Open the created file
-          const openedFile = await editorManager.openFile(fullPath);
-          if (!openedFile) {
-            editorManager.addNewFile(filename, {
-              text: extractedContent
+            // Allow user to select directory
+            try {
+              const fileBrowser = acode.require('fileBrowser');
+              const dirResult = await fileBrowser('folder', `Save ${filename} to folder:`);
+              if (dirResult && dirResult.url) {
+                targetDirectory = dirResult.url;
+              }
+            } catch (browserError) {
+              // User cancelled, use default directory
+            }
+
+            const targetFs = await fs(targetDirectory);
+            const createdFileUrl = await targetFs.createFile(filename, extractedContent);
+
+            window.toast(`✅ File created: ${filename}`, 3000);
+
+            // Close the AI assistant page if it's open
+            if (this.$page && this.$page.isVisible) {
+              this.$page.hide();
+            }
+
+            // Open the created file
+            try {
+              await editorManager.openFile(createdFileUrl);
+            } catch (openError) {
+              const EditorFile = acode.require('editorFile');
+              const newFile = new EditorFile(filename, {
+                text: extractedContent,
+                uri: createdFileUrl,
+                render: true,
+                isUnsaved: false
+              });
+              newFile.makeActive();
+            }
+
+          } catch (fsError) {
+            console.warn('Filesystem operation failed, creating in memory:', fsError);
+
+            // **ULTIMATE FALLBACK: Create file in memory only**
+            const EditorFile = acode.require('editorFile');
+            const newFile = new EditorFile(filename, {
+              text: extractedContent,
+              render: true,
+              isUnsaved: true,
+              editable: true
             });
+
+            newFile.makeActive();
+            window.toast(`📝 File created in memory: ${filename}\n💾 Use Save As to save to device`, 4000);
           }
         }
       }
+
     } catch (error) {
-      window.toast(`Failed to create file with AI: ${error.message}`, 4000);
+      loader.removeTitleLoader();
+      console.error('AI file creation error:', error);
+      window.toast(`❌ Failed to create file with AI: ${error.message}`, 4000);
     }
   }
 
   async renameFileIntelligently(filePath) {
     try {
-      if (!await fs(filePath).exists()) {
+      // Menggunakan fs API yang benar
+      const filesystem = await acode.require('fs')(filePath);
+
+      if (!await filesystem.exists()) {
         throw new Error("File not found");
       }
 
-      const content = await fs(filePath).readFile('utf8');
+      const content = await filesystem.readFile('utf8');
       const currentName = filePath.split('/').pop();
 
       const aiPrompt = `Analyze this file content and suggest a better filename:
 
-      Current name: ${currentName}
-      Content:
-      \`\`\`
-      ${content.substring(0, 1000)}
-      \`\`\`
+    Current name: ${currentName}
+    Content:
+    \`\`\`
+    ${content.substring(0, 1000)}
+    \`\`\`
 
-      Suggest 3 alternative filenames that better describe the file's purpose. Consider:
-      1. File content and functionality
-      2. Naming conventions
-      3. Descriptive but concise names
+    Suggest 3 alternative filenames that better describe the file's purpose. Consider:
+    1. File content and functionality
+    2. Naming conventions
+    3. Descriptive but concise names
 
-      Respond with just the filenames, one per line.`;
+    Respond with just the filenames, one per line.`;
 
       const response = await this.appendGptResponse(aiPrompt);
       const suggestions = response.split('\n').filter(name => name.trim());
@@ -2204,15 +3413,24 @@ Exact name:`;
       const selectedName = await select("Choose new filename:", [currentName, ...suggestions]);
 
       if (selectedName && selectedName !== currentName) {
-        const newPath = filePath.replace(currentName, selectedName);
-        await fs(filePath).moveTo(newPath);
+        // Menggunakan renameTo method yang tersedia di API
+        const newUrl = await filesystem.renameTo(selectedName);
         window.toast(`File renamed to: ${selectedName}`, 3000);
 
-        // Update editor if file is open
-        const openFile = editorManager.getFile(filePath);
+        // Update editor jika file sedang terbuka
+        // Menggunakan editorManager yang benar dari Acode
+        const openFiles = editorManager.files;
+        const openFile = openFiles.find(file => file.uri === filePath);
+
         if (openFile) {
+          // Update properti file yang terbuka
           openFile.filename = selectedName;
-          openFile.name = selectedName;
+          openFile.uri = newUrl;
+
+          // Refresh tab jika diperlukan
+          if (openFile.tab) {
+            openFile.tab.textContent = selectedName;
+          }
         }
       }
     } catch (error) {
@@ -2227,16 +3445,39 @@ Exact name:`;
 
       const projectFiles = await this.scanProjectStructure();
 
-      if (!projectFiles || projectFiles.length === 0) {
+      // Enhanced validation for ACODE
+      if (!projectFiles || !Array.isArray(projectFiles) || projectFiles.length === 0) {
         loader.removeTitleLoader();
         window.toast("No project files found to organize", 3000);
+        return;
+      }
+
+      // Safe slice operation with validation
+      let filesToShow;
+      try {
+        filesToShow = projectFiles.slice(0, 20);
+      } catch (sliceError) {
+        loader.removeTitleLoader();
+        window.toast(`Error processing files: ${sliceError.message}`, 3000);
+        return;
+      }
+
+      // Build file list safely
+      const fileList = filesToShow
+        .filter(f => f && f.name) // Filter out invalid entries
+        .map(f => `- ${f.name} (${f.type || 'unknown'})`)
+        .join('\n');
+
+      if (fileList.length === 0) {
+        loader.removeTitleLoader();
+        window.toast("No valid files found in project structure", 3000);
         return;
       }
 
       const aiPrompt = `Project structure analysis for organization:
 
 Files found: ${projectFiles.length}
-${projectFiles.slice(0, 20).map(f => `- ${f.name} (${f.type})`).join('\n')}
+${fileList}
 
 Suggest improvements:
 1. Better folder organization
@@ -2271,46 +3512,59 @@ Response format: Clear actionable steps.`;
     }
 
     try {
-      const structure = {};
+      const fs = acode.require('fs'); // ✅ Import fs module sesuai dokumentasi
+      const allFiles = [];
+
       const scanDir = async (dirPath, depth = 0) => {
         if (depth > 3) return; // Limit depth
 
         try {
-          const dirFs = fs(dirPath);
-          if (dirFs && await dirFs.exists()) {
-            const items = await dirFs.lsDir();
-            structure[dirPath] = {
-              files: [],
-              folders: []
-            };
+          const filesystem = await fs(dirPath); // ✅ Create filesystem object
 
-            for (const item of items) {
-              if (item.isDirectory && !item.name.startsWith('.')) {
-                structure[dirPath].folders.push(item.name);
-                await scanDir(`${dirPath}/${item.name}`, depth + 1);
-              } else if (item.isFile) {
-                structure[dirPath].files.push({
-                  name: item.name,
-                  size: item.length || 0,
-                  extension: item.name.split('.').pop() || 'unknown'
+          if (await filesystem.exists()) {
+            const entries = await filesystem.lsDir(); // ✅ Use lsDir() method
+
+            for (const entry of entries) {
+              if (entry.isDirectory && !entry.name.startsWith('.')) {
+                // Add folder info
+                allFiles.push({
+                  name: entry.name,
+                  type: 'folder',
+                  path: `${dirPath}/${entry.name}`,
+                  size: 0
+                });
+
+                // Recursively scan subdirectory
+                await scanDir(`${dirPath}/${entry.name}`, depth + 1);
+              } else if (entry.isFile) {
+                // Add file info
+                allFiles.push({
+                  name: entry.name,
+                  type: 'file',
+                  path: `${dirPath}/${entry.name}`,
+                  size: entry.size || 0,
+                  extension: entry.name.split('.').pop() || 'unknown'
                 });
               }
             }
           }
         } catch (error) {
-          window.toast('Error scanning directory', 3000);
+          console.warn(`Error scanning directory ${dirPath}:`, error);
         }
       };
 
-      await scanDir(window.PLUGIN_DIR || '/sdcard');
+      // Start scanning from current working directory or default path
+      const startPath = window.PLUGIN_DIR || '/sdcard';
+      await scanDir(startPath);
 
-      this.projectStructure = structure;
+      this.projectStructure = allFiles;
       this.lastStructureScan = Date.now();
 
-      return structure;
+      return allFiles;
     } catch (error) {
+      console.error('Error scanning project structure:', error);
       window.toast('Error scanning project structure', 3000);
-      return {};
+      return [];
     }
   }
 
@@ -2348,11 +3602,27 @@ Response format: Clear actionable steps.`;
 
   async bulkRenameFiles() {
     try {
-      const files = await this.selectMultipleFiles();
-      if (!files.length) {
-        window.toast("No files selected", 3000);
+      const fileBrowser = acode.require('fileBrowser');
+      const fs = acode.require('fs');
+
+      const folderResult = await fileBrowser('folder', 'Select folder containing files to rename');
+      if (!folderResult) {
+        window.toast("No folder selected", 3000);
         return;
       }
+
+      const folderPath = folderResult.url;
+      const folderFs = await fs(folderPath);
+      const entries = await folderFs.lsDir();
+
+      const files = entries.filter(entry => !entry.isDirectory).map(entry => `${folderPath}/${entry.name}`);
+
+      if (!files.length) {
+        window.toast("No files found in selected folder", 3000);
+        return;
+      }
+
+      window.toast(`Found ${files.length} files in folder`, 2000);
 
       const pattern = await prompt("Enter naming pattern (use {index} for numbers):", "file_{index}.js", "text");
       if (!pattern) return;
@@ -2368,18 +3638,28 @@ Response format: Clear actionable steps.`;
             if (await fileFs.exists()) {
               const oldName = files[i].split('/').pop();
               const extension = oldName.includes('.') ? '.' + oldName.split('.').pop() : '';
-              const newName = pattern.replace('{index}', i + 1).replace(/\.[^.]*$/, '') + extension;
+              const baseName = pattern.replace('{index}', i + 1);
+              const newName = baseName.replace(/\.[^.]*$/, '') + extension;
 
               await fileFs.renameTo(newName);
               renamedCount++;
             }
           } catch (err) {
-            window.toast(`Error renaming file: ${err.message}`, 3000);
+            window.toast(`Error renaming file ${i + 1}: ${err.message}`, 3000);
           }
         }
 
         loader.removeTitleLoader();
-        window.toast(`✅ Renamed ${renamedCount} files`, 4000);
+        window.toast(`✅ Renamed ${renamedCount} files successfully`, 4000);
+
+        try {
+          const openFolder = acode.require('openFolder');
+          if (openFolder.find && openFolder.find(folderPath)) {
+            openFolder.find(folderPath).reload();
+          }
+        } catch (e) {
+          // Silent fail - folder refresh is optional
+        }
       }
     } catch (error) {
       loader.removeTitleLoader();
@@ -2389,16 +3669,15 @@ Response format: Clear actionable steps.`;
 
   async bulkMoveFiles() {
     try {
-      // First select files to move
+      const fileBrowser = acode.require('fileBrowser');
+      const fs = acode.require('fs');
+
       const files = await this.selectMultipleFiles();
       if (!files.length) {
         window.toast("No files selected", 3000);
         return;
       }
 
-      const fileBrowser = acode.require('fileBrowser');
-
-      // Then select target folder
       const targetResult = await fileBrowser('folder', 'Select target folder for files');
       if (!targetResult) {
         window.toast("No target folder selected", 3000);
@@ -2407,9 +3686,8 @@ Response format: Clear actionable steps.`;
 
       const targetFolder = targetResult.url;
 
-      // Ensure target folder exists
       try {
-        const targetFs = fs(targetFolder);
+        const targetFs = await fs(targetFolder);
         if (!await targetFs.exists()) {
           window.toast("Target folder not accessible", 3000);
           return;
@@ -2426,7 +3704,7 @@ Response format: Clear actionable steps.`;
 
         for (const filePath of files) {
           try {
-            const fileFs = fs(filePath);
+            const fileFs = await fs(filePath);
             if (await fileFs.exists()) {
               const fileName = filePath.split('/').pop();
               const newPath = `${targetFolder}/${fileName}`;
@@ -2449,115 +3727,404 @@ Response format: Clear actionable steps.`;
 
   async deleteUnusedFiles() {
     try {
-      const extensions = await multiPrompt("Select file types to analyze", [
-        {
-          id: "extensions",
-          placeholder: "Extensions (e.g., .log,.tmp,.bak)",
-          value: ".log,.tmp,.bak,.backup",
-          type: "text",
-          required: true
-        }
-      ]);
+      const fileBrowser = acode.require('fileBrowser');
+      const fs = acode.require('fs');
 
-      if (!extensions) return;
-
-      const extensionList = extensions.extensions.split(',').map(ext => ext.trim());
-      const unusedFiles = await this.getAllProjectFiles(extensionList);
-
-      if (!unusedFiles.length) {
-        window.toast("No unused files found", 3000);
+      const folderResult = await fileBrowser('folder', 'Select project folder to scan for unused files');
+      if (!folderResult) {
+        window.toast("No folder selected", 3000);
         return;
       }
 
-      const fileList = unusedFiles.map(f => f.split('/').pop()).join('\n');
-      const confirmDelete = await select(`Delete ${unusedFiles.length} unused files?\n\n${fileList.substring(0, 200)}${fileList.length > 200 ? '...' : ''}`, ["Yes", "No"]);
+      const projectPath = folderResult.url;
+      loader.showTitleLoader();
+
+      const allFiles = await this.getAllFilesRecursive(projectPath);
+
+      const codeFiles = allFiles.filter(file =>
+        /\.(js|jsx|ts|tsx|vue|html|css|scss|sass|less)$/i.test(file)
+      );
+
+      const assetFiles = allFiles.filter(file =>
+        /\.(png|jpg|jpeg|gif|svg|ico|woff|woff2|ttf|eot|mp3|mp4|avi|mov|pdf|doc|docx)$/i.test(file)
+      );
+
+      if (assetFiles.length === 0) {
+        loader.removeTitleLoader();
+        window.toast("No asset files found to check", 3000);
+        return;
+      }
+
+      const unusedFiles = [];
+
+      for (const assetFile of assetFiles) {
+        const fileName = assetFile.split('/').pop();
+        const fileNameWithoutExt = fileName.replace(/\.[^.]*$/, '');
+        let isUsed = false;
+
+        for (const codeFile of codeFiles) {
+          try {
+            const codeFs = await fs(codeFile);
+            const content = await codeFs.readFile('utf8');
+
+            const patterns = [
+              fileName,
+              fileNameWithoutExt,
+              assetFile.replace(projectPath, ''),
+              assetFile.split('/').slice(-2).join('/')
+            ];
+
+            if (patterns.some(pattern => content.includes(pattern))) {
+              isUsed = true;
+              break;
+            }
+          } catch (err) {
+            continue;
+          }
+        }
+
+        if (!isUsed) {
+          unusedFiles.push(assetFile);
+        }
+      }
+
+      loader.removeTitleLoader();
+
+      if (unusedFiles.length === 0) {
+        window.toast("✅ No unused files found!", 3000);
+        return;
+      }
+
+      const fileList = unusedFiles.map(file => file.split('/').pop()).join('\n');
+      const confirmDelete = await select(
+        `Found ${unusedFiles.length} potentially unused files:\n\n${fileList.substring(0, 200)}${fileList.length > 200 ? '...' : ''}\n\nDelete these files?`,
+        ["Yes", "No", "Show List"]
+      );
+
+      if (confirmDelete === "Show List") {
+        const EditorFile = acode.require('editorFile');
+        const listContent = `Unused Files Found:\n\n${unusedFiles.map((file, index) => `${index + 1}. ${file}`).join('\n')}`;
+
+        new EditorFile('unused_files_list.txt', {
+          text: listContent,
+          render: true
+        });
+        return;
+      }
 
       if (confirmDelete === "Yes") {
+        loader.showTitleLoader();
         let deletedCount = 0;
+
         for (const filePath of unusedFiles) {
           try {
-            const fileFs = fs(filePath);
-            if (fileFs && await fileFs.exists()) {
+            const fileFs = await fs(filePath);
+            if (await fileFs.exists()) {
               await fileFs.delete();
               deletedCount++;
             }
           } catch (err) {
-            window.toast('Error deleting file', 3000);
+            window.toast(`Error deleting file: ${err.message}`, 3000);
           }
         }
-        window.toast(`Deleted ${deletedCount} unused files`, 3000);
+
+        loader.removeTitleLoader();
+        window.toast(`✅ Deleted ${deletedCount} unused files`, 4000);
+
+        try {
+          const openFolder = acode.require('openFolder');
+          if (openFolder.find && openFolder.find(projectPath)) {
+            openFolder.find(projectPath).reload();
+          }
+        } catch (e) {
+          // Silent fail
+        }
       }
+
     } catch (error) {
-      window.toast(`Delete unused files error: ${error.message}`, 3000);
+      loader.removeTitleLoader();
+      window.toast(`❌ Delete unused files error: ${error.message}`, 3000);
     }
+  }
+
+  async getAllFilesRecursive(dirPath) {
+    const fs = acode.require('fs');
+    const allFiles = [];
+
+    try {
+      const dirFs = await fs(dirPath);
+      const entries = await dirFs.lsDir();
+
+      for (const entry of entries) {
+        const fullPath = `${dirPath}/${entry.name}`;
+
+        if (entry.isDirectory) {
+          if (!['node_modules', '.git', 'dist', 'build', '.cache'].includes(entry.name)) {
+            const subFiles = await this.getAllFilesRecursive(fullPath);
+            allFiles.push(...subFiles);
+          }
+        } else {
+          allFiles.push(fullPath);
+        }
+      }
+    } catch (err) {
+      // Silent fail for inaccessible directories
+    }
+
+    return allFiles;
   }
 
   async addHeadersToFiles() {
     try {
-      const headerInfo = await multiPrompt("File Header Configuration", [
+      const fs = acode.require('fs');
+
+      const cfg = await multiPrompt("File Header Configuration", [
         {
           id: "header",
-          placeholder: "Header template (use {filename}, {date}, {author})",
+          placeholder: "Header template (use {filename}, {date}, {author}, {year}, {time})",
           value: "/*\n * File: {filename}\n * Created: {date}\n * Author: {author}\n */\n",
           type: "textarea",
           required: true
         },
-        {
-          id: "author",
-          placeholder: "Author name",
-          value: "Developer",
-          type: "text"
-        },
-        {
-          id: "extensions",
-          placeholder: "File extensions (e.g., .js,.css,.html)",
-          value: ".js,.css,.html",
-          type: "text",
-          required: true
-        }
+        { id: "author", placeholder: "Author name", value: "Developer", type: "text" },
+        { id: "extensions", placeholder: "File extensions (e.g., .js,.css,.html)", value: ".js,.css,.html", type: "text", required: true },
+        { id: "include", placeholder: "Include glob (comma separated, optional)", value: "", type: "text" },
+        { id: "exclude", placeholder: "Exclude glob (comma separated, optional)", value: "node_modules,.git", type: "text" },
+        { id: "maxSizeKB", placeholder: "Max file size (KB) to process (0 = no limit)", value: "0", type: "text" },
       ]);
 
-      if (!headerInfo) return;
+      if (!cfg) return;
 
-      const extensionList = headerInfo.extensions.split(',').map(ext => ext.trim());
-      const files = await this.getAllProjectFiles(extensionList);
+      const insertPos = await select("Insert header:", ["Top of file", "After shebang (#!)", "After existing license/header if present"]);
+      const makeBackup = await select("Create backups (.bak)?", ["Yes", "No"]);
+      const dryRun = await select("Dry run (don't write files)?", ["Yes", "No"]);
+      const confirmApply = await select("Start adding headers now?", ["Yes", "No"]);
+
+      if (confirmApply !== "Yes") {
+        window.toast("Cancelled", 2000);
+        return;
+      }
+
+      const author = cfg.author || "Developer";
+      const extList = cfg.extensions.split(',').map(s => s.trim().toLowerCase()).filter(Boolean).map(e => e.startsWith('.') ? e : '.' + e);
+      const includeGlobs = cfg.include ? cfg.include.split(',').map(s => s.trim()).filter(Boolean) : [];
+      const excludeGlobs = cfg.exclude ? cfg.exclude.split(',').map(s => s.trim()).filter(Boolean) : [];
+      const maxSizeKB = Number(cfg.maxSizeKB || 0);
+
+      const matchAny = (name, patterns) => {
+        if (!patterns || !patterns.length) return false;
+        return patterns.some(p => {
+          if (p === name) return true;
+          if (p.startsWith('*') && name.endsWith(p.slice(1))) return true;
+          if (p.endsWith('*') && name.startsWith(p.slice(0, -1))) return true;
+          return name.includes(p);
+        });
+      };
+
+      const formatHeader = (template, fileName) => {
+        const d = new Date();
+        const placeholders = {
+          '{filename}': fileName,
+          '{date}': d.toLocaleDateString(),
+          '{time}': d.toLocaleTimeString(),
+          '{year}': String(d.getFullYear()),
+          '{author}': author
+        };
+        let out = template;
+        for (const k in placeholders) out = out.split(k).join(placeholders[k]);
+        return out;
+      };
+
+      let files = [];
+      if (typeof this.getAllProjectFiles === 'function') {
+        try {
+          files = await this.getAllProjectFiles(extList);
+        } catch (e) {
+          console.warn('getAllProjectFiles failed, falling back to internal walker', e);
+        }
+      }
+
+      if (!files || !files.length) {
+        const root = window.PLUGIN_DIR || '/sdcard';
+        const MAX_DEPTH = 6;
+        const walker = async (dirPath, depth = 0) => {
+          if (depth > MAX_DEPTH) return;
+          try {
+            const dirFs = await fs(dirPath);
+            if (!dirFs || !await dirFs.exists()) return;
+            let items = [];
+            try {
+              items = await dirFs.lsDir();
+            } catch (e) {
+              console.warn('lsDir fail', dirPath, e);
+              return;
+            }
+            for (const item of items) {
+              const name = item.name || item.filename || item.path || String(item);
+              if (!name) continue;
+              if (excludeGlobs.length && matchAny(name, excludeGlobs)) continue;
+              const childPath = dirPath.endsWith('/') ? dirPath + name : dirPath + '/' + name;
+              const isDir = ('isDirectory' in item) ? item.isDirectory : (item.isFile === false);
+              if (isDir) {
+                if (['node_modules', '.git', 'dist', 'build'].includes(name)) continue;
+                await walker(childPath, depth + 1);
+              } else {
+                const ext = (name.includes('.') ? '.' + name.split('.').pop().toLowerCase() : '');
+                if (extList.length && !extList.includes(ext)) continue;
+                if (includeGlobs.length && !matchAny(name, includeGlobs)) continue;
+                files.push(childPath);
+              }
+            }
+          } catch (err) {
+            console.warn('walker error', dirPath, err);
+          }
+        };
+        await walker(root, 0);
+      }
 
       if (!files.length) {
         window.toast("No matching files found", 3000);
         return;
       }
 
-      const confirmAdd = await select(`Add headers to ${files.length} files?`, ["Yes", "No"]);
-      if (confirmAdd === "Yes") {
-        let processedCount = 0;
-        for (const filePath of files) {
-          try {
-            const fileFs = fs(filePath);
-            if (fileFs && await fileFs.exists()) {
-              const content = await fileFs.readFile('utf8');
-              const fileName = filePath.split('/').pop();
-              const currentDate = new Date().toLocaleDateString();
+      let processedCount = 0, skippedCount = 0, errors = 0, backups = 0;
+      const summary = { processed: [], skipped: [], errors: [] };
 
-              const header = headerInfo.header
-                .replace('{filename}', fileName)
-                .replace('{date}', currentDate)
-                .replace('{author}', headerInfo.author);
+      const normalizeForCompare = s => (s || '').replace(/\r\n/g, '\n').trim();
 
-              // Check if header already exists
-              if (!content.startsWith(header.trim())) {
-                const newContent = header + content;
-                await fileFs.writeFile(newContent);
-                processedCount++;
-              }
-            }
-          } catch (err) {
-            window.toast('Error adding header', 3000);
+      for (let i = 0; i < files.length; i++) {
+        const filePath = files[i];
+        try {
+          const f = await fs(filePath);
+          if (!f || !await f.exists()) {
+            skippedCount++;
+            summary.skipped.push({ file: filePath, reason: 'not exists' });
+            continue;
           }
+
+          let fileSize = 0;
+          try {
+            const st = await f.stat();
+            fileSize = st && st.size ? Number(st.size) : 0;
+          } catch (e) { /* ignore stat errors */ }
+
+          if (maxSizeKB > 0 && fileSize > maxSizeKB * 1024) {
+            skippedCount++;
+            summary.skipped.push({ file: filePath, reason: 'size limit' });
+            continue;
+          }
+
+          let content = '';
+          try {
+            content = await f.readFile('utf8');
+          } catch (e) {
+            skippedCount++;
+            summary.skipped.push({ file: filePath, reason: 'read error' });
+            continue;
+          }
+
+          if (typeof content === 'string' && content.indexOf('\0') !== -1) {
+            skippedCount++;
+            summary.skipped.push({ file: filePath, reason: 'binary' });
+            continue;
+          }
+
+          const fileName = filePath.split('/').pop();
+          const headerText = formatHeader(cfg.header, fileName);
+          const headerNormalized = normalizeForCompare(headerText);
+
+          const contentNormalizedStart = normalizeForCompare(content.slice(0, headerText.length + 200));
+          let alreadyHas = false;
+
+          if (contentNormalizedStart.startsWith(headerNormalized) || normalizeForCompare(content).startsWith(headerNormalized)) {
+            alreadyHas = true;
+          } else {
+            const topChunk = content.slice(0, 500);
+            const authorRegex = new RegExp(author.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&'), 'i');
+            if (topChunk.includes('Author:') && authorRegex.test(topChunk)) alreadyHas = true;
+          }
+
+          if (alreadyHas) {
+            skippedCount++;
+            summary.skipped.push({ file: filePath, reason: 'already has header' });
+            continue;
+          }
+
+          let newContent = content;
+          if (insertPos === "After shebang (#!)") {
+            if (content.startsWith('#!')) {
+              const idx = content.indexOf('\n');
+              if (idx === -1) newContent = content + '\n' + headerText;
+              else newContent = content.slice(0, idx + 1) + headerText + content.slice(idx + 1);
+            } else {
+              newContent = headerText + content;
+            }
+          } else if (insertPos === "After existing license/header if present") {
+            const lines = content.split(/\r?\n/);
+            let insertAt = 0;
+            while (insertAt < lines.length && lines[insertAt].trim() === '') insertAt++;
+            if (lines[insertAt] && lines[insertAt].startsWith('#!')) {
+              insertAt++;
+            }
+            if (lines[insertAt] && lines[insertAt].trim().startsWith('/*')) {
+              let j = insertAt;
+              while (j < lines.length && !lines[j].includes('*/')) j++;
+              insertAt = j + 1;
+            } else {
+              let j = insertAt;
+              while (j < lines.length && (lines[j].trim().startsWith('//') || lines[j].trim().startsWith('#') || lines[j].trim() === '')) j++;
+              insertAt = j;
+            }
+            const before = lines.slice(0, insertAt).join('\n');
+            const after = lines.slice(insertAt).join('\n');
+            newContent = (before ? before + '\n' : '') + headerText + (after ? after : '');
+          } else {
+            newContent = headerText + content;
+          }
+
+          if (makeBackup === "Yes") {
+            try {
+              const bakPath = filePath + `.bak.${Date.now()}`;
+              const bakFs = await fs(bakPath);
+              await bakFs.writeFile(content, 'utf8');
+              backups++;
+            } catch (e) {
+              console.warn('backup failed for', filePath, e);
+            }
+          }
+
+          if (dryRun !== "Yes") {
+            try {
+              await f.writeFile(newContent, 'utf8');
+              processedCount++;
+              summary.processed.push(filePath);
+            } catch (e) {
+              errors++;
+              summary.errors.push({ file: filePath, error: e && e.message ? e.message : String(e) });
+              console.warn('writeFile error', filePath, e);
+            }
+          } else {
+            processedCount++;
+            summary.processed.push(filePath);
+          }
+
+          if ((i % 25) === 0) window.toast(`Processing ${i + 1}/${files.length}...`, 1000);
+
+        } catch (errFile) {
+          errors++;
+          summary.errors.push({ file: filePath, error: errFile && errFile.message ? errFile.message : String(errFile) });
+          console.warn('file loop error', filePath, errFile);
         }
-        window.toast(`Added headers to ${processedCount} files`, 3000);
       }
+
+      const msg = `Headers: processed ${processedCount}, skipped ${skippedCount}, errors ${errors}, backups ${backups}`;
+      window.toast(msg, 4000);
+
+      return { processedCount, skippedCount, errors, backups, details: summary };
+
     } catch (error) {
-      window.toast(`Add headers error: ${error.message}`, 3000);
+      window.toast(`Add headers error: ${error && error.message ? error.message : String(error)}`, 5000);
+      return { processedCount: 0, skippedCount: 0, errors: 1, backups: 0, error: error };
     }
   }
 
@@ -2594,21 +4161,20 @@ Response format: Clear actionable steps.`;
         let convertedCount = 0;
         for (const filePath of files) {
           try {
-            const fileFs = fs(filePath);
-            if (fileFs && await fileFs.exists()) {
-              const content = await fileFs.readFile('utf8');
+            // Baca file menggunakan API acodeplugin
+            const readResult = await this.readFileContent(filePath);
+            if (readResult.success) {
               const baseName = filePath.replace(conversion.fromExt, '');
               const newPath = baseName + conversion.toExt;
 
-              // Create new file with converted extension
-              const parentDir = filePath.substring(0, filePath.lastIndexOf('/'));
-              const parentFs = fs(parentDir);
-              const newFileName = newPath.split('/').pop();
-
-              if (parentFs) {
-                await parentFs.createFile(newFileName, content);
-                await fileFs.delete(); // Delete original file
-                convertedCount++;
+              // Buat file baru dengan ekstensi yang dikonversi
+              const createResult = await this.createFileInProject(newPath, readResult.content);
+              if (createResult.success) {
+                // Hapus file asli
+                const deleteResult = await this.deleteFileFromProject(filePath);
+                if (deleteResult.success) {
+                  convertedCount++;
+                }
               }
             }
           } catch (err) {
@@ -2624,57 +4190,65 @@ Response format: Clear actionable steps.`;
 
   async selectMultipleFiles() {
     try {
-      const fileBrowser = acode.require('fileBrowser');
-      const fileList = acode.require('fileList');
       const selectedFiles = [];
-
-      // Get all open folders for context
-      const openFolders = await fileList();
-
-      if (openFolders.length === 0) {
-        window.toast("Please open a folder first", 3000);
-        return [];
-      }
-
       let continueSelection = true;
       let selectionCount = 0;
 
-      while (continueSelection && selectionCount < 10) { // Limit to 10 files
+      // Dapatkan semua file project terlebih dahulu
+      const allFiles = await this.getAllProjectFiles();
+
+      if (allFiles.length === 0) {
+        window.toast("No files found in project", 3000);
+        return [];
+      }
+
+      // Buat daftar file untuk dipilih
+      const fileOptions = allFiles.map(filePath => {
+        const fileName = filePath.split('/').pop();
+        return `${fileName} (${filePath})`;
+      });
+
+      while (continueSelection && selectionCount < 10) {
         try {
-          const result = await fileBrowser('file', `Select files (${selectionCount} selected)`, false, openFolders);
+          const selectedOption = await select(`Select files (${selectionCount} selected)`, [...fileOptions, "Done"]);
 
-          if (result && result.url && !selectedFiles.includes(result.url)) {
-            selectedFiles.push(result.url);
-            selectionCount++;
-
-            const continuePrompt = await select(`Added ${result.name}. Continue selecting?`, ["Yes", "Done"]);
-            if (continuePrompt === "Done" || continuePrompt === null) {
-              continueSelection = false;
-            }
-          } else {
-            // User cancelled or no file selected
+          if (selectedOption === "Done" || !selectedOption) {
             continueSelection = false;
+          } else {
+            // Extract file path dari option yang dipilih
+            const filePath = selectedOption.match(/\((.*)\)$/)?.[1];
+            if (filePath && !selectedFiles.includes(filePath)) {
+              selectedFiles.push(filePath);
+              selectionCount++;
+
+              // Remove selected file dari options
+              const index = fileOptions.indexOf(selectedOption);
+              if (index > -1) {
+                fileOptions.splice(index, 1);
+              }
+
+              if (fileOptions.length === 0) {
+                continueSelection = false;
+              }
+            }
           }
         } catch (error) {
-          // User cancelled or error occurred
           continueSelection = false;
         }
       }
 
       return selectedFiles;
     } catch (error) {
-      window.toast('Error in selectMultipleFiles', 3000);
       window.toast(`Error selecting files: ${error.message}`, 3000);
       return [];
     }
   }
 
   async readFileContent(filePath) {
-    /*
-    Read file content from project
-    */
     try {
-      const fileFs = fs(filePath);
+      const fsModule = acode.require('fs');
+      const fileFs = fsModule(filePath);
+
       if (fileFs && await fileFs.exists()) {
         const content = await fileFs.readFile('utf8');
         return { success: true, content, path: filePath };
@@ -2687,50 +4261,38 @@ Response format: Clear actionable steps.`;
   }
 
   async editFileContent(filePath, newContent) {
-    /*
-    Edit file content in project with backup using proper Acode API
-    */
     try {
-      const fileFs = fs(filePath);
+      const fsModule = acode.require('fs');
+      const fileFs = fsModule(filePath);
+
       if (!fileFs) {
         throw new Error("Cannot access file system");
       }
 
-      // Create backup before editing
+      // Buat backup sebelum edit
       if (await fileFs.exists()) {
         const originalContent = await fileFs.readFile('utf8');
-        const backupPath = filePath + '.backup.' + Date.now();
-        const parentDir = filePath.substring(0, filePath.lastIndexOf('/'));
-        const parentFs = fs(parentDir);
-        const backupFileName = backupPath.split('/').pop();
 
-        // Create backup file
-        if (parentFs) {
-          try {
-            await parentFs.createFile(backupFileName, originalContent);
-          } catch (error) {
-            // Could not create backup file
-          }
-        }
-
-        // Store backup info for undo
+        // Simpan info undo
         this.storeUndoInfo(filePath, originalContent);
 
-        // Write new content
+        // Tulis konten baru
         await fileFs.writeFile(newContent);
 
-        // Update open editor file if it's currently open
+        // Update editor yang sedang aktif jika file sedang terbuka
+        const editorManager = acode.require('editorManager');
         const activeFile = editorManager.activeFile;
+
         if (activeFile && (activeFile.uri === filePath || activeFile.location + '/' + activeFile.filename === filePath)) {
           activeFile.session.setValue(newContent);
           activeFile.isUnsaved = false;
         }
       } else {
-        // File doesn't exist, create it
-        const parentDir = filePath.substring(0, filePath.lastIndexOf('/'));
-        const fileName = filePath.split('/').pop();
-        const parentFs = await fs(parentDir);
-        await parentFs.createFile(fileName, newContent);
+        // File tidak ada, buat file baru
+        const createResult = await this.createFileInProject(filePath, newContent);
+        if (!createResult.success) {
+          throw new Error(createResult.error);
+        }
       }
 
       return { success: true, message: `File edited successfully: ${filePath.split('/').pop()}` };
@@ -2740,20 +4302,44 @@ Response format: Clear actionable steps.`;
     }
   }
 
-  async deleteFileFromProject(filePath) {
-    /*
-    Delete file from project with backup
-    */
+  async createFileInProject(filePath, content = '') {
     try {
-      const fileFs = fs(filePath);
+      const fsModule = acode.require('fs');
+      const parentDir = filePath.substring(0, filePath.lastIndexOf('/'));
+      const fileName = filePath.split('/').pop();
+
+      // Pastikan parent directory ada
+      const parentFs = fsModule(parentDir);
+      if (!await parentFs.exists()) {
+        // Buat directory jika tidak ada
+        await parentFs.createDirectory();
+      }
+
+      // Buat file
+      await parentFs.createFile(fileName, content);
+
+      return { success: true, message: `File created successfully: ${fileName}` };
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+  }
+
+  async deleteFileFromProject(filePath) {
+    try {
+      const fsModule = acode.require('fs');
+      const fileFs = fsModule(filePath);
+
       if (fileFs && await fileFs.exists()) {
-        // Create backup before deleting
+        // Buat backup sebelum hapus
         const content = await fileFs.readFile('utf8');
-        const backupPath = window.DATA_STORAGE + 'deleted_files/' + Date.now() + '_' + filePath.split('/').pop();
-        const backupFs = fs(backupPath);
-        if (backupFs) {
-          await backupFs.writeFile(content);
-        }
+        const backupInfo = {
+          path: filePath,
+          content: content,
+          timestamp: Date.now()
+        };
+
+        // Simpan backup info untuk recovery
+        this.storeDeletedFileInfo(backupInfo);
 
         await fileFs.delete();
         return { success: true, message: `File deleted successfully: ${filePath}` };
@@ -2766,58 +4352,21 @@ Response format: Clear actionable steps.`;
   }
 
   async showFileDiff(originalContent, newContent, filename) {
-    /*
-    Show diff between original and new content with enhanced visualization
-    */
     try {
-      // Improved diff implementation
       const originalLines = originalContent.split('\n');
       const newLines = newContent.split('\n');
 
-      // Create header with file info
       let diffHtml = `
-        <div class="diff-container">
-          <div class="diff-header">
-            <h4>Changes in ${filename}</h4>
-            <div class="diff-stats">
-              <span class="diff-summary">Showing changes from ${originalLines.length} to ${newLines.length} lines</span>
-            </div>
+      <div class="diff-container">
+        <div class="diff-header">
+          <h4>Changes in ${filename}</h4>
+          <div class="diff-stats">
+            <span class="diff-summary">Showing changes from ${originalLines.length} to ${newLines.length} lines</span>
           </div>
-          <div class="diff-content">
-      `;
+        </div>
+        <div class="diff-content">
+    `;
 
-      // Track consecutive unchanged lines for collapsing
-      let unchangedCount = 0;
-      let unchangedBuffer = [];
-      const contextLines = 3; // Number of context lines to show around changes
-
-      // Function to flush unchanged lines with context
-      const flushUnchanged = () => {
-        if (unchangedCount <= contextLines * 2) {
-          // If small number of unchanged lines, show all
-          unchangedBuffer.forEach(line => {
-            diffHtml += line;
-          });
-        } else {
-          // Show only context lines at beginning and end
-          for (let i = 0; i < contextLines; i++) {
-            diffHtml += unchangedBuffer[i];
-          }
-
-          // Add collapse indicator
-          diffHtml += `<div class="diff-collapse">... ${unchangedCount - (contextLines * 2)} more unchanged lines ...</div>`;
-
-          // Show context lines at end
-          for (let i = unchangedBuffer.length - contextLines; i < unchangedBuffer.length; i++) {
-            diffHtml += unchangedBuffer[i];
-          }
-        }
-
-        unchangedCount = 0;
-        unchangedBuffer = [];
-      };
-
-      // Enhanced diff algorithm with context
       const maxLines = Math.max(originalLines.length, newLines.length);
       let hasChanges = false;
 
@@ -2825,67 +4374,46 @@ Response format: Clear actionable steps.`;
         const origLine = originalLines[i] || '';
         const newLine = newLines[i] || '';
 
-        // Remove HTML escaping to preserve markdown formatting
-        const escapeHtml = (text) => {
-          // Return text as-is to preserve markdown and code formatting
-          return text;
-        };
-
-        const escapedOrigLine = origLine; // No escaping for better formatting
-        const escapedNewLine = newLine; // No escaping for better formatting
-
         if (origLine !== newLine) {
-          // Flush any accumulated unchanged lines before showing changes
-          if (unchangedCount > 0) {
-            flushUnchanged();
-          }
-
           hasChanges = true;
 
           if (origLine && newLine) {
             // Modified line
             diffHtml += `<div class="diff-line modified">
-              <span class="line-num">${i + 1}</span>
-              <span class="old-line">- ${escapedOrigLine}</span>
-              <span class="new-line">+ ${escapedNewLine}</span>
-            </div>`;
+            <span class="line-num">${i + 1}</span>
+            <span class="old-line">- ${origLine}</span>
+            <span class="new-line">+ ${newLine}</span>
+          </div>`;
           } else if (origLine && !newLine) {
             // Deleted line
             diffHtml += `<div class="diff-line deleted">
-              <span class="line-num">${i + 1}</span>
-              <span class="old-line">- ${escapedOrigLine}</span>
-            </div>`;
+            <span class="line-num">${i + 1}</span>
+            <span class="old-line">- ${origLine}</span>
+          </div>`;
           } else if (!origLine && newLine) {
             // Added line
             diffHtml += `<div class="diff-line added">
-              <span class="line-num">${i + 1}</span>
-              <span class="new-line">+ ${escapedNewLine}</span>
-            </div>`;
+            <span class="line-num">${i + 1}</span>
+            <span class="new-line">+ ${newLine}</span>
+          </div>`;
           }
         } else {
-          // Unchanged line - accumulate for potential collapsing
-          unchangedCount++;
-          unchangedBuffer.push(`<div class="diff-line unchanged">
-            <span class="line-num">${i + 1}</span>
-            <span class="unchanged-line">${escapedOrigLine}</span>
-          </div>`);
+          // Unchanged line
+          diffHtml += `<div class="diff-line unchanged">
+          <span class="line-num">${i + 1}</span>
+          <span class="unchanged-line">${origLine}</span>
+        </div>`;
         }
       }
 
-      // Flush any remaining unchanged lines
-      if (unchangedCount > 0) {
-        flushUnchanged();
-      }
-
-      // If no changes detected, show a message
       if (!hasChanges) {
         diffHtml += `<div class="diff-no-changes">No changes detected</div>`;
       }
 
       diffHtml += `
-          </div>
         </div>
-      `;
+      </div>
+    `;
 
       return diffHtml;
     } catch (error) {
@@ -2894,99 +4422,304 @@ Response format: Clear actionable steps.`;
     }
   }
 
-  async searchAndReplaceInProject(searchTerm, replaceTerm, fileExtensions = ['.js', '.json', '.html', '.css', '.md']) {
-    /*
-    Search and replace across all project files
-    */
+  async searchAndReplaceInProject(searchTerm, replaceTerm, fileExtensions = ['.js', '.json', '.html', '.css', '.md'], options = {}) {
+    const {
+      dryRun = false,
+      useRegex = false,
+      caseSensitive = true,
+      maxFileSize = 10 * 1024 * 1024,
+      excludePatterns = ['node_modules', '.git', 'dist', 'build', '.cache'],
+      includeHidden = false,
+      backupFiles = false,
+      progressCallback = null
+    } = options;
+
+    const fsModule = acode.require('fs');
+    const startTime = Date.now();
+
+    const escapeRegExp = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+    const metrics = {
+      filesScanned: 0,
+      filesProcessed: 0,
+      bytesProcessed: 0,
+      timeElapsed: 0,
+      averageFileSize: 0
+    };
+
     try {
-      const results = [];
+      // Validasi input
+      if (!searchTerm || typeof searchTerm !== 'string' || searchTerm.trim().length === 0) {
+        return {
+          success: false,
+          error: '🚫 Search term must be a non-empty string',
+          code: 'INVALID_SEARCH_TERM'
+        };
+      }
+
+      if (typeof replaceTerm !== 'string') {
+        return {
+          success: false,
+          error: '🚫 Replace term must be a string',
+          code: 'INVALID_REPLACE_TERM'
+        };
+      }
+
+      // Buat pattern regex
+      let flags = 'g';
+      if (!caseSensitive) flags += 'i';
+      let pattern;
+
+      try {
+        if (useRegex) {
+          if (searchTerm.length > 1000) {
+            throw new Error('Regex pattern too complex (max 1000 characters)');
+          }
+          pattern = new RegExp(searchTerm, flags);
+        } else {
+          pattern = new RegExp(escapeRegExp(searchTerm), flags);
+        }
+        pattern.test('');
+      } catch (e) {
+        return {
+          success: false,
+          error: `🔴 Invalid regex pattern: ${e.message}`,
+          code: 'REGEX_ERROR'
+        };
+      }
+
+      // Dapatkan semua file project
       const projectFiles = await this.getAllProjectFiles(fileExtensions);
 
-      for (const filePath of projectFiles) {
-        if (await fs(filePath).exists()) {
-          const content = await fs(filePath).readFile('utf8');
-          if (content.includes(searchTerm)) {
-            const newContent = content.replace(new RegExp(searchTerm, 'g'), replaceTerm);
-            await this.editFileContent(filePath, newContent);
+      if (!projectFiles || projectFiles.length === 0) {
+        return {
+          success: true,
+          results: [],
+          message: '📂 No project files found matching the specified criteria.',
+          metrics: { ...metrics, timeElapsed: Date.now() - startTime },
+          summary: { filesScanned: 0, matchingFiles: 0, totalOccurrences: 0 }
+        };
+      }
+
+      // Proses search & replace
+      const results = [];
+      let totalReplacements = 0;
+      let skippedFiles = 0;
+
+      window.toast(`🚀 Processing ${projectFiles.length} files...`, 2000);
+
+      for (let i = 0; i < projectFiles.length; i++) {
+        const filePath = projectFiles[i];
+        metrics.filesScanned++;
+
+        if (progressCallback && i % 10 === 0) {
+          progressCallback({
+            phase: 'processing',
+            current: i + 1,
+            total: projectFiles.length,
+            currentFile: filePath,
+            matches: totalReplacements
+          });
+        }
+
+        try {
+          // Baca file menggunakan API acodeplugin
+          const readResult = await this.readFileContent(filePath);
+
+          if (!readResult.success) {
             results.push({
               file: filePath,
-              occurrences: (content.match(new RegExp(searchTerm, 'g')) || []).length
+              error: readResult.error,
+              skipped: true
             });
+            skippedFiles++;
+            continue;
           }
+
+          const content = readResult.content;
+          const fileSize = content.length;
+          metrics.bytesProcessed += fileSize;
+
+          // Deteksi file binary
+          const nullBytes = (content.match(/\0/g) || []).length;
+          const nonPrintable = (content.match(/[\x00-\x08\x0E-\x1F\x7F]/g) || []).length;
+          const binaryRatio = (nullBytes + nonPrintable) / content.length;
+
+          if (binaryRatio > 0.1 || nullBytes > 10) {
+            skippedFiles++;
+            continue;
+          }
+
+          // Cek apakah ada match
+          pattern.lastIndex = 0;
+          if (!pattern.test(content)) continue;
+
+          // Analisis match detail
+          pattern.lastIndex = 0;
+          const matches = [];
+          let match;
+          while ((match = pattern.exec(content)) !== null) {
+            matches.push({
+              text: match[0],
+              index: match.index,
+              line: content.substring(0, match.index).split('\n').length
+            });
+            if (!pattern.global) break;
+          }
+
+          const occurrences = matches.length;
+
+          // Replace content
+          pattern.lastIndex = 0;
+          const newContent = content.replace(pattern, replaceTerm);
+
+          // Tulis file jika bukan dry run
+          if (!dryRun) {
+            const editResult = await this.editFileContent(filePath, newContent);
+            if (!editResult.success) {
+              results.push({
+                file: filePath,
+                occurrences,
+                matches: matches.slice(0, 5),
+                updated: false,
+                error: editResult.error,
+                fileSize: Math.round(fileSize / 1024) + 'KB'
+              });
+              continue;
+            }
+            metrics.filesProcessed++;
+          }
+
+          totalReplacements += occurrences;
+          results.push({
+            file: filePath,
+            occurrences,
+            matches: matches.slice(0, 5),
+            updated: !dryRun,
+            fileSize: Math.round(fileSize / 1024) + 'KB',
+            encoding: 'utf8'
+          });
+
+        } catch (errFile) {
+          results.push({
+            file: filePath,
+            error: errFile?.message || String(errFile),
+            skipped: true
+          });
+          skippedFiles++;
         }
       }
 
-      return { success: true, results, message: `Replaced "${searchTerm}" with "${replaceTerm}" in ${results.length} files` };
+      // Hitung metrics final
+      metrics.timeElapsed = Date.now() - startTime;
+      metrics.averageFileSize = metrics.filesScanned > 0 ?
+        Math.round(metrics.bytesProcessed / metrics.filesScanned) : 0;
+
+      const successfulFiles = results.filter(r => r.updated).length;
+      const matchingFiles = results.filter(r => r.occurrences > 0).length;
+
+      const message = dryRun
+        ? `🔍 Dry Run Complete: Found ${matchingFiles} files with matches (${totalReplacements} occurrences). No files were modified. ${skippedFiles} files skipped.`
+        : `✅ Operation Complete: Replaced "${searchTerm}" with "${replaceTerm}" in ${successfulFiles}/${matchingFiles} files (${totalReplacements} total occurrences). ${skippedFiles} files skipped.`;
+
+      window.toast(message, 5000);
+
+      return {
+        success: true,
+        results,
+        totalOccurrences: totalReplacements,
+        message,
+        metrics: {
+          ...metrics,
+          skippedFiles,
+          successRate: metrics.filesScanned > 0 ?
+            Math.round((metrics.filesProcessed / metrics.filesScanned) * 100) : 0
+        },
+        summary: {
+          filesScanned: metrics.filesScanned,
+          matchingFiles,
+          successfulReplacements: successfulFiles,
+          totalOccurrences: totalReplacements,
+          processingTime: `${(metrics.timeElapsed / 1000).toFixed(2)}s`,
+          averageSpeed: metrics.timeElapsed > 0 ?
+            Math.round(metrics.filesScanned / (metrics.timeElapsed / 1000)) + ' files/sec' : 'N/A'
+        },
+        options: { dryRun, useRegex, caseSensitive, maxFileSize, excludePatterns }
+      };
+
     } catch (error) {
-      return { success: false, error: error.message };
+      const errorMsg = `🔴 Critical error: ${error?.message || String(error)}`;
+      window.toast(errorMsg, 6000);
+
+      return {
+        success: false,
+        error: errorMsg,
+        code: 'CRITICAL_ERROR',
+        metrics: { ...metrics, timeElapsed: Date.now() - startTime }
+      };
     }
   }
 
-  async getAllProjectFiles(extensions) {
-    /*
-    Get all project files with specified extensions
-    */
+  async getAllProjectFiles(extensions = []) {
     try {
-      const files = [];
-      const scanDirectory = async (dirPath) => {
-        try {
-          const dirFs = fs(dirPath);
-          if (dirFs && await dirFs.exists()) {
-            const items = await dirFs.lsDir();
-            for (const item of items) {
-              const fullPath = `${dirPath}/${item.name}`;
-              if (item.isDirectory && !item.name.startsWith('.')) {
-                await scanDirectory(fullPath);
-              } else if (item.isFile) {
-                const hasValidExt = extensions.some(ext => item.name.endsWith(ext));
-                if (hasValidExt) {
-                  files.push(fullPath);
-                }
-              }
-            }
-          }
-        } catch (error) {
-          // Could not scan directory
-        }
-      };
-
-      // Scan open folders first, fallback to root directories
       const fileList = acode.require('fileList');
       const openFolders = await fileList();
+      let allFiles = [];
 
       if (openFolders.length > 0) {
+        // Gunakan folder yang terbuka sebagai root directory
         for (const folder of openFolders) {
-          await scanDirectory(folder.url);
+          const folderFiles = await this.getAllFilesRecursive(folder.url);
+          allFiles.push(...folderFiles);
         }
       } else {
-        // Fallback to common directories if no folders are open
-        const commonDirs = ['/sdcard', '/storage/emulated/0', window.DATA_STORAGE];
-        for (const dir of commonDirs) {
-          try {
-            await scanDirectory(dir);
-            break; // Use first accessible directory
-          } catch (error) {
-            continue;
-          }
-        }
+        // Fallback ke directory default
+        const defaultPath = window.PLUGIN_DIR || '/sdcard';
+        allFiles = await this.getAllFilesRecursive(defaultPath);
       }
-      return files;
+
+      // Filter berdasarkan ekstensi jika disediakan
+      if (extensions.length > 0) {
+        const normalizedExts = extensions.map(ext =>
+          ext.startsWith('.') ? ext.toLowerCase() : '.' + ext.toLowerCase()
+        );
+
+        allFiles = allFiles.filter(filePath => {
+          const fileName = filePath.split('/').pop();
+          const fileExt = fileName.includes('.') ? '.' + fileName.split('.').pop().toLowerCase() : '';
+          return normalizedExts.includes(fileExt);
+        });
+      }
+
+      return allFiles;
     } catch (error) {
-      window.toast('Error scanning project files', 3000);
+      window.toast(`Error getting project files: ${error.message}`, 3000);
       return [];
     }
   }
 
-  storeUndoInfo(filePath, content) {
-    /*
-    Store file state for undo operations
-    */
-    if (!this.undoStack) this.undoStack = [];
-    this.undoStack.push({ filePath, content, timestamp: Date.now() });
+  // Helper methods untuk backup dan undo
+  storeUndoInfo(filePath, originalContent) {
+    if (!this.undoHistory) this.undoHistory = [];
+    this.undoHistory.push({
+      path: filePath,
+      content: originalContent,
+      timestamp: Date.now()
+    });
 
-    // Keep only last 10 undo operations
-    if (this.undoStack.length > 10) {
-      this.undoStack.shift();
+    // Batasi history ke 10 item terakhir
+    if (this.undoHistory.length > 10) {
+      this.undoHistory.shift();
+    }
+  }
+
+  storeDeletedFileInfo(backupInfo) {
+    if (!this.deletedFiles) this.deletedFiles = [];
+    this.deletedFiles.push(backupInfo);
+
+    // Batasi ke 20 file yang dihapus terakhir
+    if (this.deletedFiles.length > 20) {
+      this.deletedFiles.shift();
     }
   }
 
@@ -3026,48 +4759,54 @@ Response format: Clear actionable steps.`;
       const content = await fs(currentFilePath).readFile('utf8');
       const imports = [];
 
-      // Match import/require patterns
-      const importRegex = /(?:import.*from\s+['"]([^'"]+)['"]|require\(['"]([^'"]+)['"]\))/g;
-      let match;
+      // Enhanced regex patterns for different languages and frameworks
+      const patterns = [
+        // JavaScript/TypeScript imports
+        /(?:import.*from\s+['"`]([^'"`]+)['"`]|require\(['"`]([^'"`]+)['"`]\))/g,
+        // CSS @import
+        /@import\s+['"`]([^'"`]+)['"`]/g,
+        // SCSS/SASS @import and @use
+        /@(?:import|use)\s+['"`]([^'"`]+)['"`]/g,
+        // HTML script/link src
+        /(?:src|href)\s*=\s*['"`]([^'"`]+)['"`]/g,
+        // Vue/Angular template imports
+        /(?:from|import)\s+['"`]([^'"`]+)['"`]/g,
+        // Python imports (for .py files)
+        /(?:from\s+([^\s]+)\s+import|import\s+([^\s]+))/g,
+        // PHP includes/requires
+        /(?:include|require)(?:_once)?\s*\(?['"`]([^'"`]+)['"`]\)?/g,
+        // Go imports
+        /import\s+['"`]([^'"`]+)['"`]/g,
+        // Rust use statements
+        /use\s+([^;]+);/g,
+        // C/C++ includes
+        /#include\s*[<"]([^>"]+)[>"]/g
+      ];
 
-      while ((match = importRegex.exec(content)) !== null) {
-        const importPath = match[1] || match[2];
-        if (importPath && !importPath.startsWith('http') && !importPath.includes('node_modules')) {
-          imports.push(importPath);
+      // Apply all patterns
+      patterns.forEach(pattern => {
+        let match;
+        while ((match = pattern.exec(content)) !== null) {
+          const importPath = match[1] || match[2];
+          if (importPath &&
+            !importPath.startsWith('http') &&
+            !importPath.startsWith('//') &&
+            !importPath.includes('node_modules') &&
+            !importPath.includes('vendor/') &&
+            !this.isSystemImport(importPath)) {
+            imports.push(importPath);
+          }
         }
-      }
+      });
 
       const relatedFiles = [];
       const basePath = currentFilePath.substring(0, currentFilePath.lastIndexOf('/'));
 
       for (const importPath of imports) {
-        let resolvedPath;
+        let resolvedPath = this.resolveImportPath(importPath, basePath);
 
-        // Resolve relative paths
-        if (importPath.startsWith('./')) {
-          resolvedPath = `${basePath}/${importPath.substring(2)}`;
-        } else if (importPath.startsWith('../')) {
-          // Handle multiple levels of ../
-          const upLevels = (importPath.match(/\.\.\//g) || []).length;
-          let parentPath = basePath;
-
-          for (let i = 0; i < upLevels; i++) {
-            const lastSlash = parentPath.lastIndexOf('/');
-            if (lastSlash > 0) {
-              parentPath = parentPath.substring(0, lastSlash);
-            }
-          }
-
-          const remainingPath = importPath.replace(/\.\.\//g, '');
-          resolvedPath = `${parentPath}/${remainingPath}`;
-        } else if (importPath.startsWith('/')) {
-          resolvedPath = importPath;
-        } else {
-          resolvedPath = `${basePath}/${importPath}`;
-        }
-
-        // Try different extensions
-        const extensions = ['', '.js', '.json', '.ts', '.jsx', '.tsx', '.vue', '.css', '.scss'];
+        // Try different extensions based on file type
+        const extensions = this.getExtensionsForFile(currentFilePath);
         let found = false;
 
         for (const ext of extensions) {
@@ -3075,18 +4814,25 @@ Response format: Clear actionable steps.`;
           try {
             if (await fs(fullPath).exists()) {
               const fileContent = await fs(fullPath).readFile('utf8');
-              relatedFiles.push({ path: fullPath, content: fileContent });
+              relatedFiles.push({
+                path: fullPath,
+                content: fileContent,
+                extension: ext || this.getFileExtension(fullPath)
+              });
               found = true;
               break;
             }
           } catch (error) {
-            // Continue trying other extensions
             continue;
           }
         }
 
+        // If not found, try as directory with index files
         if (!found) {
-          // Could not resolve import
+          const indexFiles = await this.tryIndexFiles(resolvedPath);
+          if (indexFiles.length > 0) {
+            relatedFiles.push(...indexFiles);
+          }
         }
       }
 
@@ -3097,6 +4843,178 @@ Response format: Clear actionable steps.`;
     }
   }
 
+  // Helper method to check if import is a system/built-in import
+  isSystemImport(importPath) {
+    const systemPatterns = [
+      // Node.js built-ins
+      /^(fs|path|http|https|url|crypto|os|util|events|stream|buffer|child_process|cluster|dgram|dns|net|readline|repl|tls|tty|v8|vm|worker_threads|zlib)$/,
+      // Python built-ins
+      /^(sys|os|json|re|math|datetime|collections|itertools|functools|operator|pathlib|urllib|http|xml|csv|sqlite3|threading|multiprocessing|asyncio|typing)$/,
+      // Go standard library
+      /^(fmt|log|net|http|json|time|strings|strconv|io|os|path|regexp|sync|context|crypto|encoding|database|testing)$/,
+      // C/C++ standard library
+      /^(stdio|stdlib|string|math|time|ctype|limits|float|stdarg|setjmp|signal|locale|errno|assert|stddef|stdint|stdbool|complex|fenv|inttypes|iso646|stdalign|stdatomic|stdnoreturn|tgmath|threads|uchar|wchar|wctype)$/
+    ];
+
+    return systemPatterns.some(pattern => pattern.test(importPath));
+  }
+
+  // Helper method to resolve import paths
+  resolveImportPath(importPath, basePath) {
+    if (importPath.startsWith('./')) {
+      return `${basePath}/${importPath.substring(2)}`;
+    } else if (importPath.startsWith('../')) {
+      const upLevels = (importPath.match(/\.\.\//g) || []).length;
+      let parentPath = basePath;
+
+      for (let i = 0; i < upLevels; i++) {
+        const lastSlash = parentPath.lastIndexOf('/');
+        if (lastSlash > 0) {
+          parentPath = parentPath.substring(0, lastSlash);
+        }
+      }
+
+      const remainingPath = importPath.replace(/\.\.\//g, '');
+      return `${parentPath}/${remainingPath}`;
+    } else if (importPath.startsWith('/')) {
+      return importPath;
+    } else {
+      return `${basePath}/${importPath}`;
+    }
+  }
+
+  // Helper method to get appropriate extensions based on current file
+  getExtensionsForFile(filePath) {
+    const currentExt = this.getFileExtension(filePath);
+
+    const extensionMap = {
+      // JavaScript/TypeScript
+      'js': ['', '.js', '.jsx', '.ts', '.tsx', '.mjs', '.cjs', '.json'],
+      'jsx': ['', '.jsx', '.js', '.ts', '.tsx', '.json'],
+      'ts': ['', '.ts', '.tsx', '.js', '.jsx', '.d.ts', '.json'],
+      'tsx': ['', '.tsx', '.ts', '.jsx', '.js', '.json'],
+      'mjs': ['', '.mjs', '.js', '.json'],
+      'cjs': ['', '.cjs', '.js', '.json'],
+
+      // Vue
+      'vue': ['', '.vue', '.js', '.ts', '.jsx', '.tsx', '.json'],
+
+      // CSS/SCSS/SASS
+      'css': ['', '.css', '.scss', '.sass', '.less', '.styl'],
+      'scss': ['', '.scss', '.sass', '.css'],
+      'sass': ['', '.sass', '.scss', '.css'],
+      'less': ['', '.less', '.css'],
+      'styl': ['', '.styl', '.css'],
+
+      // HTML
+      'html': ['', '.html', '.htm', '.xhtml', '.php', '.jsp', '.asp'],
+      'htm': ['', '.htm', '.html'],
+
+      // PHP
+      'php': ['', '.php', '.phtml', '.php3', '.php4', '.php5', '.phps'],
+
+      // Python
+      'py': ['', '.py', '.pyx', '.pyi', '.pyw'],
+      'pyx': ['', '.pyx', '.py'],
+
+      // Go
+      'go': ['', '.go'],
+
+      // Rust
+      'rs': ['', '.rs'],
+
+      // C/C++
+      'c': ['', '.c', '.h'],
+      'cpp': ['', '.cpp', '.cc', '.cxx', '.c++', '.hpp', '.hh', '.hxx', '.h++', '.h'],
+      'h': ['', '.h', '.hpp', '.hh'],
+
+      // Java
+      'java': ['', '.java'],
+
+      // C#
+      'cs': ['', '.cs'],
+
+      // Ruby
+      'rb': ['', '.rb', '.rbw'],
+
+      // Swift
+      'swift': ['', '.swift'],
+
+      // Kotlin
+      'kt': ['', '.kt', '.kts'],
+
+      // Dart
+      'dart': ['', '.dart'],
+
+      // Markdown
+      'md': ['', '.md', '.markdown', '.mdown', '.mkd'],
+
+      // Config files
+      'json': ['', '.json', '.jsonc'],
+      'yaml': ['', '.yaml', '.yml'],
+      'yml': ['', '.yml', '.yaml'],
+      'toml': ['', '.toml'],
+      'ini': ['', '.ini', '.cfg', '.conf'],
+      'xml': ['', '.xml', '.xsd', '.xsl', '.xslt'],
+
+      // Shell scripts
+      'sh': ['', '.sh', '.bash', '.zsh', '.fish'],
+      'bash': ['', '.bash', '.sh'],
+
+      // PowerShell
+      'ps1': ['', '.ps1', '.psm1', '.psd1'],
+
+      // Batch
+      'bat': ['', '.bat', '.cmd'],
+
+      // Default fallback
+      'default': ['', '.js', '.ts', '.json', '.css', '.html', '.md', '.txt']
+    };
+
+    return extensionMap[currentExt] || extensionMap['default'];
+  }
+
+  // Helper method to get file extension
+  getFileExtension(filePath) {
+    const lastDot = filePath.lastIndexOf('.');
+    const lastSlash = filePath.lastIndexOf('/');
+
+    if (lastDot > lastSlash && lastDot !== -1) {
+      return filePath.substring(lastDot + 1).toLowerCase();
+    }
+    return '';
+  }
+
+  // Helper method to try index files in directories
+  async tryIndexFiles(dirPath) {
+    const indexNames = [
+      'index.js', 'index.ts', 'index.jsx', 'index.tsx', 'index.vue',
+      'index.html', 'index.php', 'index.py', '__init__.py',
+      'main.js', 'main.ts', 'app.js', 'app.ts',
+      'mod.rs', 'lib.rs' // Rust
+    ];
+
+    const foundFiles = [];
+
+    for (const indexName of indexNames) {
+      const indexPath = `${dirPath}/${indexName}`;
+      try {
+        if (await fs(indexPath).exists()) {
+          const content = await fs(indexPath).readFile('utf8');
+          foundFiles.push({
+            path: indexPath,
+            content: content,
+            extension: this.getFileExtension(indexPath)
+          });
+          break; // Only take the first found index file
+        }
+      } catch (error) {
+        continue;
+      }
+    }
+
+    return foundFiles;
+  }
 
   // Enhanced UI and Direct Editing Features
   createProviderDropdown() {
@@ -3218,47 +5136,108 @@ Response format: Clear actionable steps.`;
 
   async searchInChat() {
     try {
-      const searchTerm = await prompt("Search in chat:", "", "text");
-      if (!searchTerm) return;
+      // Create search dialog
+      const searchDialog = this.createSearchDialog();
+      document.body.appendChild(searchDialog);
 
-      if (!this.$chatBox) {
-        window.toast("Chat not initialized", 3000);
+      // Focus on search input
+      const searchInput = searchDialog.querySelector('#ai-search-input');
+      setTimeout(() => searchInput.focus(), 100);
+
+      // Handle search dialog events
+      const result = await new Promise((resolve) => {
+        const handleSearch = async () => {
+          const searchTerm = searchInput.value.trim();
+          if (!searchTerm) {
+            searchInput.focus();
+            return;
+          }
+
+          const options = {
+            searchTerm,
+            scope: searchDialog.querySelector('#ai-search-scope').value,
+            caseSensitive: searchDialog.querySelector('#ai-case-sensitive').checked,
+            wholeWord: searchDialog.querySelector('#ai-whole-word').checked,
+            sessionId: searchDialog.querySelector('#ai-session-list').value
+          };
+
+          document.body.removeChild(searchDialog);
+          resolve(options);
+        };
+
+        const handleCancel = () => {
+          document.body.removeChild(searchDialog);
+          resolve(null);
+        };
+
+        // Event listeners
+        searchDialog.querySelector('#ai-search-submit').addEventListener('click', handleSearch);
+        searchDialog.querySelector('#ai-search-cancel').addEventListener('click', handleCancel);
+        searchDialog.querySelector('.ai-search-close').addEventListener('click', handleCancel);
+        searchDialog.querySelector('#ai-search-clear').addEventListener('click', () => {
+          searchInput.value = '';
+          searchInput.focus();
+        });
+
+        // Scope change handler
+        searchDialog.querySelector('#ai-search-scope').addEventListener('change', async (e) => {
+          const sessionSelector = searchDialog.querySelector('#ai-session-selector');
+          const sessionList = searchDialog.querySelector('#ai-session-list');
+
+          if (e.target.value === 'session') {
+            // Populate session list
+            sessionList.innerHTML = '<option value="">Select session...</option>';
+            if (this.messageHistories) {
+              Object.keys(this.messageHistories).forEach(sessionId => {
+                const option = document.createElement('option');
+                option.value = sessionId;
+                option.textContent = `Session: ${sessionId.substring(0, 8)}...`;
+                sessionList.appendChild(option);
+              });
+            }
+            sessionSelector.style.display = 'block';
+          } else {
+            sessionSelector.style.display = 'none';
+          }
+        });
+
+        // Enter to search, Escape to cancel
+        searchInput.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter') handleSearch();
+          if (e.key === 'Escape') handleCancel();
+        });
+
+        // Click overlay to close
+        searchDialog.addEventListener('click', (e) => {
+          if (e.target === searchDialog) handleCancel();
+        });
+      });
+
+      if (!result) return;
+
+      // Perform search based on scope
+      let searchResults = [];
+
+      if (result.scope === 'current') {
+        searchResults = this.searchCurrentChat(result);
+      } else if (result.scope === 'all') {
+        searchResults = this.searchAllHistory(result);
+      } else if (result.scope === 'session') {
+        searchResults = this.searchSpecificSession(result);
+      }
+
+      // Display results
+      if (searchResults.length === 0) {
+        window.toast && window.toast(`🔍 No results found for "${result.searchTerm}"`, 3000);
         return;
       }
 
-      const chatMessages = this.$chatBox.querySelectorAll('.message, .ai_message');
-      let foundCount = 0;
+      // Show results dialog
+      this.showSearchResults(searchResults, result.searchTerm);
 
-      chatMessages.forEach(msg => {
-        if (msg && msg.textContent) {
-          const text = msg.textContent.toLowerCase();
-          msg.style.backgroundColor = '';
-          msg.style.border = '';
-
-          if (text.includes(searchTerm.toLowerCase())) {
-            msg.style.backgroundColor = 'rgba(0, 212, 255, 0.2)';
-            msg.style.border = '2px solid var(--accent-color)';
-            foundCount++;
-          }
-        }
-      });
-
-      if (foundCount > 0) {
-        window.toast(`Found ${foundCount} messages containing "${searchTerm}"`, 4000);
-        // Scroll to first match
-        try {
-          const firstMatch = this.$chatBox ? this.$chatBox.querySelector('[style*="border: 2px solid"]') : null;
-          if (firstMatch) {
-            firstMatch.scrollIntoView({ behavior: 'smooth', block: 'center' });
-          }
-        } catch (error) {
-          // Could not scroll to first match
-        }
-      } else {
-        window.toast(`No messages found containing "${searchTerm}"`, 3000);
-      }
     } catch (error) {
-      window.toast('Error searching chat', 3000);
+      console.error("Search error:", error);
+      window.toast && window.toast("❌ Error searching chat", 3000);
     }
   }
 
@@ -3551,51 +5530,47 @@ Response format: Clear actionable steps.`;
   }
 
   showAiEditPopup(initialText = "") {
-    // Create backdrop for better focus and visibility
-    const backdrop = tag("div", {
-      className: "ai-edit-backdrop"
-    });
+    // helper creator: pakai tag() kalau ada, kalau nggak fallback ke createElement
+    const maker = (tagName, props = {}) => {
+      if (typeof tag === "function") return tag(tagName, props);
+      const el = document.createElement(tagName);
+      Object.assign(el, props);
+      return el;
+    };
 
-    const popup = tag("div", {
-      className: "ai-edit-popup"
-    });
+    const container = document.getElementById("acode-ai-assistant") || document.body;
 
-    const header = tag("div", {
-      className: "ai-edit-popup-header"
-    });
+    // build elements
+    const backdrop = maker("div", { className: "ai-edit-backdrop" });
+    const popup = maker("div", { className: "ai-edit-popup" });
 
-    const title = tag("div", {
+    const header = maker("div", { className: "ai-edit-popup-header" });
+    const title = maker("div", {
       className: "ai-edit-popup-title",
       textContent: "Edit with AI"
     });
-
-    const closeBtn = tag("button", {
+    const closeBtn = maker("button", {
       className: "ai-edit-popup-close",
-      innerHTML: "&times;"
+      innerHTML: "&times;",
+      title: "Close"
     });
 
     header.append(title, closeBtn);
 
-    const body = tag("div", {
-      className: "ai-edit-popup-body"
-    });
-
-    const promptArea = tag("textarea", {
+    const body = maker("div", { className: "ai-edit-popup-body" });
+    const promptArea = maker("textarea", {
       className: "ai-edit-prompt",
-      placeholder: "Describe what you want to do with the code...\nExample: 'Add error handling to this function' or 'Optimize this loop for better performance'",
+      placeholder:
+        "Describe what you want to do with the code...\nExample: 'Add error handling to this function' or 'Optimize this loop for better performance'",
       value: initialText
     });
 
-    const actions = tag("div", {
-      className: "ai-edit-actions"
-    });
-
-    const cancelBtn = tag("button", {
+    const actions = maker("div", { className: "ai-edit-actions" });
+    const cancelBtn = maker("button", {
       className: "ai-edit-btn secondary",
       textContent: "Cancel"
     });
-
-    const editBtn = tag("button", {
+    const editBtn = maker("button", {
       className: "ai-edit-btn primary",
       textContent: "Edit Code"
     });
@@ -3603,59 +5578,92 @@ Response format: Clear actionable steps.`;
     actions.append(cancelBtn, editBtn);
     body.append(promptArea, actions);
     popup.append(header, body);
+    backdrop.appendChild(popup);
 
-    // Enhanced close functionality
-    const closePopup = () => {
-      if (document.body.contains(backdrop)) {
-        document.body.removeChild(backdrop);
-      }
-    };
+    // stop clicks inside popup from closing via backdrop
+    popup.addEventListener("click", (e) => e.stopPropagation());
 
-    // Event listeners
-    closeBtn.onclick = cancelBtn.onclick = closePopup;
+    // append into scoped container (so SCSS under #acode-ai-assistant apply)
+    container.appendChild(backdrop);
 
-    // Close when clicking backdrop
-    backdrop.onclick = (e) => {
-      if (e.target === backdrop) {
-        closePopup();
-      }
-    };
-
-    editBtn.onclick = async () => {
-      const prompt = promptArea.value.trim();
-      if (prompt) {
-        closePopup();
-        await this.processAiEdit(prompt);
-      } else {
-        window.toast("Please enter editing instructions", 3000);
+    // focus safely
+    setTimeout(() => {
+      try {
+        promptArea.focus({ preventScroll: true });
+      } catch (err) {
         promptArea.focus();
       }
+      if (initialText) {
+        try {
+          const len = initialText.length;
+          promptArea.setSelectionRange(len, len);
+        } catch (e) {
+          // ignore if not supported
+        }
+      }
+    }, 60);
+
+    const cleanup = () => {
+      try {
+        if (container.contains(backdrop)) container.removeChild(backdrop);
+      } catch (e) { }
+      // remove listeners
+      document.removeEventListener("keydown", handleKeyDown);
+      backdrop.removeEventListener("click", onBackdropClick);
+      closeBtn.removeEventListener("click", onClose);
+      cancelBtn.removeEventListener("click", onClose);
+      editBtn.removeEventListener("click", onEdit);
+      promptArea.removeEventListener("keydown", promptKeydown);
+      popup.removeEventListener("click", (ev) => ev.stopPropagation()); // safe noop
     };
 
-    // Handle keyboard shortcuts
-    const handleKeyDown = (e) => {
-      if (e.key === 'Escape') {
-        closePopup();
-        document.removeEventListener('keydown', handleKeyDown);
-      } else if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+    const onClose = () => cleanup();
+
+    const onBackdropClick = (e) => {
+      if (e.target === backdrop) onClose();
+    };
+
+    const promptKeydown = (e) => {
+      if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
         e.preventDefault();
         editBtn.click();
       }
     };
 
-    document.addEventListener('keydown', handleKeyDown);
-
-    // Append elements properly - backdrop first with popup inside
-    backdrop.appendChild(popup);
-    document.body.appendChild(backdrop);
-
-    // Auto-focus with slight delay for better UX
-    setTimeout(() => {
-      promptArea.focus();
-      if (initialText) {
-        promptArea.setSelectionRange(initialText.length, initialText.length);
+    const handleKeyDown = (e) => {
+      if (e.key === "Escape") {
+        onClose();
       }
-    }, 100);
+    };
+
+    const onEdit = async () => {
+      const prompt = (promptArea.value || "").trim();
+      if (!prompt) {
+        if (window && typeof window.toast === "function") {
+          window.toast("Please enter editing instructions", 3000);
+        } else {
+          console.warn("Please enter editing instructions");
+        }
+        try { promptArea.focus(); } catch (e) { }
+        return;
+      }
+      // close UI then process
+      cleanup();
+      try {
+        await this.processAiEdit(prompt);
+      } catch (err) {
+        console.error("processAiEdit error:", err);
+        window && typeof window.toast === "function" && window.toast("Error processing edit", 3000);
+      }
+    };
+
+    // wire listeners
+    closeBtn.addEventListener("click", onClose);
+    cancelBtn.addEventListener("click", onClose);
+    editBtn.addEventListener("click", onEdit);
+    promptArea.addEventListener("keydown", promptKeydown);
+    backdrop.addEventListener("click", onBackdropClick);
+    document.addEventListener("keydown", handleKeyDown);
   }
 
   async processAiEdit(userPrompt) {
@@ -4230,44 +6238,42 @@ Focus specifically on the selected code while considering its context within the
   }
 
   async showGenerateCodePopup() {
-    const popup = tag("div", {
-      className: "ai-edit-popup"
-    });
+    // Gunakan tag helper dari Acode untuk membuat elemen
+    const tag = acode.require('tag');
 
-    const header = tag("div", {
-      className: "ai-edit-popup-header"
-    });
+    // Cari container utama plugin (fall back ke body)
+    const container = document.getElementById("acode-ai-assistant") || document.body;
 
+    // Buat backdrop + popup
+    const backdrop = tag("div", { className: "ai-edit-backdrop" });
+    const popup = tag("div", { className: "ai-edit-popup" });
+
+    // Header
+    const header = tag("div", { className: "ai-edit-popup-header" });
     const title = tag("div", {
       className: "ai-edit-popup-title",
       textContent: "Generate Code"
     });
-
     const closeBtn = tag("button", {
       className: "ai-edit-popup-close",
-      innerHTML: "X"
+      innerHTML: "×",
+      title: "Close"
     });
-
     header.append(title, closeBtn);
 
-    const body = tag("div", {
-      className: "ai-edit-popup-body"
-    });
-
+    // Body
+    const body = tag("div", { className: "ai-edit-popup-body" });
     const promptArea = tag("textarea", {
       className: "ai-edit-prompt",
       placeholder: "Describe what code you want to generate...\nExample: 'Create a function to validate email addresses'"
     });
 
-    const actions = tag("div", {
-      className: "ai-edit-actions"
-    });
-
+    // Actions
+    const actions = tag("div", { className: "ai-edit-actions" });
     const cancelBtn = tag("button", {
       className: "ai-edit-btn secondary",
       textContent: "Cancel"
     });
-
     const generateBtn = tag("button", {
       className: "ai-edit-btn primary",
       textContent: "Generate Code"
@@ -4276,61 +6282,101 @@ Focus specifically on the selected code while considering its context within the
     actions.append(cancelBtn, generateBtn);
     body.append(promptArea, actions);
     popup.append(header, body);
+    backdrop.appendChild(popup);
 
-    // Event listeners
-    closeBtn.onclick = cancelBtn.onclick = () => {
-      if (document.body.contains(popup)) {
-        document.body.removeChild(popup);
-      }
+    // Append to container
+    container.appendChild(backdrop);
+
+    // Focus dengan mencegah scroll
+    try {
+      promptArea.focus({ preventScroll: true });
+    } catch (e) {
+      promptArea.focus();
+    }
+
+    // --- Handlers (disposable so we can remove them on close) ---
+    const removePopup = () => {
+      // Safe remove
+      if (container.contains(backdrop)) container.removeChild(backdrop);
+
+      // Cleanup listeners
+      promptArea.removeEventListener("keydown", promptKeydown);
+      generateBtn.removeEventListener("click", onGenerate);
+      closeBtn.removeEventListener("click", onClose);
+      cancelBtn.removeEventListener("click", onClose);
+      window.removeEventListener("keydown", onWindowKey);
     };
 
-    generateBtn.onclick = async () => {
-      const userPrompt = promptArea.value.trim();
-      if (userPrompt) {
-        if (document.body.contains(popup)) {
-          document.body.removeChild(popup);
-        }
+    const onClose = () => removePopup();
+
+    const onGenerate = async () => {
+      const userPrompt = (promptArea.value || "").trim();
+      if (!userPrompt) {
+        // Gunakan toast dari Acode
+        acode.toast("Please enter a description", 3000);
+        return;
+      }
+
+      // Remove popup before processing (keamanan & UX)
+      removePopup();
+
+      try {
         await this.processCodeGeneration(userPrompt);
-      } else {
-        window.toast("Please enter a description", 3000);
+      } catch (err) {
+        console.error("processCodeGeneration error:", err);
       }
     };
 
-    // Handle Enter key
-    promptArea.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+    const promptKeydown = (e) => {
+      // Ctrl/Cmd + Enter => generate
+      if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
+        e.preventDefault();
         generateBtn.click();
       }
-    });
+    };
 
-    document.body.appendChild(popup);
-    promptArea.focus();
+    const onWindowKey = (e) => {
+      // Escape => close
+      if (e.key === "Escape") {
+        removePopup();
+      }
+    };
+
+    // Wire listeners
+    closeBtn.addEventListener("click", onClose);
+    cancelBtn.addEventListener("click", onClose);
+    generateBtn.addEventListener("click", onGenerate);
+    promptArea.addEventListener("keydown", promptKeydown);
+    window.addEventListener("keydown", onWindowKey);
+
+    // Small debug log supaya gampang ngecek
+    console.log("AI Generate popup opened in container:", container === document.body ? "body" : "#acode-ai-assistant");
   }
 
   async processCodeGeneration(userPrompt) {
     // Input validation
     if (!userPrompt || userPrompt.trim().length === 0) {
-      window.toast("Please provide a description for code generation", 3000);
+      acode.toast("Please provide a description for code generation", 3000);
       return;
     }
 
     if (userPrompt.length > 1000) {
-      window.toast("Description too long. Please keep it under 1000 characters", 3000);
+      acode.toast("Description too long. Please keep it under 1000 characters", 3000);
       return;
     }
 
-    const activeFile = editorManager.activeFile;
+    const activeFile = acode.editorManager.activeFile;
     let fileContent = "";
     let fileExtension = "js"; // default extension
 
     if (activeFile) {
-      fileContent = editor.getValue();
+      fileContent = acode.editor.getValue();
       fileExtension = activeFile.name.split('.').pop() || "js";
     }
 
     // Show loading
-    loader.showTitleLoader();
-    window.toast("Generating code...", 3000);
+    acode.loader.showTitleLoader();
+    acode.toast("Generating code...", 3000);
 
     try {
       // Improved prompt for better code generation
@@ -4355,12 +6401,12 @@ Generate the ${fileExtension} code:`;
       try {
         response = await this.appendGptResponse(aiPrompt);
       } catch (error) {
-        window.toast('Primary AI service failed', 4000);
+        acode.toast('Primary AI service failed', 4000);
         // Fallback: try with basic model if advanced fails
         try {
           response = await this.sendAiQuery(aiPrompt);
         } catch (fallbackError) {
-          window.toast('Fallback AI service also failed', 4000);
+          acode.toast('Fallback AI service also failed', 4000);
           response = null;
         }
       }
@@ -4382,23 +6428,24 @@ Generate the ${fileExtension} code:`;
       }
 
       // Insert at cursor position
-      const cursor = editor.getCursorPosition();
-      editor.session.insert(cursor, generatedCode + '\n');
+      const cursor = acode.editor.getCursorPosition();
+      acode.editor.session.insert(cursor, generatedCode + '\n');
 
       // Auto-save if file exists
       if (activeFile && activeFile.uri) {
         try {
           await activeFile.save();
-          window.toast("Code generated and saved successfully!", 3000);
+          acode.toast("Code generated and saved successfully!", 3000);
         } catch (saveError) {
-          window.toast("Code generated! Please save manually.", 3000);
+          acode.toast("Code generated! Please save manually.", 3000);
         }
       } else {
-        window.toast("Code generated successfully!", 3000);
+        acode.toast("Code generated successfully!", 3000);
       }
 
       // Ask if user wants to run the code
       setTimeout(async () => {
+        const select = acode.require('select');
         const shouldRun = await select("Run the generated code?", ["Yes", "No", "Cancel"]);
         if (shouldRun === "Yes") {
           this.runCurrentFile(); // Removed await since we're not checking the result
@@ -4406,10 +6453,11 @@ Generate the ${fileExtension} code:`;
       }, 1000);
 
     } catch (error) {
-      window.toast(`Code generation failed: ${error.message}`, 4000);
+      acode.toast(`Code generation failed: ${error.message}`, 4000);
 
       // Show fallback options
       setTimeout(async () => {
+        const select = acode.require('select');
         const fallback = await select("Code generation failed. Try:", ["Retry", "Chat Mode", "Cancel"]);
         if (fallback === "Retry") {
           this.processCodeGeneration(userPrompt); // Removed await since we're not checking the result
@@ -4422,7 +6470,7 @@ Generate the ${fileExtension} code:`;
         }
       }, 500);
     } finally {
-      loader.removeTitleLoader();
+      acode.loader.removeTitleLoader();
     }
   }
 
@@ -4882,6 +6930,300 @@ Include: JSDoc, params, returns, examples.`;
     await this.getCliResponse(prompt);
   }
 
+  // Helper methods within the same function scope
+  createSearchDialog() {
+    const overlay = document.createElement('div');
+    overlay.className = 'ai-search-overlay';
+    overlay.innerHTML = `
+    <div class="ai-search-dialog">
+      <div class="ai-search-header">
+        <h3>🔍 Chat Search</h3>
+        <button class="ai-search-close">×</button>
+      </div>
+      
+      <div class="ai-search-body">
+        <div class="ai-search-input-group">
+          <input type="text" id="ai-search-input" placeholder="Enter search term..." autocomplete="off">
+          <button id="ai-search-clear" title="Clear">✕</button>
+        </div>
+        
+        <div class="ai-search-options">
+          <div class="ai-search-scope">
+            <label>Search in:</label>
+            <select id="ai-search-scope">
+              <option value="current">Current Chat</option>
+              <option value="all">All Chat History</option>
+              <option value="session">Specific Session</option>
+            </select>
+          </div>
+          
+          <div class="ai-search-filters">
+            <label><input type="checkbox" id="ai-case-sensitive"> Case sensitive</label>
+            <label><input type="checkbox" id="ai-whole-word"> Whole words only</label>
+          </div>
+        </div>
+        
+        <div id="ai-session-selector" class="ai-session-selector" style="display: none;">
+          <label>Select session:</label>
+          <select id="ai-session-list">
+            <option value="">Select session...</option>
+          </select>
+        </div>
+      </div>
+      
+      <div class="ai-search-footer">
+        <button id="ai-search-cancel" class="ai-btn-secondary">Cancel</button>
+        <button id="ai-search-submit" class="ai-btn-primary">🔍 Search</button>
+      </div>
+    </div>
+  `;
+
+    return overlay;
+  }
+
+  searchCurrentChat(options) {
+    const results = [];
+    const chatBox = this.$chatBox || document.querySelector('.chatBox');
+    if (!chatBox) return results;
+
+    const messages = chatBox.querySelectorAll('.message, .ai_message');
+    const { searchTerm, caseSensitive, wholeWord } = options;
+
+    messages.forEach((element, index) => {
+      if (!element || !element.textContent) return;
+
+      const text = element.textContent;
+      const isMatch = this.testMatch(text, searchTerm, caseSensitive, wholeWord);
+
+      if (isMatch) {
+        const isUser = element.closest('.wrapper') !== null;
+        results.push({
+          element,
+          text: text.trim(),
+          isUser,
+          source: 'current',
+          index,
+          preview: this.generatePreview(text, searchTerm, caseSensitive)
+        });
+      }
+    });
+
+    return results;
+  }
+
+  searchAllHistory(options) {
+    const results = [];
+
+    // Search current chat
+    results.push(...this.searchCurrentChat(options));
+
+    // Search stored histories
+    if (this.messageHistories) {
+      Object.entries(this.messageHistories).forEach(([sessionId, messages]) => {
+        if (messages && Array.isArray(messages)) {
+          const sessionResults = this.searchMessageArray(messages, options, sessionId);
+          results.push(...sessionResults);
+        }
+      });
+    }
+
+    return results;
+  }
+
+  searchSpecificSession(options) {
+    const { sessionId } = options;
+    if (!sessionId || !this.messageHistories || !this.messageHistories[sessionId]) {
+      return [];
+    }
+
+    return this.searchMessageArray(this.messageHistories[sessionId], options, sessionId);
+  }
+
+  searchMessageArray(messages, options, sessionId) {
+    const results = [];
+    const { searchTerm, caseSensitive, wholeWord } = options;
+
+    messages.forEach((msg, index) => {
+      if (!msg || !msg.content) return;
+
+      const text = msg.content;
+      const isMatch = this.testMatch(text, searchTerm, caseSensitive, wholeWord);
+
+      if (isMatch) {
+        results.push({
+          text: text.trim(),
+          isUser: msg.role === 'user',
+          source: sessionId,
+          index,
+          timestamp: msg.timestamp,
+          preview: this.generatePreview(text, searchTerm, caseSensitive)
+        });
+      }
+    });
+
+    return results;
+  }
+
+  testMatch(text, searchTerm, caseSensitive, wholeWord) {
+    if (wholeWord) {
+      const flags = caseSensitive ? 'g' : 'gi';
+      const regex = new RegExp(`\\b${this.escapeRegex(searchTerm)}\\b`, flags);
+      return regex.test(text);
+    } else {
+      const searchText = caseSensitive ? text : text.toLowerCase();
+      const pattern = caseSensitive ? searchTerm : searchTerm.toLowerCase();
+      return searchText.includes(pattern);
+    }
+  }
+
+  generatePreview(text, searchTerm, caseSensitive = false) {
+    const maxLength = 150;
+    const searchPattern = caseSensitive ? searchTerm : searchTerm.toLowerCase();
+    const searchText = caseSensitive ? text : text.toLowerCase();
+
+    const index = searchText.indexOf(searchPattern);
+    if (index === -1) return text.substring(0, maxLength) + '...';
+
+    const start = Math.max(0, index - 50);
+    const end = Math.min(text.length, index + searchTerm.length + 50);
+
+    let preview = text.substring(start, end);
+    if (start > 0) preview = '...' + preview;
+    if (end < text.length) preview = preview + '...';
+
+    // Highlight the search term
+    const regex = new RegExp(`(${this.escapeRegex(searchTerm)})`, caseSensitive ? 'g' : 'gi');
+    preview = preview.replace(regex, '<mark>$1</mark>');
+
+    return preview;
+  }
+
+  showSearchResults(results, searchTerm) {
+    // Clear previous highlights
+    this.clearSearchHighlights();
+
+    const overlay = document.createElement('div');
+    overlay.className = 'ai-search-results-overlay';
+    overlay.innerHTML = `
+    <div class="ai-search-results-dialog">
+      <div class="ai-search-results-header">
+        <h3>🎯 Search Results (${results.length})</h3>
+        <div class="ai-search-results-actions">
+          <button id="ai-highlight-all" class="ai-btn-small">✨ Highlight All</button>
+          <button class="ai-search-close">×</button>
+        </div>
+      </div>
+      
+      <div class="ai-search-results-body">
+        <div class="ai-search-results-list">
+          ${results.map((result, index) => `
+            <div class="ai-search-result-item" data-index="${index}">
+              <div class="ai-search-result-header">
+                <span class="ai-search-result-type">${result.isUser ? '👤 User' : '🤖 AI'}</span>
+                <span class="ai-search-result-source">📍 ${result.source}</span>
+                ${result.timestamp ? `<span class="ai-search-result-time">🕒 ${new Date(result.timestamp).toLocaleString()}</span>` : ''}
+              </div>
+              <div class="ai-search-result-preview">${result.preview}</div>
+              <div class="ai-search-result-actions">
+                <button class="ai-jump-btn" data-index="${index}">🎯 Jump to Message</button>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+      
+      <div class="ai-search-results-footer">
+        <span class="ai-search-stats">Found ${results.length} results for "${searchTerm}"</span>
+        <button id="ai-results-close" class="ai-btn-primary">Close</button>
+      </div>
+    </div>
+  `;
+
+    document.body.appendChild(overlay);
+
+    // Event handlers
+    overlay.querySelector('#ai-highlight-all').addEventListener('click', () => {
+      this.highlightSearchResults(results);
+      window.toast && window.toast(`✨ Highlighted ${results.length} results`, 2000);
+    });
+
+    overlay.querySelectorAll('.ai-jump-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const index = parseInt(e.target.dataset.index);
+        this.jumpToSearchResult(results[index]);
+      });
+    });
+
+    overlay.querySelectorAll('.ai-search-result-item').forEach((item, index) => {
+      item.addEventListener('click', () => {
+        this.jumpToSearchResult(results[index]);
+      });
+    });
+
+    const closeDialog = () => {
+      document.body.removeChild(overlay);
+    };
+
+    overlay.querySelector('.ai-search-close').addEventListener('click', closeDialog);
+    overlay.querySelector('#ai-results-close').addEventListener('click', closeDialog);
+    overlay.addEventListener('click', (e) => {
+      if (e.target === overlay) closeDialog();
+    });
+
+    window.toast && window.toast(`🎯 Found ${results.length} results for "${searchTerm}"`, 3000);
+  }
+
+  highlightSearchResults(results) {
+    this.clearSearchHighlights();
+
+    results.forEach(result => {
+      if (result.element && result.source === 'current') {
+        result.element.classList.add('ai-search-highlight');
+        result.element.style.background = 'rgba(0, 212, 255, 0.15)';
+        result.element.style.border = '2px solid var(--galaxy-star-blue)';
+        result.element.style.boxShadow = '0 0 20px rgba(0, 212, 255, 0.3)';
+      }
+    });
+  }
+
+  jumpToSearchResult(result) {
+    if (result.element && result.source === 'current') {
+      // Highlight and scroll to result
+      result.element.classList.add('ai-search-highlight-active');
+      result.element.style.background = 'rgba(0, 212, 255, 0.25)';
+      result.element.style.border = '2px solid var(--galaxy-star-purple)';
+      result.element.style.boxShadow = '0 0 30px rgba(157, 78, 221, 0.5)';
+      result.element.style.transform = 'scale(1.02)';
+
+      result.element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+      // Remove active highlight after animation
+      setTimeout(() => {
+        result.element.classList.remove('ai-search-highlight-active');
+        result.element.style.transform = '';
+      }, 2000);
+    } else {
+      window.toast && window.toast(`📍 Result from ${result.source} session`, 2000);
+    }
+  }
+
+  clearSearchHighlights() {
+    const chatBox = this.$chatBox || document.querySelector('.chatBox');
+    if (chatBox) {
+      chatBox.querySelectorAll('.ai-search-highlight').forEach(el => {
+        el.classList.remove('ai-search-highlight', 'ai-search-highlight-active');
+        el.style.removeProperty('background');
+        el.style.removeProperty('border');
+        el.style.removeProperty('box-shadow');
+        el.style.removeProperty('transform');
+      });
+    }
+  }
+
+  escapeRegex(string) {
+    return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  }
+
   initializeMarkdown() {
     if (!this.$mdIt && window.markdownit) {
       this.$mdIt = window.markdownit({
@@ -5063,7 +7405,7 @@ Make cleaner, more efficient. Same functionality.`;
       } catch (error) {
         // Could not query status element
       }
-      
+
       if (!statusElement) {
         statusElement = tag("div", { className: "realtime-ai-status" });
       }
@@ -5324,7 +7666,7 @@ Focus cursor area only.`;
         window.toast('Editor not available', 3000);
         return;
       }
-      
+
       const content = editor.getValue();
       const lines = content.split('\n');
 
@@ -5357,7 +7699,7 @@ Focus cursor area only.`;
       if (!editor || !editor.getCursorPosition || !editor.renderer) {
         return;
       }
-      
+
       const cursorPos = editor.getCursorPosition();
       const screenPos = editor.renderer.textToScreenCoordinates(cursorPos.row, cursorPos.column);
 
