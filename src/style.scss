@@ -683,7 +683,7 @@ textarea {
   bottom: 0;
   background: rgba(15, 15, 30, 0.8);
   backdrop-filter: blur(8px);
-  z-index: 1000;
+  z-index: 99999;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -859,7 +859,7 @@ textarea {
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 10000;
+  z-index: 99998;
   animation: fadeIn 0.3s ease-out;
   padding: 1rem;
 }
