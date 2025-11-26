@@ -137,6 +137,22 @@
               text-decoration: underline;
             }
           }
+
+          .ai-error {
+            background: #fff0f0;
+            color: #7a0b0b;
+            border: 1px solid #ffdddd;
+            padding: 10px;
+            border-radius: 6px;
+            word-break: break-word;
+          }
+
+          .ai-typing-cursor {
+            display: inline-block;
+            width: 8px;
+            margin-left: 2px;
+            animation: blink 1s steps(1) infinite;
+          }
         }
 
         &.user-message {
@@ -163,6 +179,12 @@
           .ai-message-content {
             background: var(--secondary-color);
             border-bottom-left-radius: 4px;
+          }
+        }
+
+        &.error {
+          .ai-message-content {
+            background: #fff0f0;
           }
         }
       }
@@ -399,5 +421,11 @@
         }
       }
     }
+  }
+}
+
+@keyframes blink {
+  50% {
+    opacity: 0;
   }
 }
