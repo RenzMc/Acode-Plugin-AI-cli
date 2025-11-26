@@ -61,13 +61,6 @@ class AIAssistant {
       textContent: style,
     });
 
-    document.head.append(
-      this.$githubDarkFile,
-      this.$higlightJsFile,
-      this.$markdownItFile,
-      this.$style
-    );
-
     this.scriptsLoaded = new Promise((resolve) => {
       let loaded = 0;
       const total = 2;
@@ -87,6 +80,13 @@ class AIAssistant {
       this.$markdownItFile.onload = check;
       this.$markdownItFile.onerror = check;
     });
+
+    document.head.append(
+      this.$githubDarkFile,
+      this.$higlightJsFile,
+      this.$markdownItFile,
+      this.$style
+    );
 
     try {
       await this.scriptsLoaded;
