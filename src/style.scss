@@ -1,0 +1,396 @@
+.ai-assistant-sidebar {
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: var(--primary-color);
+  color: var(--primary-text-color);
+  font-family: var(--font-family);
+
+  .ai-header {
+    border-bottom: 1px solid var(--border-color);
+    padding: 10px;
+    flex-shrink: 0;
+
+    .ai-nav {
+      display: flex;
+      gap: 5px;
+
+      .ai-nav-btn {
+        flex: 1;
+        padding: 8px 12px;
+        border: none;
+        background: transparent;
+        color: var(--primary-text-color);
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 0.9rem;
+        transition: all 0.2s ease;
+
+        &:hover {
+          background: var(--secondary-color);
+        }
+
+        &.active {
+          background: var(--button-background-color);
+          color: var(--button-text-color);
+        }
+      }
+    }
+  }
+
+  .ai-content {
+    flex: 1;
+    overflow: hidden;
+    position: relative;
+
+    .ai-chat-area {
+      height: 100%;
+      padding: 15px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+
+      .ai-welcome-message {
+        text-align: center;
+        padding: 20px;
+
+        .ai-welcome-content {
+          h3 {
+            color: var(--primary-text-color);
+            margin-bottom: 10px;
+            font-size: 1.2rem;
+          }
+
+          p {
+            color: var(--secondary-text-color);
+            font-size: 0.9rem;
+          }
+        }
+      }
+
+      .ai-message {
+        display: flex;
+        gap: 10px;
+        max-width: 100%;
+
+        .ai-avatar {
+          width: 30px;
+          height: 30px;
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 0.8rem;
+          flex-shrink: 0;
+        }
+
+        .ai-message-content {
+          flex: 1;
+          padding: 10px 12px;
+          border-radius: 8px;
+          font-size: 0.9rem;
+          line-height: 1.4;
+
+          pre {
+            background: var(--secondary-color);
+            border-radius: 4px;
+            padding: 10px;
+            overflow-x: auto;
+            margin: 5px 0;
+
+            code {
+              font-family: 'Courier New', monospace;
+              font-size: 0.85rem;
+            }
+          }
+
+          p {
+            margin: 5px 0;
+          }
+
+          ul, ol {
+            margin: 5px 0;
+            padding-left: 20px;
+          }
+
+          h1, h2, h3, h4, h5, h6 {
+            margin: 10px 0 5px 0;
+          }
+
+          a {
+            color: var(--button-background-color);
+            text-decoration: none;
+
+            &:hover {
+              text-decoration: underline;
+            }
+          }
+        }
+
+        &.user-message {
+          flex-direction: row-reverse;
+
+          .ai-avatar {
+            background: var(--button-background-color);
+            color: var(--button-text-color);
+          }
+
+          .ai-message-content {
+            background: var(--button-background-color);
+            color: var(--button-text-color);
+            border-bottom-right-radius: 4px;
+          }
+        }
+
+        &.assistant-message {
+          .ai-avatar {
+            background: var(--secondary-color);
+            color: var(--primary-text-color);
+          }
+
+          .ai-message-content {
+            background: var(--secondary-color);
+            border-bottom-left-radius: 4px;
+          }
+        }
+      }
+    }
+
+    .ai-history-area {
+      height: 100%;
+      padding: 15px;
+      overflow-y: auto;
+
+      h3 {
+        margin-bottom: 15px;
+        color: var(--primary-text-color);
+        font-size: 1.1rem;
+      }
+
+      .ai-history-list {
+        .history-session-item {
+          padding: 12px;
+          margin-bottom: 8px;
+          background: var(--secondary-color);
+          border-radius: 6px;
+          cursor: pointer;
+          transition: all 0.2s ease;
+
+          &:hover {
+            background: var(--hover-color);
+            transform: translateX(2px);
+          }
+
+          .session-title {
+            font-weight: 500;
+            color: var(--primary-text-color);
+            margin-bottom: 4px;
+          }
+
+          .session-date {
+            font-size: 0.8rem;
+            color: var(--secondary-text-color);
+          }
+        }
+      }
+    }
+
+    .ai-settings-area {
+      height: 100%;
+      padding: 15px;
+      overflow-y: auto;
+
+      .ai-settings-form {
+        .setting-group {
+          margin-bottom: 15px;
+
+          label {
+            display: block;
+            margin-bottom: 5px;
+            color: var(--primary-text-color);
+            font-weight: 500;
+            font-size: 0.9rem;
+          }
+
+          input, select {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            background: var(--primary-color);
+            color: var(--primary-text-color);
+            font-size: 0.9rem;
+
+            &:focus {
+              outline: none;
+              border-color: var(--button-background-color);
+            }
+          }
+
+          input[type="password"] {
+            font-family: monospace;
+          }
+        }
+
+        .save-settings-btn {
+          width: 100%;
+          padding: 10px;
+          background: var(--button-background-color);
+          color: var(--button-text-color);
+          border: none;
+          border-radius: 4px;
+          font-size: 0.9rem;
+          font-weight: 500;
+          cursor: pointer;
+          transition: all 0.2s ease;
+
+          &:hover {
+            background: var(--button-hover-color);
+          }
+        }
+      }
+    }
+  }
+
+  .ai-footer {
+    border-top: 1px solid var(--border-color);
+    padding: 10px;
+    flex-shrink: 0;
+
+    .ai-input-container {
+      display: flex;
+      gap: 8px;
+      align-items: flex-end;
+
+      .ai-input {
+        flex: 1;
+        padding: 8px 12px;
+        border: 1px solid var(--border-color);
+        border-radius: 20px;
+        background: var(--primary-color);
+        color: var(--primary-text-color);
+        font-size: 0.9rem;
+        resize: none;
+        min-height: 36px;
+        max-height: 100px;
+        font-family: var(--font-family);
+
+        &:focus {
+          outline: none;
+          border-color: var(--button-background-color);
+        }
+      }
+
+      .ai-send-btn {
+        width: 36px;
+        height: 36px;
+        border: none;
+        border-radius: 50%;
+        background: var(--button-background-color);
+        color: var(--button-text-color);
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s ease;
+        flex-shrink: 0;
+
+        &:hover {
+          background: var(--button-hover-color);
+          transform: scale(1.05);
+        }
+
+        &:disabled {
+          opacity: 0.6;
+          cursor: not-allowed;
+        }
+
+        svg {
+          width: 16px;
+          height: 16px;
+        }
+      }
+    }
+  }
+}
+
+.scroll {
+  max-height: 100%;
+  overflow-y: auto;
+}
+
+@media (max-width: 768px) {
+  .ai-assistant-sidebar {
+    .ai-header {
+      padding: 8px;
+
+      .ai-nav {
+        .ai-nav-btn {
+          padding: 6px 8px;
+          font-size: 0.8rem;
+        }
+      }
+    }
+
+    .ai-content {
+      .ai-chat-area {
+        padding: 10px;
+        gap: 10px;
+
+        .ai-message {
+          .ai-avatar {
+            width: 25px;
+            height: 25px;
+            font-size: 0.7rem;
+          }
+
+          .ai-message-content {
+            font-size: 0.85rem;
+            padding: 8px 10px;
+          }
+        }
+      }
+
+      .ai-history-area {
+        padding: 10px;
+
+        .history-session-item {
+          padding: 10px;
+        }
+      }
+
+      .ai-settings-area {
+        padding: 10px;
+      }
+    }
+
+    .ai-footer {
+      padding: 8px;
+
+      .ai-input-container {
+        .ai-input {
+          font-size: 0.85rem;
+          padding: 6px 10px;
+          min-height: 32px;
+        }
+
+        .ai-send-btn {
+          width: 32px;
+          height: 32px;
+
+          svg {
+            width: 14px;
+            height: 14px;
+          }
+        }
+      }
+    }
+  }
+}

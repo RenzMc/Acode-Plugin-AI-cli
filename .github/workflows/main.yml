@@ -1,0 +1,86 @@
+name: Build Acode Plugin
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+  workflow_dispatch: {}
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        shell: bash
+        run: |
+          npm install
+
+      - name: Run build script (show stdout/stderr)
+        shell: bash
+        run: |
+          echo "== RUNNING BUILD =="
+          node -v
+          npm -v
+          set -o pipefail
+          npm run build 2>&1 | tee build-output.log || true
+          echo "=== BUILD OUTPUT (last 200 lines) ==="
+          tail -n 200 build-output.log || true
+
+      - name: Debug - show workspace recursively
+        shell: bash
+        run: |
+          echo "Working dir: $(pwd)"
+          echo "Top-level files:"
+          ls -la
+          echo "Find zip files (if any):"
+          find . -type f -name "*.zip" -print -exec ls -lh {} \; || true
+
+      - name: Prepare artifacts
+        shell: bash
+        run: |
+          mkdir -p .artifacts
+          
+          # Kalau AI.zip sudah ada di repo, pakai itu
+          if [ -f "AI.zip" ]; then
+            cp AI.zip .artifacts/
+            echo "✅ Copied AI.zip to artifacts"
+          else
+            echo "❌ AI.zip not found, creating from dist"
+            if [ -d "dist" ]; then
+              # Bikin zip clean → isi dist/* langsung di root zip
+              if [ -f "README.md" ]; then
+                zip -r .artifacts/AI.zip dist/* plugin.json icon.png README.md
+              elif [ -f "readme.md" ]; then
+                zip -r .artifacts/AI.zip dist/* plugin.json icon.png readme.md
+              else
+                zip -r .artifacts/AI.zip dist/* plugin.json icon.png
+              fi
+            else
+              echo "❌ No dist folder found"
+              exit 1
+            fi
+          fi
+          
+          echo "=== Final artifacts check ==="
+          ls -la .artifacts/
+          file .artifacts/AI.zip
+          echo "File exists check:"
+          test -f .artifacts/AI.zip && echo "✅ AI.zip exists" || echo "❌ AI.zip missing"
+
+      - name: Upload plugin artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: acode-plugin-ai
+          path: .artifacts/AI.zip
+          if-no-files-found: error
