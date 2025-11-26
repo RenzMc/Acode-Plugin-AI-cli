@@ -4,7 +4,6 @@ import style from "./style.scss";
 import { StringOutputParser } from "@langchain/core/output_parsers";
 import { ChatPromptTemplate } from "@langchain/core/prompts";
 import { ChatOpenAI } from "@langchain/openai";
-import { CallbackManager } from "langchain/callbacks";
 
 import copy from "copy-to-clipboard";
 import { v4 as uuidv4 } from "uuid";
@@ -401,82 +400,59 @@ class AIAssistant {
     const sendBtn = app.querySelector(".ai-send-btn");
     if (sendBtn) sendBtn.innerHTML = stopIconSvg;
 
+    const aiMessageElement = this.addMessageToChat("assistant", "", app);
+
     try {
       const settings = await this.getSettings();
       if (!settings.apiKey || !settings.baseUrl || !settings.model) {
         window.toast("Please configure API settings first", 3000);
         this.switchView("settings", app);
+        this.isGenerating = false;
+        if (sendBtn) sendBtn.innerHTML = sendIconSvg;
         return;
       }
 
-      const aiMessageElement = this.addMessageToChat("assistant", "", app);
-      let streamedText = "";
+      let response = await this.callAI(message, settings);
 
-      try {
-        const response = await this.callAI(message, settings, {
-          onToken: (token) => {
-            if (token == null) return;
-            streamedText += token;
-            aiMessageElement.innerHTML = this._escapeHtml(streamedText) + '<span class="ai-typing-cursor">|</span>';
-            const chatAreaAfter = app.querySelector("#ai-chat-area");
-            if (chatAreaAfter) {
-              chatAreaAfter.scrollTop = chatAreaAfter.scrollHeight;
-            }
-          },
-          onError: (err) => {
-            const errText = err && err.message ? err.message : String(err);
-            const safe = this._escapeHtml(errText).replace(/\n/g, "<br>");
-            aiMessageElement.innerHTML = `<div class="ai-error">${safe}</div>`;
-            if (aiMessageElement.parentElement) aiMessageElement.parentElement.classList.add("error");
-            this.highlightCode(app);
-          }
+      await this.typeText(aiMessageElement, response, app);
+
+      const chatAreaAfter = app.querySelector("#ai-chat-area");
+      if (chatAreaAfter) {
+        requestAnimationFrame(() => {
+          chatAreaAfter.scrollTop = chatAreaAfter.scrollHeight;
         });
-
-        let finalResponse = response;
-        if (typeof finalResponse !== "string") {
-          finalResponse = String(finalResponse || "");
-        }
-
-        const isLikelyError = /rate limit|rate-limit|quota|429|error|timeout|exceeded/i.test(finalResponse);
-
-        if (isLikelyError) {
-          const safe = this._escapeHtml(finalResponse).replace(/\n/g, "<br>");
-          aiMessageElement.innerHTML = `<div class="ai-error">${safe}</div>`;
-          if (aiMessageElement.parentElement) aiMessageElement.parentElement.classList.add("error");
-          this.highlightCode(app);
-        } else {
-          aiMessageElement.innerHTML = this.formatAIResponse(finalResponse);
-          this.highlightCode(app);
-        }
-
-        const chatAreaAfter = app.querySelector("#ai-chat-area");
-        if (chatAreaAfter) {
-          requestAnimationFrame(() => {
-            chatAreaAfter.scrollTop = chatAreaAfter.scrollHeight;
-          });
-        }
-
-        if (!this.currentSession) {
-          this.currentSession = {
-            id: uuidv4(),
-            messages: [],
-          };
-          this.sessions.push(this.currentSession);
-        }
-
-        this.currentSession.messages.push({ role: "user", content: message });
-        this.currentSession.messages.push({ role: "assistant", content: finalResponse });
-
-        this.saveSession().catch((e) => console.error("saveSession error:", e));
-      } catch (aiError) {
-        const errText = aiError && aiError.message ? aiError.message : String(aiError);
-        const safe = this._escapeHtml(errText).replace(/\n/g, "<br>");
-        aiMessageElement.innerHTML = `<div class="ai-error">${safe}</div>`;
-        if (aiMessageElement.parentElement) aiMessageElement.parentElement.classList.add("error");
-        this.highlightCode(app);
       }
+
+      if (!this.currentSession) {
+        this.currentSession = {
+          id: uuidv4(),
+          messages: [],
+        };
+        this.sessions.push(this.currentSession);
+      }
+
+      this.currentSession.messages.push({ role: "user", content: message });
+      this.currentSession.messages.push({ role: "assistant", content: response });
+
+      this.saveSession().catch((e) => console.error("saveSession error:", e));
     } catch (error) {
       console.error("Error generating response:", error);
+      const errMsg = "Error: " + (error && error.message ? error.message : error);
+      if (aiMessageElement) {
+        aiMessageElement.textContent = errMsg;
+        aiMessageElement.classList.add("ai-error");
+        this.highlightCode(app);
+      }
+      if (!this.currentSession) {
+        this.currentSession = {
+          id: uuidv4(),
+          messages: [],
+        };
+        this.sessions.push(this.currentSession);
+      }
+      this.currentSession.messages.push({ role: "user", content: message });
+      this.currentSession.messages.push({ role: "assistant", content: errMsg });
+      this.saveSession().catch((e) => console.error("saveSession error:", e));
       window.toast("Error generating response: " + (error && error.message ? error.message : error), 3000);
     } finally {
       this.isGenerating = false;
@@ -570,37 +546,12 @@ class AIAssistant {
     };
   }
 
-  _escapeHtml(str) {
-    return String(str)
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;");
-  }
-
-  async callAI(message, settings, handlers = {}) {
+  async callAI(message, settings) {
     const { apiKey, baseUrl, model } = settings;
 
     if (!apiKey || !baseUrl || !model) {
       throw new Error("Please configure API settings first");
     }
-
-    const callbackManager = CallbackManager.fromHandlers({
-      async handleLLMNewToken(token) {
-        try {
-          if (handlers && typeof handlers.onToken === "function") handlers.onToken(token);
-        } catch (e) {}
-      },
-      async handleLLMError(err) {
-        try {
-          if (handlers && typeof handlers.onError === "function") handlers.onError(err);
-        } catch (e) {}
-      },
-      async handleLLMEnd(output) {
-        try {
-          if (handlers && typeof handlers.onEnd === "function") handlers.onEnd(output);
-        } catch (e) {}
-      }
-    });
 
     const chatModel = new ChatOpenAI({
       openAIApiKey: apiKey,
@@ -608,8 +559,6 @@ class AIAssistant {
       configuration: {
         baseURL: baseUrl,
       },
-      streaming: true,
-      callbackManager,
     });
 
     const promptTemplate = ChatPromptTemplate.fromMessages([
@@ -761,6 +710,24 @@ class AIAssistant {
     if (this.$higlightJsFile) this.$higlightJsFile.remove();
     if (this.$markdownItFile) this.$markdownItFile.remove();
     if (this.$style) this.$style.remove();
+  }
+
+  async typeText(element, text, app) {
+    if (!element) return;
+    element.classList.remove("ai-error");
+    element.textContent = "";
+    const chunkDelay = 8;
+    for (let i = 0; i < text.length; i++) {
+      element.textContent += text[i];
+      if (i % 8 === 0) {
+        const chatArea = app.querySelector("#ai-chat-area");
+        if (chatArea) {
+          chatArea.scrollTop = chatArea.scrollHeight;
+        }
+      }
+      await new Promise((r) => setTimeout(r, chunkDelay));
+    }
+    this.updateMessage(element, text, app);
   }
 }
 
