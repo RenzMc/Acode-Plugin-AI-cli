@@ -4,6 +4,7 @@ import style from "./style.scss";
 import { StringOutputParser } from "@langchain/core/output_parsers";
 import { ChatPromptTemplate } from "@langchain/core/prompts";
 import { ChatOpenAI } from "@langchain/openai";
+import { CallbackManager } from "langchain/callbacks";
 
 import copy from "copy-to-clipboard";
 import { v4 as uuidv4 } from "uuid";
@@ -400,8 +401,6 @@ class AIAssistant {
     const sendBtn = app.querySelector(".ai-send-btn");
     if (sendBtn) sendBtn.innerHTML = stopIconSvg;
 
-    let aiMessageElement = null;
-
     try {
       const settings = await this.getSettings();
       if (!settings.apiKey || !settings.baseUrl || !settings.model) {
@@ -410,38 +409,75 @@ class AIAssistant {
         return;
       }
 
-      aiMessageElement = this.addMessageToChat("assistant", "", app);
+      const aiMessageElement = this.addMessageToChat("assistant", "", app);
+      let streamedText = "";
 
-      let response = await this.callAI(message, settings);
-
-      await this.streamMessage(aiMessageElement, response, app, false);
-
-      const chatAreaAfter = app.querySelector("#ai-chat-area");
-      if (chatAreaAfter) {
-        requestAnimationFrame(() => {
-          chatAreaAfter.scrollTop = chatAreaAfter.scrollHeight;
+      try {
+        const response = await this.callAI(message, settings, {
+          onToken: (token) => {
+            if (token == null) return;
+            streamedText += token;
+            aiMessageElement.innerHTML = this._escapeHtml(streamedText) + '<span class="ai-typing-cursor">|</span>';
+            const chatAreaAfter = app.querySelector("#ai-chat-area");
+            if (chatAreaAfter) {
+              chatAreaAfter.scrollTop = chatAreaAfter.scrollHeight;
+            }
+          },
+          onError: (err) => {
+            const errText = err && err.message ? err.message : String(err);
+            const safe = this._escapeHtml(errText).replace(/\n/g, "<br>");
+            aiMessageElement.innerHTML = `<div class="ai-error">${safe}</div>`;
+            if (aiMessageElement.parentElement) aiMessageElement.parentElement.classList.add("error");
+            this.highlightCode(app);
+          }
         });
+
+        let finalResponse = response;
+        if (typeof finalResponse !== "string") {
+          finalResponse = String(finalResponse || "");
+        }
+
+        const isLikelyError = /rate limit|rate-limit|quota|429|error|timeout|exceeded/i.test(finalResponse);
+
+        if (isLikelyError) {
+          const safe = this._escapeHtml(finalResponse).replace(/\n/g, "<br>");
+          aiMessageElement.innerHTML = `<div class="ai-error">${safe}</div>`;
+          if (aiMessageElement.parentElement) aiMessageElement.parentElement.classList.add("error");
+          this.highlightCode(app);
+        } else {
+          aiMessageElement.innerHTML = this.formatAIResponse(finalResponse);
+          this.highlightCode(app);
+        }
+
+        const chatAreaAfter = app.querySelector("#ai-chat-area");
+        if (chatAreaAfter) {
+          requestAnimationFrame(() => {
+            chatAreaAfter.scrollTop = chatAreaAfter.scrollHeight;
+          });
+        }
+
+        if (!this.currentSession) {
+          this.currentSession = {
+            id: uuidv4(),
+            messages: [],
+          };
+          this.sessions.push(this.currentSession);
+        }
+
+        this.currentSession.messages.push({ role: "user", content: message });
+        this.currentSession.messages.push({ role: "assistant", content: finalResponse });
+
+        this.saveSession().catch((e) => console.error("saveSession error:", e));
+      } catch (aiError) {
+        const errText = aiError && aiError.message ? aiError.message : String(aiError);
+        const safe = this._escapeHtml(errText).replace(/\n/g, "<br>");
+        aiMessageElement.innerHTML = `<div class="ai-error">${safe}</div>`;
+        if (aiMessageElement.parentElement) aiMessageElement.parentElement.classList.add("error");
+        this.highlightCode(app);
       }
-
-      if (!this.currentSession) {
-        this.currentSession = {
-          id: uuidv4(),
-          messages: [],
-        };
-        this.sessions.push(this.currentSession);
-      }
-
-      this.currentSession.messages.push({ role: "user", content: message });
-      this.currentSession.messages.push({ role: "assistant", content: response });
-
-      this.saveSession().catch((e) => console.error("saveSession error:", e));
     } catch (error) {
-      const errMsg = "Error: " + (error && error.message ? error.message : String(error));
-      if (!aiMessageElement) {
-        aiMessageElement = this.addMessageToChat("assistant", "", app);
-      }
-      await this.streamMessage(aiMessageElement, errMsg, app, true);
       console.error("Error generating response:", error);
+      window.toast("Error generating response: " + (error && error.message ? error.message : error), 3000);
     } finally {
       this.isGenerating = false;
       if (sendBtn) sendBtn.innerHTML = sendIconSvg;
@@ -476,44 +512,6 @@ class AIAssistant {
     });
 
     return messageContent;
-  }
-
-  async streamMessage(element, content, app, isError) {
-    if (!element) return;
-    const text = String(content || "");
-    element.classList.remove("ai-error");
-    element.innerHTML = "";
-    element.textContent = "";
-    if (isError) element.classList.add("ai-error");
-    const total = text.length;
-    let i = 0;
-    const large = total > 2000;
-    const chunk = large ? 8 : 1;
-    const delay = large ? 20 : 18;
-    while (i < total) {
-      const part = text.slice(i, i + chunk);
-      element.textContent = element.textContent + part;
-      i += chunk;
-      await new Promise((r) => setTimeout(r, delay));
-      const chatArea = app && app.querySelector ? app.querySelector("#ai-chat-area") : null;
-      if (chatArea) {
-        requestAnimationFrame(() => {
-          chatArea.scrollTop = chatArea.scrollHeight;
-        });
-      }
-    }
-    if (!isError && window.markdownit) {
-      element.innerHTML = this.formatAIResponse(element.textContent);
-      this.highlightCode(app);
-    } else {
-      element.innerHTML = String(element.textContent).replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\n/g, "<br>");
-    }
-    const chatAreaFinal = app && app.querySelector ? app.querySelector("#ai-chat-area") : null;
-    if (chatAreaFinal) {
-      requestAnimationFrame(() => {
-        chatAreaFinal.scrollTop = chatAreaFinal.scrollHeight;
-      });
-    }
   }
 
   updateMessage(element, content, app) {
@@ -572,12 +570,37 @@ class AIAssistant {
     };
   }
 
-  async callAI(message, settings) {
+  _escapeHtml(str) {
+    return String(str)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;");
+  }
+
+  async callAI(message, settings, handlers = {}) {
     const { apiKey, baseUrl, model } = settings;
 
     if (!apiKey || !baseUrl || !model) {
       throw new Error("Please configure API settings first");
     }
+
+    const callbackManager = CallbackManager.fromHandlers({
+      async handleLLMNewToken(token) {
+        try {
+          if (handlers && typeof handlers.onToken === "function") handlers.onToken(token);
+        } catch (e) {}
+      },
+      async handleLLMError(err) {
+        try {
+          if (handlers && typeof handlers.onError === "function") handlers.onError(err);
+        } catch (e) {}
+      },
+      async handleLLMEnd(output) {
+        try {
+          if (handlers && typeof handlers.onEnd === "function") handlers.onEnd(output);
+        } catch (e) {}
+      }
+    });
 
     const chatModel = new ChatOpenAI({
       openAIApiKey: apiKey,
@@ -585,6 +608,8 @@ class AIAssistant {
       configuration: {
         baseURL: baseUrl,
       },
+      streaming: true,
+      callbackManager,
     });
 
     const promptTemplate = ChatPromptTemplate.fromMessages([
