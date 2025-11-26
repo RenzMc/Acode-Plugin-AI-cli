@@ -61,6 +61,13 @@ class AIAssistant {
       textContent: style,
     });
 
+    document.head.append(
+      this.$githubDarkFile,
+      this.$higlightJsFile,
+      this.$markdownItFile,
+      this.$style
+    );
+
     this.scriptsLoaded = new Promise((resolve) => {
       let loaded = 0;
       const total = 2;
@@ -81,16 +88,34 @@ class AIAssistant {
       this.$markdownItFile.onerror = check;
     });
 
-    document.head.append(
-      this.$githubDarkFile,
-      this.$higlightJsFile,
-      this.$markdownItFile,
-      this.$style
-    );
-
     try {
       await this.scriptsLoaded;
     } catch (e) {}
+
+    if (window.markdownit) {
+      this.$mdIt = window.markdownit({
+        html: false,
+        xhtmlOut: false,
+        breaks: false,
+        linkify: false,
+        typographer: false,
+        quotes: "“”‘’",
+        highlight: (str, lang) => {
+          try {
+            if (lang && window.hljs && window.hljs.getLanguage && window.hljs.getLanguage(lang)) {
+              return '<pre><code class="hljs language-' + lang + '">' + window.hljs.highlight(str, { language: lang }).value + '</code></pre>';
+            }
+            if (window.hljs && window.hljs.highlightAuto) {
+              return '<pre><code class="hljs">' + window.hljs.highlightAuto(str).value + '</code></pre>';
+            }
+          } catch (e) {}
+          const esc = window.markdownit().utils && window.markdownit().utils.escapeHtml ? window.markdownit().utils.escapeHtml(str) : str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+          return '<pre><code>' + esc + '</code></pre>';
+        },
+      });
+    } else {
+      this.$mdIt = null;
+    }
 
     this.apiKeyManager = new APIKeyManager("acode-ai-assistant-secret");
     this.sessions = [];
@@ -497,6 +522,9 @@ class AIAssistant {
   }
 
   formatAIResponse(content) {
+    if (this.$mdIt) {
+      return this.$mdIt.render(content);
+    }
     if (window.markdownit) {
       const md = window.markdownit();
       const highlight = function (str, lang) {
@@ -688,6 +716,7 @@ class AIAssistant {
         this.addMessageToChat(msg.role, msg.content, app);
       });
     }
+    this.highlightCode(app);
   }
 
   async saveSession() {
