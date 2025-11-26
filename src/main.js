@@ -21,7 +21,7 @@ const toInternalUrl = acode.require("toInternalUrl");
 const contextMenu = acode.require("contextMenu");
 const selectionMenu = acode.require("selectionMenu");
 
-const AI_HISTORY_PATH = window.DATA_STORAGE + "chatgpt";
+const AI_HISTORY_PATH = window.DATA_STORAGE + "chatgpt/";
 
 let CURRENT_SESSION_FILEPATH = null;
 
@@ -173,22 +173,22 @@ class AIAssistant {
     header.appendChild(nav);
 
     const content = createTag("div", {
-      className: "ai-content scroll",
+      className: "ai-content",
     });
 
     const chatArea = createTag("div", {
-      className: "ai-chat-area",
+      className: "ai-chat-area scroll",
       id: "ai-chat-area",
     });
 
     const historyArea = createTag("div", {
-      className: "ai-history-area",
+      className: "ai-history-area scroll",
       id: "ai-history-area",
       style: { display: "none" },
     });
 
     const settingsArea = createTag("div", {
-      className: "ai-settings-area",
+      className: "ai-settings-area scroll",
       id: "ai-settings-area",
       style: { display: "none" },
     });
@@ -634,11 +634,19 @@ class AIAssistant {
       const historyList = app.querySelector(".ai-history-list");
       if (!historyList) return;
       historyList.innerHTML = "";
-      const historyFiles = await fs.readdir(AI_HISTORY_PATH);
+      let historyFiles = [];
+      try {
+        historyFiles = await fs.readdir(AI_HISTORY_PATH);
+      } catch (e) {
+        try {
+          await fs.createDirectory(AI_HISTORY_PATH, true);
+        } catch (e2) {}
+        return;
+      }
       for (const file of historyFiles) {
         if (file.endsWith(".json")) {
           try {
-            const content = await fs.readFile(AI_HISTORY_PATH + "/" + file);
+            const content = await fs.readFile(AI_HISTORY_PATH + file);
             const session = JSON.parse(content);
             const sessionItem = createTag("div", {
               className: "history-session-item",
@@ -689,7 +697,7 @@ class AIAssistant {
       this.currentSession.timestamp = Date.now();
       const sessionData = JSON.stringify(this.currentSession, null, 2);
       const filename = `${this.currentSession.id}.json`;
-      await fs.writeFile(AI_HISTORY_PATH + "/" + filename, sessionData);
+      await fs.writeFile(AI_HISTORY_PATH + filename, sessionData);
     } catch (error) {
       console.error("Error saving session:", error);
     }
