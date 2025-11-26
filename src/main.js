@@ -12,7 +12,6 @@ import { copyIconSvg, sendIconSvg, stopIconSvg } from "./constants";
 
 const fs = acode.require("fs");
 const select = acode.require("select");
-const prompt = acode.require("prompt");
 const DialogBox = acode.require("dialogBox");
 const helpers = acode.require("helpers");
 const loader = acode.require("loader");
@@ -20,33 +19,44 @@ const sidebarApps = acode.require("sidebarApps");
 const toInternalUrl = acode.require("toInternalUrl");
 const contextMenu = acode.require("contextMenu");
 const selectionMenu = acode.require("selectionMenu");
-const { editor } = editorManager;
 
 const AI_HISTORY_PATH = window.DATA_STORAGE + "chatgpt";
 
 let CURRENT_SESSION_FILEPATH = null;
 
+const _tag = typeof tag !== "undefined" ? tag : null;
+
+function createTag(name, props = {}) {
+  if (_tag) return _tag(name, props);
+  const el = document.createElement(name);
+  for (const k in props) {
+    const v = props[k];
+    if (k === "textContent") el.textContent = v;
+    else if (k === "innerHTML") el.innerHTML = v;
+    else if (k === "className") el.className = v;
+    else if (k === "style" && typeof v === "object") Object.assign(el.style, v);
+    else el[k] = v;
+  }
+  return el;
+}
+
 class AIAssistant {
   async init($page, cacheFile, cacheFileUrl) {
-    console.log("AIAssistant init called");
-    console.log("sidebarApps available:", !!sidebarApps);
-    console.log("selectionMenu available:", !!selectionMenu);
-
     this.$page = $page;
     this.cacheFile = cacheFile;
     this.cacheFileUrl = cacheFileUrl;
 
-    this.$githubDarkFile = tag("link", {
+    this.$githubDarkFile = createTag("link", {
       rel: "stylesheet",
       href: this.baseUrl + "assets/github-dark.css",
     });
-    this.$higlightJsFile = tag("script", {
+    this.$higlightJsFile = createTag("script", {
       src: this.baseUrl + "assets/highlight.min.js",
     });
-    this.$markdownItFile = tag("script", {
+    this.$markdownItFile = createTag("script", {
       src: this.baseUrl + "assets/markdown-it.min.js",
     });
-    this.$style = tag("style", {
+    this.$style = createTag("style", {
       textContent: style,
     });
 
@@ -65,127 +75,126 @@ class AIAssistant {
 
     try {
       this.setupSidebar();
-      console.log("Sidebar setup completed");
     } catch (error) {
       console.error("Sidebar setup failed:", error);
     }
 
     try {
       this.setupSelectionMenu();
-      console.log("Selection menu setup completed");
     } catch (error) {
       console.error("Selection menu setup failed:", error);
     }
   }
 
   setupSidebar() {
-    console.log("Setting up sidebar...");
-    console.log("baseUrl:", this.baseUrl);
-    
+    if (!sidebarApps || !acode || !acode.addIcon) return;
     acode.addIcon("ai-assistant-icon", this.baseUrl + "icon.png");
-    console.log("Icon added successfully");
-    
     sidebarApps.add(
       "ai-assistant-icon",
       "ai-assistant-sidebar",
       "AI Assistant",
       (app) => {
-        console.log("Initializing sidebar container");
-        this.createSidebarContent(app);
+        try {
+          this.createSidebarContent(app);
+        } catch (e) {
+          console.error("createSidebarContent error:", e);
+        }
       },
       false,
       (app) => {
-        console.log("AI Assistant sidebar selected");
-        this.onSidebarSelected(app);
+        try {
+          this.onSidebarSelected(app);
+        } catch (e) {
+          console.error("onSidebarSelected error:", e);
+        }
       }
     );
-    console.log("Sidebar app added successfully");
   }
 
   createSidebarContent(app) {
-    console.log("Creating sidebar content directly in container");
-    
+    if (!app) return;
+
     app.className = "ai-assistant-sidebar";
-    
-    const header = tag("div", {
-      className: "ai-header"
+
+    const header = createTag("div", {
+      className: "ai-header",
     });
 
-    const nav = tag("div", {
-      className: "ai-nav"
+    const nav = createTag("div", {
+      className: "ai-nav",
     });
 
-    const chatBtn = tag("button", {
+    const chatBtn = createTag("button", {
       className: "ai-nav-btn active",
       textContent: "Chat",
-      onclick: () => this.switchView("chat", app)
     });
+    chatBtn.onclick = () => this.switchView("chat", app);
 
-    const historyBtn = tag("button", {
+    const historyBtn = createTag("button", {
       className: "ai-nav-btn",
       textContent: "History",
-      onclick: () => this.switchView("history", app)
     });
+    historyBtn.onclick = () => this.switchView("history", app);
 
-    const settingsBtn = tag("button", {
+    const settingsBtn = createTag("button", {
       className: "ai-nav-btn",
       textContent: "Settings",
-      onclick: () => this.switchView("settings", app)
     });
+    settingsBtn.onclick = () => this.switchView("settings", app);
 
     nav.appendChild(chatBtn);
     nav.appendChild(historyBtn);
     nav.appendChild(settingsBtn);
     header.appendChild(nav);
 
-    const content = tag("div", {
-      className: "ai-content scroll"
+    const content = createTag("div", {
+      className: "ai-content scroll",
     });
 
-    const chatArea = tag("div", {
+    const chatArea = createTag("div", {
       className: "ai-chat-area",
-      id: "ai-chat-area"
+      id: "ai-chat-area",
     });
 
-    const historyArea = tag("div", {
+    const historyArea = createTag("div", {
       className: "ai-history-area",
       id: "ai-history-area",
-      style: { display: "none" }
+      style: { display: "none" },
     });
 
-    const settingsArea = tag("div", {
+    const settingsArea = createTag("div", {
       className: "ai-settings-area",
       id: "ai-settings-area",
-      style: { display: "none" }
+      style: { display: "none" },
     });
 
     content.appendChild(chatArea);
     content.appendChild(historyArea);
     content.appendChild(settingsArea);
 
-    const welcomeMessage = tag("div", {
+    const welcomeMessage = createTag("div", {
       className: "ai-welcome-message",
       innerHTML: `
         <div class="ai-welcome-content">
           <h3>Welcome to AI Assistant</h3>
           <p>Start a conversation by typing your message below.</p>
         </div>
-      `
+      `,
     });
     chatArea.appendChild(welcomeMessage);
 
-    const historyTitle = tag("h3", {
-      textContent: "Chat History"
+    const historyTitle = createTag("h3", {
+      textContent: "Chat History",
     });
 
-    const historyList = tag("div", {
-      className: "ai-history-list"
+    const historyList = createTag("div", {
+      className: "ai-history-list",
     });
 
     historyArea.appendChild(historyTitle);
     historyArea.appendChild(historyList);
 
-    const settingsForm = tag("div", {
+    const settingsForm = createTag("div", {
       className: "ai-settings-form",
       innerHTML: `
         <div class="setting-group">
@@ -201,40 +210,43 @@ class AIAssistant {
           <input type="text" id="model-input" placeholder="gpt-3.5-turbo, gemini-pro, llama2, etc." />
         </div>
         <button type="button" class="save-settings-btn">Save Settings</button>
-      `
+      `,
     });
 
     settingsArea.appendChild(settingsForm);
 
-    const saveBtn = settingsForm.querySelector(".save-settings-btn");
-    saveBtn.onclick = () => this.saveSettings(app);
-    this.loadSettings(app);
+    const saveBtn = settingsForm && settingsForm.querySelector(".save-settings-btn");
+    if (saveBtn) saveBtn.onclick = () => this.saveSettings(app);
 
-    const footer = tag("div", {
-      className: "ai-footer"
+    this.loadSettings(app).catch((e) => {
+      console.error("loadSettings caught:", e);
     });
 
-    const inputContainer = tag("div", {
-      className: "ai-input-container"
+    const footer = createTag("div", {
+      className: "ai-footer",
     });
 
-    const inputField = tag("textarea", {
+    const inputContainer = createTag("div", {
+      className: "ai-input-container",
+    });
+
+    const inputField = createTag("textarea", {
       className: "ai-input",
       placeholder: "Type your message...",
       rows: 1,
-      onkeydown: (e) => {
-        if (e.key === "Enter" && !e.shiftKey) {
-          e.preventDefault();
-          this.sendMessage(app);
-        }
-      }
     });
+    inputField.onkeydown = (e) => {
+      if (e.key === "Enter" && !e.shiftKey) {
+        e.preventDefault();
+        this.sendMessage(app);
+      }
+    };
 
-    const sendBtn = tag("button", {
+    const sendBtn = createTag("button", {
       className: "ai-send-btn",
       innerHTML: sendIconSvg,
-      onclick: () => this.sendMessage(app)
     });
+    sendBtn.onclick = () => this.sendMessage(app);
 
     inputContainer.appendChild(inputField);
     inputContainer.appendChild(sendBtn);
@@ -244,30 +256,31 @@ class AIAssistant {
     app.appendChild(content);
     app.appendChild(footer);
 
-    this.loadChatHistory(app);
-
-    console.log("Sidebar content created and appended successfully");
+    this.loadChatHistory(app).catch((e) => {
+      console.error("loadChatHistory error:", e);
+    });
   }
 
   setupSelectionMenu() {
-    console.log("Setting up selection menu...");
-    
-    selectionMenu.add(async () => {
-      console.log("Selection menu clicked");
-      let opt = await select("AI Actions", ["Explain Code", "Rewrite", "Generate Code"], {
-        onHide: () => { window.toast("Work is in progress...", 3000) }
-      });
-      console.log("Selected option:", opt);
-      if (opt) {
-        this.handleSelectionAction(opt);
-      }
-    }, "✨", "all");
-    console.log("Selection menu added successfully");
+    if (!selectionMenu) return;
+    selectionMenu.add(
+      async () => {
+        let opt = await select("AI Actions", ["Explain Code", "Rewrite", "Generate Code"], {
+          onHide: () => {
+            window.toast("Work is in progress...", 3000);
+          },
+        });
+        if (opt) {
+          this.handleSelectionAction(opt);
+        }
+      },
+      "✨",
+      "all"
+    );
   }
 
   async handleSelectionAction(action) {
-    console.log("Handling selection action:", action);
-    const selectedText = editor.getSelectedText();
+    const selectedText = editorManager && editorManager.editor ? editorManager.editor.getSelectedText() : "";
     if (!selectedText) {
       window.toast("Please select some text first", 2000);
       return;
@@ -281,7 +294,7 @@ class AIAssistant {
       }
 
       let promptText = "";
-      switch(action) {
+      switch (action) {
         case "Explain Code":
           promptText = `Explain this code:\n\n${selectedText}`;
           break;
@@ -296,55 +309,61 @@ class AIAssistant {
       window.toast("Processing your request...", 2000);
       const response = await this.callAI(promptText, settings);
       if (response) {
-        editorManager.editor.session.replace(editor.getRange(), response);
+        if (editorManager && editorManager.editor && editorManager.editor.session) {
+          editorManager.editor.session.replace(editorManager.editor.getRange(), response);
+        }
         window.toast(`${action} completed!`, 2000);
       }
     } catch (error) {
       console.error("Error in selection action:", error);
-      window.toast("Error: " + error.message, 3000);
+      window.toast("Error: " + (error && error.message ? error.message : error), 3000);
     }
   }
 
   switchView(view, app) {
-    console.log("Switching view to:", view);
+    if (!app) return;
     this.currentView = view;
-    
+
     const navBtns = app.querySelectorAll(".ai-nav-btn");
-    navBtns.forEach(btn => btn.classList.remove("active"));
-    
+    navBtns.forEach((btn) => btn.classList.remove("active"));
+
     const chatArea = app.querySelector("#ai-chat-area");
     const historyArea = app.querySelector("#ai-history-area");
     const settingsArea = app.querySelector("#ai-settings-area");
 
-    chatArea.style.display = "none";
-    historyArea.style.display = "none";
-    settingsArea.style.display = "none";
+    if (chatArea) chatArea.style.display = "none";
+    if (historyArea) historyArea.style.display = "none";
+    if (settingsArea) settingsArea.style.display = "none";
 
-    switch(view) {
+    switch (view) {
       case "chat":
-        navBtns[0].classList.add("active");
-        chatArea.style.display = "block";
+        if (navBtns[0]) navBtns[0].classList.add("active");
+        if (chatArea) chatArea.style.display = "block";
         break;
       case "history":
-        navBtns[1].classList.add("active");
-        historyArea.style.display = "block";
-        this.loadChatHistory(app);
+        if (navBtns[1]) navBtns[1].classList.add("active");
+        if (historyArea) {
+          historyArea.style.display = "block";
+          this.loadChatHistory(app).catch((e) => console.error(e));
+        }
         break;
       case "settings":
-        navBtns[2].classList.add("active");
-        settingsArea.style.display = "block";
+        if (navBtns[2]) navBtns[2].classList.add("active");
+        if (settingsArea) settingsArea.style.display = "block";
         break;
     }
   }
 
   async sendMessage(app) {
+    if (!app) return;
     const inputField = app.querySelector(".ai-input");
+    if (!inputField) return;
     const message = inputField.value.trim();
-    
+
     if (!message || this.isGenerating) return;
 
     const chatArea = app.querySelector("#ai-chat-area");
-    const welcomeMessage = chatArea.querySelector(".ai-welcome-message");
+    const welcomeMessage = chatArea && chatArea.querySelector(".ai-welcome-message");
     if (welcomeMessage) {
       welcomeMessage.remove();
     }
@@ -354,7 +373,7 @@ class AIAssistant {
 
     this.isGenerating = true;
     const sendBtn = app.querySelector(".ai-send-btn");
-    sendBtn.innerHTML = stopIconSvg;
+    if (sendBtn) sendBtn.innerHTML = stopIconSvg;
 
     try {
       const settings = this.getSettings();
@@ -365,48 +384,49 @@ class AIAssistant {
       }
 
       const aiMessageElement = this.addMessageToChat("assistant", "", app);
-      
+
       let response = await this.callAI(message, settings);
-      
+
       this.updateMessage(aiMessageElement, response, app);
-      
+
       if (!this.currentSession) {
         this.currentSession = {
           id: uuidv4(),
-          messages: []
+          messages: [],
         };
         this.sessions.push(this.currentSession);
       }
-      
+
       this.currentSession.messages.push({ role: "user", content: message });
       this.currentSession.messages.push({ role: "assistant", content: response });
-      
-      this.saveSession();
-      
+
+      this.saveSession().catch((e) => console.error("saveSession error:", e));
     } catch (error) {
       console.error("Error generating response:", error);
-      window.toast("Error generating response: " + error.message, 3000);
+      window.toast("Error generating response: " + (error && error.message ? error.message : error), 3000);
     } finally {
       this.isGenerating = false;
-      sendBtn.innerHTML = sendIconSvg;
+      if (sendBtn) sendBtn.innerHTML = sendIconSvg;
     }
   }
 
   addMessageToChat(role, content, app) {
+    if (!app) return null;
     const chatArea = app.querySelector("#ai-chat-area");
-    
-    const messageDiv = tag("div", {
-      className: `ai-message ${role}-message`
+    if (!chatArea) return null;
+
+    const messageDiv = createTag("div", {
+      className: `ai-message ${role}-message`,
     });
 
-    const avatar = tag("div", {
+    const avatar = createTag("div", {
       className: "ai-avatar",
-      innerHTML: role === "user" ? "👤" : "🤖"
+      innerHTML: role === "user" ? "👤" : "🤖",
     });
 
-    const messageContent = tag("div", {
+    const messageContent = createTag("div", {
       className: "ai-message-content",
-      innerHTML: content
+      innerHTML: content,
     });
 
     messageDiv.appendChild(avatar);
@@ -419,44 +439,68 @@ class AIAssistant {
   }
 
   updateMessage(element, content, app) {
+    if (!element) return;
     element.innerHTML = this.formatAIResponse(content);
     this.highlightCode(app);
   }
 
   formatAIResponse(content) {
     if (window.markdownit) {
-      const md = window.markdownit({
-        highlight: function (str, lang) {
-          if (lang && window.hljs) {
-            try {
-              return '<pre><code class="hljs">' + 
-                     window.hljs.highlight(str, { language: lang }).value + 
-                     '</code></pre>';
-            } catch (__) {}
-          }
-          return '<pre><code>' + md.utils.escapeHtml(str) + '</code></pre>';
+      const md = window.markdownit();
+      const highlight = function (str, lang) {
+        if (lang && window.hljs) {
+          try {
+            return '<pre><code class="hljs">' + window.hljs.highlight(str, { language: lang }).value + '</code></pre>';
+          } catch (__) {}
         }
-      });
+        return '<pre><code>' + md.utils.escapeHtml(str) + '</code></pre>';
+      };
+      md.options.highlight = highlight;
       return md.render(content);
     }
-    return content.replace(/\n/g, '<br>');
+    return String(content).replace(/\n/g, "<br>");
   }
 
   highlightCode(app) {
+    if (!app) return;
     if (window.hljs) {
-      app.querySelectorAll('pre code').forEach((block) => {
-        window.hljs.highlightElement(block);
+      app.querySelectorAll("pre code").forEach((block) => {
+        try {
+          window.hljs.highlightElement(block);
+        } catch (e) {}
+        const pre = block.closest("pre");
+        if (!pre) return;
+        if (pre.querySelector(".ai-copy-code-btn")) return;
+        const btn = createTag("button", {
+          className: "ai-copy-code-btn",
+          innerHTML: copyIconSvg,
+          title: "Copy code",
+        });
+        btn.onclick = this._createCopyHandler(block.innerText);
+        pre.style.position = "relative";
+        btn.style.position = "absolute";
+        btn.style.right = "8px";
+        btn.style.top = "8px";
+        btn.style.zIndex = "20";
+        pre.appendChild(btn);
       });
     }
+  }
+
+  _createCopyHandler(text) {
+    return () => {
+      copy(text);
+      window.toast("Code copied to clipboard", 1200);
+    };
   }
 
   async callAI(message, settings) {
     const { apiKey, baseUrl, model } = settings;
-    
+
     if (!apiKey || !baseUrl || !model) {
       throw new Error("Please configure API settings first");
     }
-    
+
     const chatModel = new ChatOpenAI({
       openAIApiKey: apiKey,
       modelName: model,
@@ -465,15 +509,15 @@ class AIAssistant {
       },
     });
 
-    const prompt = ChatPromptTemplate.fromMessages([
+    const promptTemplate = ChatPromptTemplate.fromMessages([
       ["system", "You are a helpful assistant."],
       ["human", "{input}"],
     ]);
 
-    const chain = prompt.pipe(chatModel).pipe(new StringOutputParser());
-    
+    const chain = promptTemplate.pipe(chatModel).pipe(new StringOutputParser());
+
     const response = await chain.invoke({ input: message });
-    
+
     return response;
   }
 
@@ -481,118 +525,141 @@ class AIAssistant {
     return {
       apiKey: localStorage.getItem("ai-api-key") || "",
       baseUrl: localStorage.getItem("ai-base-url") || "https://api.openai.com/v1",
-      model: localStorage.getItem("ai-model") || "gpt-3.5-turbo"
+      model: localStorage.getItem("ai-model") || "gpt-3.5-turbo",
     };
   }
 
   async saveSettings(app) {
+    if (!app) return;
     const settingsForm = app.querySelector(".ai-settings-form");
-    const apiKey = settingsForm.querySelector("#api-key").value;
-    const baseUrl = settingsForm.querySelector("#base-url").value;
-    const model = settingsForm.querySelector("#model-input").value;
+    if (!settingsForm) return;
+    const apiKeyInput = settingsForm.querySelector("#api-key");
+    const baseUrlInput = settingsForm.querySelector("#base-url");
+    const modelInput = settingsForm.querySelector("#model-input");
+    const apiKey = apiKeyInput ? apiKeyInput.value : "";
+    const baseUrl = baseUrlInput ? baseUrlInput.value : "";
+    const model = modelInput ? modelInput.value : "";
 
-    if (apiKey) {
-      await this.apiKeyManager.saveAPIKey("default", apiKey);
+    if (apiKey && this.apiKeyManager && typeof this.apiKeyManager.saveAPIKey === "function") {
+      try {
+        await this.apiKeyManager.saveAPIKey("default", apiKey);
+        localStorage.setItem("ai-api-key", "saved");
+      } catch (e) {
+        console.error("saveAPIKey error:", e);
+      }
     }
 
-    localStorage.setItem("ai-base-url", baseUrl);
-    localStorage.setItem("ai-model", model);
+    if (baseUrl) localStorage.setItem("ai-base-url", baseUrl);
+    if (model) localStorage.setItem("ai-model", model);
 
     window.toast("Settings saved successfully!", 2000);
   }
 
   async loadSettings(app) {
+    if (!app) return;
     const settings = this.getSettings();
     const settingsForm = app.querySelector(".ai-settings-form");
-    
-    settingsForm.querySelector("#base-url").value = settings.baseUrl;
-    settingsForm.querySelector("#model-input").value = settings.model;
+    if (!settingsForm) return;
 
-    const apiKey = await this.apiKeyManager.getAPIKey("default");
-    if (apiKey) {
-      settingsForm.querySelector("#api-key").value = apiKey;
+    const baseUrlInput = settingsForm.querySelector("#base-url");
+    const modelInput = settingsForm.querySelector("#model-input");
+    if (baseUrlInput) baseUrlInput.value = settings.baseUrl || "";
+    if (modelInput) modelInput.value = settings.model || "";
+
+    if (this.apiKeyManager && typeof this.apiKeyManager.getAPIKey === "function") {
+      try {
+        const apiKey = await this.apiKeyManager.getAPIKey("default");
+        if (apiKey) {
+          const apiKeyInput = settingsForm.querySelector("#api-key");
+          if (apiKeyInput) apiKeyInput.value = apiKey;
+        }
+      } catch (e) {
+        console.error("getAPIKey error:", e);
+      }
+    } else {
+      const apiKeyInput = settingsForm.querySelector("#api-key");
+      if (apiKeyInput) apiKeyInput.value = "";
     }
   }
 
   async loadChatHistory(app) {
+    if (!app) return;
     try {
-      const historyFiles = await fs.readdir(AI_HISTORY_PATH);
       const historyList = app.querySelector(".ai-history-list");
+      if (!historyList) return;
       historyList.innerHTML = "";
-
+      const historyFiles = await fs.readdir(AI_HISTORY_PATH);
       for (const file of historyFiles) {
-        if (file.endsWith('.json')) {
-          const content = await fs.readFile(AI_HISTORY_PATH + '/' + file);
-          const session = JSON.parse(content);
-          
-          const sessionItem = tag("div", {
-            className: "history-session-item",
-            onclick: () => this.loadSession(session, app)
-          });
-
-          const sessionTitle = tag("div", {
-            className: "session-title",
-            textContent: `Session ${session.id.substring(0, 8)}...`
-          });
-
-          const sessionDate = tag("div", {
-            className: "session-date",
-            textContent: new Date(session.timestamp).toLocaleDateString()
-          });
-
-          sessionItem.appendChild(sessionTitle);
-          sessionItem.appendChild(sessionDate);
-          historyList.appendChild(sessionItem);
+        if (file.endsWith(".json")) {
+          try {
+            const content = await fs.readFile(AI_HISTORY_PATH + "/" + file);
+            const session = JSON.parse(content);
+            const sessionItem = createTag("div", {
+              className: "history-session-item",
+            });
+            sessionItem.onclick = this._createSessionClickHandler(session, app);
+            const sessionTitle = createTag("div", {
+              className: "session-title",
+              textContent: `Session ${session.id ? session.id.substring(0, 8) + "..." : file}`,
+            });
+            const sessionDate = createTag("div", {
+              className: "session-date",
+              textContent: session.timestamp ? new Date(session.timestamp).toLocaleDateString() : "",
+            });
+            sessionItem.appendChild(sessionTitle);
+            sessionItem.appendChild(sessionDate);
+            historyList.appendChild(sessionItem);
+          } catch (e) {
+            console.error("Error parsing history file", file, e);
+          }
         }
       }
     } catch (error) {
-      console.log("No history found or error loading history:", error);
     }
   }
 
+  _createSessionClickHandler(session, app) {
+    return () => this.loadSession(session, app);
+  }
+
   async loadSession(session, app) {
+    if (!app || !session) return;
     this.currentSession = session;
     this.switchView("chat", app);
-    
     const chatArea = app.querySelector("#ai-chat-area");
+    if (!chatArea) return;
     chatArea.innerHTML = "";
-
-    session.messages.forEach(msg => {
-      this.addMessageToChat(msg.role, msg.content, app);
-    });
+    if (Array.isArray(session.messages)) {
+      session.messages.forEach((msg) => {
+        this.addMessageToChat(msg.role, msg.content, app);
+      });
+    }
   }
 
   async saveSession() {
     if (!this.currentSession) return;
-
     try {
       await fs.createDirectory(AI_HISTORY_PATH, true);
-      
       this.currentSession.timestamp = Date.now();
       const sessionData = JSON.stringify(this.currentSession, null, 2);
       const filename = `${this.currentSession.id}.json`;
-      
-      await fs.writeFile(AI_HISTORY_PATH + '/' + filename, sessionData);
+      await fs.writeFile(AI_HISTORY_PATH + "/" + filename, sessionData);
     } catch (error) {
       console.error("Error saving session:", error);
     }
   }
 
   onSidebarSelected(app) {
-    console.log("AI Assistant sidebar selected");
   }
 
   async destroy() {
-    console.log("Destroying AI Assistant");
     try {
-      // Fix: selectionMenu.remove() might not exist, use try-catch
-      if (selectionMenu && typeof selectionMenu.remove === 'function') {
-        selectionMenu.remove("✨");
+      if (selectionMenu && typeof selectionMenu.remove === "function") {
+        try {
+          selectionMenu.remove("✨");
+        } catch (e) {}
       }
-    } catch (error) {
-      console.error("Error removing selection menu:", error);
-    }
-    
+    } catch (error) {}
     if (this.$githubDarkFile) this.$githubDarkFile.remove();
     if (this.$higlightJsFile) this.$higlightJsFile.remove();
     if (this.$markdownItFile) this.$markdownItFile.remove();
@@ -601,18 +668,15 @@ class AIAssistant {
 }
 
 if (window.acode) {
-  console.log("Acode available, initializing AI Assistant plugin...");
   const acodePlugin = new AIAssistant();
   acode.setPluginInit(
     plugin.id,
-    async (baseUrl, $page, { cacheFileUrl, cacheFile }) => {
-      console.log("Plugin init callback called");
-      if (!baseUrl.endsWith("/")) {
-        baseUrl += "/";
-      }
+    async (baseUrl, $page, options = {}) => {
+      if (!baseUrl) baseUrl = "";
+      if (!baseUrl.endsWith("/")) baseUrl += "/";
       acodePlugin.baseUrl = baseUrl;
-      await acodePlugin.init($page, cacheFile, cacheFileUrl);
-    },
+      await acodePlugin.init($page, options.cacheFile, options.cacheFileUrl);
+    }
   );
   acode.setPluginUnmount(plugin.id, () => {
     acodePlugin.destroy();

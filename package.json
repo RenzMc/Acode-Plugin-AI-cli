@@ -1,5 +1,5 @@
 {
-  "name": "acode-plugin-chatgpt-sidebar",
+  "name": "acode.plugin.ai.sidebar",
   "version": "2.1.0",
   "description": "ChatGPT Plugin with Sidebar for Acode",
   "main": "dist/main.js",
@@ -8,9 +8,10 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/bajrangCoders/acode-plugin-chatgpt.git"
+    "url":
+    "git+https://github.com/RenzMc/Acode-Plugin-AI-cli.git"
   },
-  "author": "Raunak Raj",
+  "author": "RenzMc",
   "license": "MIT",
   "dependencies": {
     "@google/generative-ai": "^0.13.0",
