@@ -4,16 +4,6 @@ AI Assistant SideBar
 
 AI Assistant plugin for Acode for all the ai related stuffs with support of wide range of models.
 
-## Supported Providers 
-
-- [OpenAi](https://platform.openai.com/account/api-keys) 🙂
-- [Google](https://makersuite.google.com/app/apikey) 😍
-- [Ollama](https://ollama.com/) 😍
-- [Groq](https://console.groq.com/keys) 😍
-- [Mistral](https://mistral.ai/) 😕
-- [Anthropic](https://www.anthropic.com/api) 😕
-- OpenAI-Like Providers (Providers that use OpenAI style APIs to provide ai models, for example [Openrouter](https://openrouter.ai/)) 🙂
-
 ## Usage (for contributors)
 
 - Clone the repo
