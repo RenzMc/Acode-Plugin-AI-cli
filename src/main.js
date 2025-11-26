@@ -68,6 +68,30 @@ class AIAssistant {
       this.$style
     );
 
+    this.scriptsLoaded = new Promise((resolve) => {
+      let loaded = 0;
+      const total = 2;
+      const check = () => {
+        loaded += 1;
+        if (loaded >= total) {
+          try {
+            if (window.hljs && typeof window.hljs.highlightAll === "function") {
+              window.hljs.highlightAll();
+            }
+          } catch (e) {}
+          resolve();
+        }
+      };
+      this.$higlightJsFile.onload = check;
+      this.$higlightJsFile.onerror = check;
+      this.$markdownItFile.onload = check;
+      this.$markdownItFile.onerror = check;
+    });
+
+    try {
+      await this.scriptsLoaded;
+    } catch (e) {}
+
     this.apiKeyManager = new APIKeyManager("acode-ai-assistant-secret");
     this.sessions = [];
     this.currentSession = null;
@@ -339,7 +363,7 @@ class AIAssistant {
     switch (view) {
       case "chat":
         if (navBtns[0]) navBtns[0].classList.add("active");
-        if (chatArea) chatArea.style.display = "block";
+        if (chatArea) chatArea.style.display = "flex";
         break;
       case "history":
         if (navBtns[1]) navBtns[1].classList.add("active");
@@ -390,6 +414,9 @@ class AIAssistant {
 
       this.updateMessage(aiMessageElement, response, app);
 
+      const chatAreaAfter = app.querySelector("#ai-chat-area");
+      if (chatAreaAfter) chatAreaAfter.scrollTop = chatAreaAfter.scrollHeight;
+
       if (!this.currentSession) {
         this.currentSession = {
           id: uuidv4(),
@@ -427,7 +454,7 @@ class AIAssistant {
 
     const messageContent = createTag("div", {
       className: "ai-message-content",
-      innerHTML: content,
+      innerHTML: role === "assistant" ? content : (String(content).replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\n/g, "<br>")),
     });
 
     messageDiv.appendChild(avatar);
