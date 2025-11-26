@@ -415,7 +415,11 @@ class AIAssistant {
       this.updateMessage(aiMessageElement, response, app);
 
       const chatAreaAfter = app.querySelector("#ai-chat-area");
-      if (chatAreaAfter) chatAreaAfter.scrollTop = chatAreaAfter.scrollHeight;
+      if (chatAreaAfter) {
+        requestAnimationFrame(() => {
+          chatAreaAfter.scrollTop = chatAreaAfter.scrollHeight;
+        });
+      }
 
       if (!this.currentSession) {
         this.currentSession = {
@@ -461,7 +465,9 @@ class AIAssistant {
     messageDiv.appendChild(messageContent);
     chatArea.appendChild(messageDiv);
 
-    chatArea.scrollTop = chatArea.scrollHeight;
+    requestAnimationFrame(() => {
+      chatArea.scrollTop = chatArea.scrollHeight;
+    });
 
     return messageContent;
   }
