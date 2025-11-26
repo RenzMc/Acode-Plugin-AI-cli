@@ -9,6 +9,7 @@ import copy from "copy-to-clipboard";
 import { v4 as uuidv4 } from "uuid";
 import { APIKeyManager } from "./api_key";
 import { copyIconSvg, sendIconSvg, stopIconSvg } from "./constants";
+import { getModelsFromProvider } from "./utils";
 
 const fs = acode.require("fs");
 const select = acode.require("select");
@@ -287,7 +288,7 @@ class AIAssistant {
     }
 
     try {
-      const settings = this.getSettings();
+      const settings = await this.getSettings();
       if (!settings.apiKey || !settings.baseUrl || !settings.model) {
         window.toast("Please configure API settings first", 3000);
         return;
@@ -376,7 +377,7 @@ class AIAssistant {
     if (sendBtn) sendBtn.innerHTML = stopIconSvg;
 
     try {
-      const settings = this.getSettings();
+      const settings = await this.getSettings();
       if (!settings.apiKey || !settings.baseUrl || !settings.model) {
         window.toast("Please configure API settings first", 3000);
         this.switchView("settings", app);
@@ -521,11 +522,19 @@ class AIAssistant {
     return response;
   }
 
-  getSettings() {
+  async getSettings() {
+    let creds = null;
+    if (this.apiKeyManager && typeof this.apiKeyManager.getCredentials === "function") {
+      try {
+        creds = await this.apiKeyManager.getCredentials("default");
+      } catch (e) {
+        creds = null;
+      }
+    }
     return {
-      apiKey: localStorage.getItem("ai-api-key") || "",
-      baseUrl: localStorage.getItem("ai-base-url") || "https://api.openai.com/v1",
-      model: localStorage.getItem("ai-model") || "gpt-3.5-turbo",
+      apiKey: (creds && creds.apiKey) || (localStorage.getItem("ai-api-key") || ""),
+      baseUrl: (creds && creds.baseUrl) || (localStorage.getItem("ai-base-url") || "https://api.openai.com/v1"),
+      model: (creds && creds.model) || (localStorage.getItem("ai-model") || "gpt-3.5-turbo"),
     };
   }
 
@@ -542,8 +551,7 @@ class AIAssistant {
 
     if (apiKey && this.apiKeyManager && typeof this.apiKeyManager.saveAPIKey === "function") {
       try {
-        await this.apiKeyManager.saveAPIKey("default", apiKey);
-        localStorage.setItem("ai-api-key", "saved");
+        await this.apiKeyManager.saveAPIKey("default", { apiKey, baseUrl, model });
       } catch (e) {
         console.error("saveAPIKey error:", e);
       }
@@ -557,29 +565,16 @@ class AIAssistant {
 
   async loadSettings(app) {
     if (!app) return;
-    const settings = this.getSettings();
+    const settings = await this.getSettings();
     const settingsForm = app.querySelector(".ai-settings-form");
     if (!settingsForm) return;
 
     const baseUrlInput = settingsForm.querySelector("#base-url");
     const modelInput = settingsForm.querySelector("#model-input");
+    const apiKeyInput = settingsForm.querySelector("#api-key");
     if (baseUrlInput) baseUrlInput.value = settings.baseUrl || "";
     if (modelInput) modelInput.value = settings.model || "";
-
-    if (this.apiKeyManager && typeof this.apiKeyManager.getAPIKey === "function") {
-      try {
-        const apiKey = await this.apiKeyManager.getAPIKey("default");
-        if (apiKey) {
-          const apiKeyInput = settingsForm.querySelector("#api-key");
-          if (apiKeyInput) apiKeyInput.value = apiKey;
-        }
-      } catch (e) {
-        console.error("getAPIKey error:", e);
-      }
-    } else {
-      const apiKeyInput = settingsForm.querySelector("#api-key");
-      if (apiKeyInput) apiKeyInput.value = "";
-    }
+    if (apiKeyInput) apiKeyInput.value = settings.apiKey || "";
   }
 
   async loadChatHistory(app) {

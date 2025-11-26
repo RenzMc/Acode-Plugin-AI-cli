@@ -1,21 +1,18 @@
 export class APIKeyManager {
   constructor(secret) {
-    this.secret = secret; // Secret passphrase for encryption/decryption
+    this.secret = secret;
   }
 
-  // Utility to encode a string as an ArrayBuffer
   _encode(text) {
     const encoder = new TextEncoder();
     return encoder.encode(text);
   }
 
-  // Utility to decode an ArrayBuffer to a string
   _decode(buffer) {
     const decoder = new TextDecoder();
     return decoder.decode(buffer);
   }
 
-  // Utility to import a key for AES-GCM
   async _importKey(secret) {
     const keyMaterial = await crypto.subtle.importKey(
       "raw",
@@ -39,10 +36,9 @@ export class APIKeyManager {
     return key;
   }
 
-  // Encrypt a value using AES-GCM
   async _encrypt(value) {
     const key = await this._importKey(this.secret);
-    const iv = crypto.getRandomValues(new Uint8Array(12)); // Initialization vector
+    const iv = crypto.getRandomValues(new Uint8Array(12));
     const encrypted = await crypto.subtle.encrypt(
       {
         name: "AES-GCM",
@@ -54,7 +50,6 @@ export class APIKeyManager {
     return { iv, encrypted };
   }
 
-  // Decrypt a value using AES-GCM
   async _decrypt(encrypted, iv) {
     const key = await this._importKey(this.secret);
     const decrypted = await crypto.subtle.decrypt(
@@ -68,9 +63,10 @@ export class APIKeyManager {
     return this._decode(decrypted);
   }
 
-  // Save API key
-  async saveAPIKey(provider, apiKey) {
-    const { iv, encrypted } = await this._encrypt(apiKey);
+  async saveAPIKey(provider, apiKeyOrObject) {
+    const payload = typeof apiKeyOrObject === "string" ? { apiKey: apiKeyOrObject } : apiKeyOrObject || {};
+    const json = JSON.stringify(payload);
+    const { iv, encrypted } = await this._encrypt(json);
     const storageValue = {
       iv: Array.from(iv),
       encrypted: Array.from(new Uint8Array(encrypted))
@@ -78,26 +74,33 @@ export class APIKeyManager {
     localStorage.setItem(provider, JSON.stringify(storageValue));
   }
 
-  // Retrieve API key
   async getAPIKey(provider) {
+    const creds = await this.getCredentials(provider);
+    if (!creds) return null;
+    return creds.apiKey || null;
+  }
+
+  async getCredentials(provider) {
     const storageValue = localStorage.getItem(provider);
     if (!storageValue) {
       return null;
     }
     const { iv, encrypted } = JSON.parse(storageValue);
-    const decryptedKey = await this._decrypt(
+    const decrypted = await this._decrypt(
       new Uint8Array(encrypted),
       new Uint8Array(iv)
     );
-    return decryptedKey;
+    try {
+      return JSON.parse(decrypted);
+    } catch (e) {
+      return null;
+    }
   }
 
-  // Delete API key
   deleteAPIKey(provider) {
     localStorage.removeItem(provider);
   }
 
-  // Check if an API key exists
   apiKeyExists(provider) {
     return localStorage.getItem(provider) !== null;
   }
